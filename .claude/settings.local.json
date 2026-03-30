@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest . --typescript --app --tailwind --no-src-dir --eslint --import-alias \"@/*\")",
+      "Bash(npx create-next-app@latest . --typescript --app --tailwind --no-src-dir --eslint --import-alias \"@/*\" --yes)",
+      "Bash(mkdir -p /tmp/hanimenebiznes_backup)",
+      "Bash(cp \"c:\\\\Users\\\\Matin Asgarov\\\\Desktop\\\\Projects\\\\hanimenebiznes\\\\CLAUDE.md\" /tmp/hanimenebiznes_backup/)",
+      "Bash(cp \"c:\\\\Users\\\\Matin Asgarov\\\\Desktop\\\\Projects\\\\hanimenebiznes\\\\Documentation.md\" /tmp/hanimenebiznes_backup/)",
+      "Read(//tmp/**)"
+    ],
+    "additionalDirectories": [
+      "\\tmp\\hanimenebiznes_backup"
+    ]
+  }
+}
