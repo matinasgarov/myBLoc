@@ -14,6 +14,7 @@ function buildQuery(lat: number, lng: number): string {
     `node["office"](around:${r},${lat},${lng});` +
     `way["shop"](around:${r},${lat},${lng});` +
     `way["amenity"](around:${r},${lat},${lng});` +
+    `way["leisure"](around:${r},${lat},${lng});` +
     `);out tags;`
   )
 }

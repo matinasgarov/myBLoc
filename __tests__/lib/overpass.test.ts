@@ -54,4 +54,15 @@ describe('fetchPlacesContext', () => {
       'Overpass API error: 429'
     )
   })
+
+  it('handles empty Overpass response gracefully', async () => {
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({ elements: [] }),
+    })
+    const result = await fetchPlacesContext(40.4093, 49.8671, 'restaurant')
+    expect(result.competitors).toBe(0)
+    expect(result.amenities).toEqual([])
+    expect(result.totalBusinesses).toBe(0)
+  })
 })
