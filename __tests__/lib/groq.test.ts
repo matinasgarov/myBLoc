@@ -29,6 +29,8 @@ describe('analyzeLocation', () => {
     jest.clearAllMocks()
     // Re-instantiate mock for each test
     ;(Groq as jest.MockedClass<typeof Groq>).mockClear()
+    // Set dummy API key for tests
+    process.env.GROQ_API_KEY = 'test-key'
   })
 
   it('returns parsed AnalysisResult on valid Groq response', async () => {
@@ -79,5 +81,17 @@ describe('analyzeLocation', () => {
     } as any))
 
     await expect(analyzeLocation(40.4093, 49.8671, 'Kafe', mockCtx)).rejects.toThrow()
+  })
+
+  it('throws when Groq API call itself fails', async () => {
+    ;(Groq as jest.MockedClass<typeof Groq>).mockImplementation(() => ({
+      chat: {
+        completions: {
+          create: jest.fn().mockRejectedValue(new Error('Network error')),
+        },
+      },
+    } as any))
+
+    await expect(analyzeLocation(40.4093, 49.8671, 'Kafe', mockCtx)).rejects.toThrow('Network error')
   })
 })

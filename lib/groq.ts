@@ -53,6 +53,9 @@ export async function analyzeLocation(
   businessType: string,
   ctx: PlacesContext
 ): Promise<AnalysisResult> {
+  if (!process.env.GROQ_API_KEY) {
+    throw new Error('GROQ_API_KEY environment variable is not set')
+  }
   const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
   const prompt = buildPrompt(lat, lng, businessType, ctx)
 
@@ -68,5 +71,6 @@ export async function analyzeLocation(
       if (attempt === 1) throw new Error('Groq returned invalid JSON after 2 attempts')
     }
   }
-  throw new Error('Analysis failed')
+  // TypeScript control flow: the throw in the loop always executes, this is unreachable
+  return undefined as never
 }
