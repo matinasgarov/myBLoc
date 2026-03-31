@@ -1,7 +1,7 @@
 import Groq from 'groq-sdk'
 import type { PlacesContext, AnalysisResult } from './types'
 
-const MODEL = 'llama-3.1-8b-instant'
+const MODEL = 'llama-3.3-70b-versatile'
 
 function buildPrompt(
   lat: number,
