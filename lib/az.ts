@@ -1,4 +1,9 @@
 export const AZ = {
+  LANDING_BRAND: 'myblocate',
+  LANDING_DESCRIPTION: 'Azərbaycanda biznesinizin uğur ehtimalını öyrənin',
+  LANDING_DISCLAIMER: 'Bu tətbiq süni intellektdən istifadə edir. Nəticələr məlumat xarakter daşıyır və 100% dəqiq olmaya bilər.',
+  LANDING_CTA: 'Başlayaq',
+  HEADER_BRAND: 'myblocate',
   MAP_INSTRUCTION: 'Yer seçmək üçün xəritəyə klikləyin',
   MODAL_TITLE: 'Bu ərazidə hansı biznes açmaq istəyirsiniz?',
   MODAL_PLACEHOLDER: 'Məsələn: Oyun klubu, Restoran, Kafe...',

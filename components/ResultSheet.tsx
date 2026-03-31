@@ -22,7 +22,15 @@ function scoreBg(score: number): string {
 
 export default function ResultSheet({ business, result, onReset }: Props) {
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-[1000] bg-white rounded-t-3xl shadow-2xl p-6 max-h-[72vh] overflow-y-auto animate-slide-up">
+    <div
+      className="absolute bottom-0 left-0 right-0 z-[1000] bg-white rounded-t-3xl shadow-2xl p-6 max-h-[72vh] overflow-y-auto animate-slide-up"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="flex justify-end mb-2">
+        <button onClick={onReset} className="text-gray-400 hover:text-gray-600 text-sm font-medium">
+          ✕
+        </button>
+      </div>
       <div className={`flex items-center justify-between mb-2 p-4 rounded-2xl border ${scoreBg(result.score)}`}>
         <div>
           <p className="text-xs text-gray-500 mb-0.5">{AZ.RESULT_PROBABILITY}</p>

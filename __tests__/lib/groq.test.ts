@@ -20,22 +20,15 @@ const mockCtx: PlacesContext = {
   totalBusinesses: 47,
 }
 
-function getMockCreate() {
-  return (Groq as jest.MockedClass<typeof Groq>).mock.results[0].value.chat.completions.create as jest.Mock
-}
-
 describe('analyzeLocation', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    // Re-instantiate mock for each test
     ;(Groq as jest.MockedClass<typeof Groq>).mockClear()
-    // Set dummy API key for tests
     process.env.GROQ_API_KEY = 'test-key'
   })
 
-  it('returns parsed AnalysisResult on valid Groq response', async () => {
+  it('returns AnalysisResult with provided score and AI-generated pros/cons/verdict', async () => {
     const mockPayload = {
-      score: 75,
       pros: ['Yaxşı trafik', 'Az rəqabət'],
       cons: ['Yüksək icarə'],
       verdict: 'Bu biznes üçün yaxşı yer.',
@@ -50,7 +43,7 @@ describe('analyzeLocation', () => {
       },
     } as any))
 
-    const result = await analyzeLocation(40.4093, 49.8671, 'Oyun Klubu', mockCtx)
+    const result = await analyzeLocation(40.4093, 49.8671, 'Oyun Klubu', mockCtx, 75)
     expect(result.score).toBe(75)
     expect(result.pros).toHaveLength(2)
     expect(result.cons).toHaveLength(1)
@@ -58,7 +51,7 @@ describe('analyzeLocation', () => {
   })
 
   it('retries once on invalid JSON then returns result', async () => {
-    const mockPayload = { score: 60, pros: ['a'], cons: ['b'], verdict: 'Orta.' }
+    const mockPayload = { pros: ['a'], cons: ['b'], verdict: 'Orta.' }
     const mockCreate = jest.fn()
       .mockResolvedValueOnce({ choices: [{ message: { content: 'not valid json' } }] })
       .mockResolvedValueOnce({ choices: [{ message: { content: JSON.stringify(mockPayload) } }] })
@@ -67,7 +60,7 @@ describe('analyzeLocation', () => {
       chat: { completions: { create: mockCreate } },
     } as any))
 
-    const result = await analyzeLocation(40.4093, 49.8671, 'Restoran', mockCtx)
+    const result = await analyzeLocation(40.4093, 49.8671, 'Restoran', mockCtx, 60)
     expect(mockCreate).toHaveBeenCalledTimes(2)
     expect(result.score).toBe(60)
   })
@@ -80,7 +73,7 @@ describe('analyzeLocation', () => {
       chat: { completions: { create: mockCreate } },
     } as any))
 
-    await expect(analyzeLocation(40.4093, 49.8671, 'Kafe', mockCtx)).rejects.toThrow()
+    await expect(analyzeLocation(40.4093, 49.8671, 'Kafe', mockCtx, 50)).rejects.toThrow()
   })
 
   it('throws when Groq API call itself fails', async () => {
@@ -92,6 +85,6 @@ describe('analyzeLocation', () => {
       },
     } as any))
 
-    await expect(analyzeLocation(40.4093, 49.8671, 'Kafe', mockCtx)).rejects.toThrow('Network error')
+    await expect(analyzeLocation(40.4093, 49.8671, 'Kafe', mockCtx, 50)).rejects.toThrow('Network error')
   })
 })

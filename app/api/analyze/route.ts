@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { analyzeLocation } from '@/lib/groq'
+import { calculateScore } from '@/lib/score'
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
@@ -16,7 +17,8 @@ export async function POST(req: NextRequest) {
     )
   }
   try {
-    const result = await analyzeLocation(body.lat, body.lng, body.businessType, body.placesContext)
+    const score = calculateScore(body.placesContext)
+    const result = await analyzeLocation(body.lat, body.lng, body.businessType, body.placesContext, score)
     return NextResponse.json(result)
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
