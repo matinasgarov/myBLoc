@@ -20,5 +20,6 @@ export function getAnalyses(): SavedAnalysis[] {
 }
 
 export function clearAnalyses(): void {
+  if (typeof window === 'undefined') return
   localStorage.removeItem(STORAGE_KEY)
 }
