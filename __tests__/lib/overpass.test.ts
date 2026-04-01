@@ -1,5 +1,9 @@
 import { fetchPlacesContext } from '@/lib/overpass'
 
+jest.mock('@/lib/az-competitors', () => ({
+  countAzCompetitors: () => -1, // no AZ mapping, fall back to OSM only
+}))
+
 global.fetch = jest.fn()
 
 const mockOSMResponse = {

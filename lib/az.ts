@@ -21,4 +21,8 @@ export const AZ = {
   HISTORY_EMPTY: 'Hələ heç bir təhlil yoxdur.',
   ERROR_NO_DATA: 'Bu ərazidə kifayət qədər məlumat yoxdur. Daha məskunlaşmış bir yer sınayın.',
   ERROR_ANALYSIS_FAILED: 'Təhlil uğursuz oldu. Yenidən cəhd edin.',
+  LANDING_MISSION_TITLE: 'Missiyamız',
+  LANDING_MISSION_TEXT: 'Biz sahibkarlara Azərbaycanda harada biznes açmaq barədə məlumata əsaslanan qərarlar qəbul etməyə kömək edirik. Süni intellekt ilə piyada axını, rəqabət və ərazi demografiyasını təhlil edərək uğurunuzu artıracaq faydalı məlumatlar təqdim edirik.',
+  LANDING_CONTACT_TITLE: 'Əlaqə',
+  LANDING_CONTACT_EMAIL: 'info@myblocate.az',
 } as const

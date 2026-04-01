@@ -1,10 +1,11 @@
 'use client'
 import { AZ } from '@/lib/az'
-import type { AnalysisResult } from '@/lib/types'
+import type { AnalysisResult, PlacesContext } from '@/lib/types'
 
 interface Props {
   business: string
   result: AnalysisResult
+  context: PlacesContext | null
   onReset: () => void
 }
 
@@ -20,7 +21,7 @@ function scoreBg(score: number): string {
   return 'bg-red-50 border-red-200'
 }
 
-export default function ResultSheet({ business, result, onReset }: Props) {
+export default function ResultSheet({ business, result, context, onReset }: Props) {
   return (
     <div
       className="absolute bottom-0 left-0 right-0 z-[1000] bg-white rounded-t-3xl shadow-2xl p-6 max-h-[72vh] overflow-y-auto animate-slide-up"
@@ -71,6 +72,42 @@ export default function ResultSheet({ business, result, onReset }: Props) {
         </h3>
         <p className="text-sm text-gray-700 italic">"{result.verdict}"</p>
       </div>
+
+      {context && (
+        <div className="mb-6 border border-gray-100 rounded-xl overflow-hidden">
+          <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">OSM Məlumatları</p>
+          </div>
+          <div className="divide-y divide-gray-50">
+            <div className="flex justify-between px-4 py-2 text-xs">
+              <span className="text-gray-500">Tapılan müəssisə</span>
+              <span className="font-medium text-gray-700">{context.totalBusinesses}</span>
+            </div>
+            <div className="flex justify-between px-4 py-2 text-xs">
+              <span className="text-gray-500">Rəqib</span>
+              <span className="font-medium text-gray-700">{context.competitors}</span>
+            </div>
+            <div className="flex justify-between px-4 py-2 text-xs">
+              <span className="text-gray-500">Ərazi növü</span>
+              <span className="font-medium text-gray-700">
+                {context.areaType === 'commercial' ? 'Ticarət' : context.areaType === 'mixed' ? 'Qarışıq' : 'Yaşayış'}
+              </span>
+            </div>
+            {context.landUse && (
+              <div className="flex justify-between px-4 py-2 text-xs">
+                <span className="text-gray-500">Ərazi istifadəsi</span>
+                <span className="font-medium text-red-500">{context.landUse}</span>
+              </div>
+            )}
+            {context.amenities.length > 0 && (
+              <div className="px-4 py-2 text-xs">
+                <p className="text-gray-500 mb-1">Yaxınlıqdakı obyektlər</p>
+                <p className="text-gray-700">{context.amenities.join(' · ')}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <button
         onClick={onReset}

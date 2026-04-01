@@ -14,7 +14,7 @@ function ctx(overrides: Partial<PlacesContext>): PlacesContext {
 describe('calculateScore', () => {
   it('returns maximum score with no competitors, 4+ amenities, commercial area', () => {
     const score = calculateScore(ctx({ amenities: ['a', 'b', 'c', 'd'] }))
-    expect(score).toBe(100) // 50 + 30 + 20
+    expect(score).toBe(95) // 50 + 30 + 20 = 100, capped at 95
   })
 
   it('returns minimum score with many competitors, no amenities, residential area', () => {

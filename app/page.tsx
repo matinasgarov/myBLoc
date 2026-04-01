@@ -1,13 +1,14 @@
 'use client'
 import { useState, useCallback, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { AZ } from '@/lib/az'
 import { saveAnalysis, getAnalyses } from '@/lib/storage'
+import { getStrings, type Lang } from '@/lib/i18n'
 import BusinessInputModal from '@/components/BusinessInputModal'
 import LoadingOverlay from '@/components/LoadingOverlay'
 import ResultSheet from '@/components/ResultSheet'
 import HistorySidebar from '@/components/HistorySidebar'
-import type { AnalysisResult, LatLng, SavedAnalysis } from '@/lib/types'
+import LandingPage from '@/components/LandingPage'
+import type { AnalysisResult, LatLng, PlacesContext, SavedAnalysis } from '@/lib/types'
 
 const Map = dynamic(() => import('@/components/Map'), { ssr: false })
 
@@ -19,13 +20,27 @@ export default function Home() {
   const [businessType, setBusinessType] = useState('')
   const [loadingStep, setLoadingStep] = useState<1 | 2>(1)
   const [result, setResult] = useState<AnalysisResult | null>(null)
+  const [placesContext, setPlacesContext] = useState<PlacesContext | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showHistory, setShowHistory] = useState(false)
   const [analyses, setAnalyses] = useState<SavedAnalysis[]>([])
+  const [lang, setLang] = useState<Lang>('az')
+
+  const strings = getStrings(lang)
 
   useEffect(() => {
     setAnalyses(getAnalyses())
   }, [])
+
+  useEffect(() => {
+    const saved = localStorage.getItem('myblocate-lang') as Lang | null
+    if (saved === 'az' || saved === 'en') setLang(saved)
+  }, [])
+
+  const handleLangChange = (newLang: Lang) => {
+    setLang(newLang)
+    localStorage.setItem('myblocate-lang', newLang)
+  }
 
   const handleStart = () => setAppState('map')
 
@@ -54,12 +69,13 @@ export default function Home() {
       })
       if (!placesRes.ok) throw new Error('places')
       setLoadingStep(2)
-      const placesContext = await placesRes.json()
+      const fetchedContext = await placesRes.json()
+      setPlacesContext(fetchedContext)
 
       const analyzeRes = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat: pin.lat, lng: pin.lng, businessType: business, placesContext }),
+        body: JSON.stringify({ lat: pin.lat, lng: pin.lng, businessType: business, placesContext: fetchedContext }),
       })
       if (!analyzeRes.ok) throw new Error('analyze')
 
@@ -79,7 +95,7 @@ export default function Home() {
       setAnalyses(getAnalyses())
     } catch (err) {
       const msg =
-        (err as Error).message === 'places' ? AZ.ERROR_NO_DATA : AZ.ERROR_ANALYSIS_FAILED
+        (err as Error).message === 'places' ? strings.ERROR_NO_DATA : strings.ERROR_ANALYSIS_FAILED
       setError(msg)
       setAppState('map')
     }
@@ -89,6 +105,7 @@ export default function Home() {
     setAppState('map')
     setPin(null)
     setResult(null)
+    setPlacesContext(null)
     setBusinessType('')
     setError(null)
   }
@@ -97,23 +114,12 @@ export default function Home() {
 
   if (appState === 'landing') {
     return (
-      <main className="w-screen h-screen bg-white flex flex-col items-center justify-center px-6">
-        <h1 className="text-5xl font-bold text-blue-600 tracking-tight animate-fade-in">
-          {AZ.LANDING_BRAND}
-        </h1>
-        <p className="mt-4 text-gray-600 text-center max-w-xs text-sm animate-fade-in-delay">
-          {AZ.LANDING_DESCRIPTION}
-        </p>
-        <p className="mt-2 text-gray-400 text-center max-w-xs text-xs animate-fade-in-delay">
-          {AZ.LANDING_DISCLAIMER}
-        </p>
-        <button
-          onClick={handleStart}
-          className="mt-8 px-8 py-3 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 transition-colors shadow-md animate-fade-in-delay-2"
-        >
-          {AZ.LANDING_CTA}
-        </button>
-      </main>
+      <LandingPage
+        onStart={handleStart}
+        strings={strings}
+        lang={lang}
+        onLangChange={handleLangChange}
+      />
     )
   }
 
@@ -123,11 +129,11 @@ export default function Home() {
       {/* Header bar */}
       <div className="flex-none h-14 bg-white border-b border-gray-100 shadow-sm flex items-center justify-between px-4 z-[1100]">
         <span className="text-lg font-bold text-blue-600 tracking-tight">
-          {AZ.HEADER_BRAND}
+          {strings.HEADER_BRAND}
         </span>
         <button
           onClick={() => setShowHistory((h) => !h)}
-          title={AZ.HISTORY_BUTTON_LABEL}
+          title={strings.HISTORY_BUTTON_LABEL}
           className="bg-gray-50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-gray-100 transition-colors text-lg border border-gray-200"
         >
           🕐
@@ -140,7 +146,7 @@ export default function Home() {
 
         {appState === 'map' && (
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[500] bg-white/90 backdrop-blur-sm rounded-full px-5 py-2 text-sm text-gray-600 shadow-md pointer-events-none select-none">
-            {AZ.MAP_INSTRUCTION}
+            {strings.MAP_INSTRUCTION}
           </div>
         )}
 
@@ -159,7 +165,7 @@ export default function Home() {
         {appState === 'result' && result && (
           <>
             <div className="absolute inset-0 z-[999]" onClick={handleReset} />
-            <ResultSheet business={businessType} result={result} onReset={handleReset} />
+            <ResultSheet business={businessType} result={result} context={placesContext} onReset={handleReset} />
           </>
         )}
       </div>

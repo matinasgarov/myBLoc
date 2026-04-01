@@ -16,6 +16,7 @@ export interface PlacesContext {
   areaType: 'residential' | 'commercial' | 'mixed'
   amenities: string[]
   totalBusinesses: number
+  landUse: string | null
 }
 
 export interface AnalysisResult {

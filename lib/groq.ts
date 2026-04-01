@@ -10,6 +10,10 @@ function buildPrompt(
   ctx: PlacesContext,
   score: number
 ): string {
+  const landUseNote = ctx.landUse
+    ? `- XƏBƏRDARLIQ: Pin dəqiq olaraq "${ctx.landUse}" ərazisindədir (məsələn, qəbiristanlıq, hərbi zona və s.)`
+    : ''
+
   return `Sən biznes məsləhətçisisən. Sadə, aydın Azərbaycan dilində yaz — sanki dostuna izah edirsən.
 
 Məlumatlar:
@@ -20,6 +24,7 @@ Məlumatlar:
 - Ərazi tipi: ${ctx.areaType === 'commercial' ? 'ticarət' : ctx.areaType === 'mixed' ? 'qarışıq' : 'yaşayış'} məntəqəsi
 - Ərazidəki ümumi müəssisə sayı: ${ctx.totalBusinesses}
 - Ümumi bal: ${score}/100
+${landUseNote}
 
 3 qısa müsbət cəhət və 3 qısa risk yaz. Hər cümlə maksimum 10-12 sözdən ibarət olsun. Texniki termin işlətmə. Yalnız bu JSON formatında cavab ver:
 {

@@ -6,10 +6,23 @@
       "Bash(mkdir -p /tmp/hanimenebiznes_backup)",
       "Bash(cp \"c:\\\\Users\\\\Matin Asgarov\\\\Desktop\\\\Projects\\\\hanimenebiznes\\\\CLAUDE.md\" /tmp/hanimenebiznes_backup/)",
       "Bash(cp \"c:\\\\Users\\\\Matin Asgarov\\\\Desktop\\\\Projects\\\\hanimenebiznes\\\\Documentation.md\" /tmp/hanimenebiznes_backup/)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(node -e \"const v = ''setupFilesAfterFramework''; console.log\\(v\\); console.log\\(v.length\\); console.log\\([...v].join\\(''-''\\)\\);\")",
+      "Bash(node -e \"const correct = ''setupFilesAfterFramework''; const inFile = ''setupFilesAfterFramework''; console.log\\(''correct:'', correct\\); console.log\\(''inFile:'', inFile\\); console.log\\(''match:'', correct === inFile\\);\")",
+      "Bash(node -e \":*)",
+      "Bash(npm info:*)",
+      "Bash(npm test:*)",
+      "Read(//c/Users/Matin Asgarov/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.6/skills/subagent-driven-development/**)",
+      "Read(//c/Users/**)",
+      "Bash(npx tsc:*)",
+      "Bash(grep -r \"saveAnalysis\\\\|getAnalyses\\\\|clearAnalyses\" --include=*.ts --include=*.tsx --exclude-dir=node_modules --exclude-dir=.next)",
+      "Bash(npx eslint:*)"
     ],
     "additionalDirectories": [
-      "\\tmp\\hanimenebiznes_backup"
+      "\\tmp\\hanimenebiznes_backup",
+      "C:\\Users"
     ]
   }
 }
