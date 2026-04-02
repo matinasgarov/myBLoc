@@ -1,4 +1,5 @@
 'use client'
+import { useState } from 'react'
 import { AZ } from '@/lib/az'
 import type { AnalysisResult, PlacesContext } from '@/lib/types'
 
@@ -9,112 +10,172 @@ interface Props {
   onReset: () => void
 }
 
-function scoreColor(score: number): string {
-  if (score >= 70) return 'text-green-600'
-  if (score >= 40) return 'text-yellow-500'
-  return 'text-red-500'
+function scoreColor(score: number) {
+  if (score >= 70) return { text: 'text-emerald-400', bg: 'bg-emerald-400/10', ring: 'ring-emerald-500/30' }
+  if (score >= 40) return { text: 'text-amber-400', bg: 'bg-amber-400/10', ring: 'ring-amber-500/30' }
+  return { text: 'text-red-400', bg: 'bg-red-400/10', ring: 'ring-red-500/30' }
 }
 
-function scoreBg(score: number): string {
-  if (score >= 70) return 'bg-green-50 border-green-200'
-  if (score >= 40) return 'bg-yellow-50 border-yellow-200'
-  return 'bg-red-50 border-red-200'
+function Label({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-slate-500 text-xs uppercase tracking-widest mb-3 font-medium">{children}</p>
+  )
+}
+
+interface BarProps { label: string; value: number; max: number }
+function ScoreBar({ label, value, max }: BarProps) {
+  const pct = Math.round((value / max) * 100)
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-slate-400 text-sm w-36 shrink-0">{label}</span>
+      <div className="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden">
+        <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-slate-400 text-sm w-14 text-right shrink-0 tabular-nums font-medium">{value}/{max}</span>
+    </div>
+  )
 }
 
 export default function ResultSheet({ business, result, context, onReset }: Props) {
+  const [expanded, setExpanded] = useState(false)
+  const score = scoreColor(result.score)
+
+  const competitionScore = context ? Math.max(5, 50 - context.competitors * 8) : 0
+  const footTrafficScore = context ? Math.min(30, context.amenities.length * 8) : 0
+  const areaScore = context
+    ? context.areaType === 'commercial' ? 20 : context.areaType === 'mixed' ? 12 : 5
+    : 0
+
+  const analysisText = [result.detail, result.verdict].filter(Boolean).join(' ')
+
   return (
     <div
-      className="absolute bottom-0 left-0 right-0 z-[1000] bg-white rounded-t-3xl shadow-2xl p-6 max-h-[72vh] overflow-y-auto animate-slide-up"
+      style={{ height: expanded ? '72vh' : '58vh' }}
+      className="flex flex-col bg-slate-950 border-t border-slate-800 overflow-hidden transition-all duration-300"
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="flex justify-end mb-2">
-        <button onClick={onReset} className="text-gray-400 hover:text-gray-600 text-sm font-medium">
+      {/* ── Header ───────────────────────────────────────── */}
+      <div className="flex items-center gap-6 px-8 py-5 border-b border-slate-800 shrink-0">
+        <div className="flex-1 min-w-0">
+          <p className="text-slate-500 text-xs uppercase tracking-widest mb-1">Biznes növü</p>
+          <h2 className="text-white font-bold text-lg tracking-tight truncate">{business}</h2>
+        </div>
+
+        <div className={`flex items-center gap-3 px-5 py-3 rounded-2xl ring-1 ${score.bg} ${score.ring}`}>
+          <div>
+            <p className="text-slate-500 text-xs uppercase tracking-widest mb-0.5">Uğur ehtimalı</p>
+            <span className={`text-3xl font-bold tabular-nums ${score.text}`}>{result.score}%</span>
+          </div>
+        </div>
+
+        <button
+          onClick={onReset}
+          className="text-slate-600 hover:text-white transition-colors text-lg ml-1 shrink-0"
+        >
           ✕
         </button>
       </div>
-      <div className={`flex items-center justify-between mb-2 p-4 rounded-2xl border ${scoreBg(result.score)}`}>
-        <div>
-          <p className="text-xs text-gray-500 mb-0.5">{AZ.RESULT_PROBABILITY}</p>
-          <h2 className="text-lg font-bold text-gray-800">{business}</h2>
-        </div>
-        <span className={`text-5xl font-extrabold ${scoreColor(result.score)}`}>
-          {result.score}%
-        </span>
-      </div>
 
-      <div className="mb-4 mt-4">
-        <h3 className="text-sm font-semibold text-green-700 mb-2">{AZ.RESULT_PROS}</h3>
-        <ul className="space-y-1.5">
-          {result.pros.map((pro, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-              <span className="text-green-500 mt-0.5 shrink-0">✓</span>
-              {pro}
-            </li>
-          ))}
-        </ul>
-      </div>
+      {/* ── Body ─────────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto">
 
-      <div className="mb-4">
-        <h3 className="text-sm font-semibold text-red-600 mb-2">{AZ.RESULT_CONS}</h3>
-        <ul className="space-y-1.5">
-          {result.cons.map((con, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-              <span className="text-red-400 mt-0.5 shrink-0">✗</span>
-              {con}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-100">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-          {AZ.RESULT_VERDICT}
-        </h3>
-        <p className="text-sm text-gray-700 italic">"{result.verdict}"</p>
-      </div>
-
-      {context && (
-        <div className="mb-6 border border-gray-100 rounded-xl overflow-hidden">
-          <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">OSM Məlumatları</p>
+        {/* Summary */}
+        {result.summary && (
+          <div className="px-8 py-5 border-b border-slate-800/60">
+            <p className="text-slate-300 text-sm leading-relaxed">{result.summary}</p>
           </div>
-          <div className="divide-y divide-gray-50">
-            <div className="flex justify-between px-4 py-2 text-xs">
-              <span className="text-gray-500">Tapılan müəssisə</span>
-              <span className="font-medium text-gray-700">{context.totalBusinesses}</span>
-            </div>
-            <div className="flex justify-between px-4 py-2 text-xs">
-              <span className="text-gray-500">Rəqib</span>
-              <span className="font-medium text-gray-700">{context.competitors}</span>
-            </div>
-            <div className="flex justify-between px-4 py-2 text-xs">
-              <span className="text-gray-500">Ərazi növü</span>
-              <span className="font-medium text-gray-700">
-                {context.areaType === 'commercial' ? 'Ticarət' : context.areaType === 'mixed' ? 'Qarışıq' : 'Yaşayış'}
-              </span>
-            </div>
-            {context.landUse && (
-              <div className="flex justify-between px-4 py-2 text-xs">
-                <span className="text-gray-500">Ərazi istifadəsi</span>
-                <span className="font-medium text-red-500">{context.landUse}</span>
-              </div>
-            )}
-            {context.amenities.length > 0 && (
-              <div className="px-4 py-2 text-xs">
-                <p className="text-gray-500 mb-1">Yaxınlıqdakı obyektlər</p>
-                <p className="text-gray-700">{context.amenities.join(' · ')}</p>
-              </div>
-            )}
+        )}
+
+        {/* Pros / Cons */}
+        <div className="grid grid-cols-2 border-b border-slate-800/60">
+          <div className="px-8 py-6 border-r border-slate-800/60">
+            <Label>{AZ.RESULT_PROS}</Label>
+            <ul className="space-y-3">
+              {result.pros.map((p, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-sm text-slate-300 leading-snug">
+                  <span className="text-emerald-400 shrink-0 font-bold mt-px">+</span>
+                  <span>{p}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="px-8 py-6">
+            <Label>{AZ.RESULT_CONS}</Label>
+            <ul className="space-y-3">
+              {result.cons.map((c, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-sm text-slate-300 leading-snug">
+                  <span className="text-red-400 shrink-0 font-bold mt-px">—</span>
+                  <span>{c}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
-      )}
 
-      <button
-        onClick={onReset}
-        className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
-      >
-        {AZ.RESULT_RESET}
-      </button>
+        {/* ── Expandable ───────────────────────────────── */}
+        {expanded && (
+          <div className="px-8 py-6 space-y-8 border-b border-slate-800/60">
+
+            {analysisText && (
+              <div>
+                <Label>Analiz</Label>
+                <p className="text-slate-400 text-sm leading-relaxed">{analysisText}</p>
+              </div>
+            )}
+
+            {context && (
+              <div>
+                <Label>{AZ.RESULT_SCORE_BREAKDOWN}</Label>
+                <div className="space-y-4">
+                  <ScoreBar label={AZ.RESULT_COMPETITION} value={competitionScore} max={50} />
+                  <ScoreBar label={AZ.RESULT_FOOT_TRAFFIC} value={footTrafficScore} max={30} />
+                  <ScoreBar label={AZ.RESULT_AREA_TYPE} value={areaScore} max={20} />
+                </div>
+              </div>
+            )}
+
+            {context && (
+              <div>
+                <Label>{AZ.RESULT_OSM_TITLE}</Label>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { val: String(context.competitors), lbl: AZ.RESULT_OSM_COMPETITORS },
+                    { val: String(context.totalBusinesses), lbl: 'Müəssisə' },
+                    ...context.amenities.map((a) => {
+                      const m = a.match(/^(\d+)\s+(.+)$/)
+                      return m ? { val: m[1], lbl: m[2] } : { val: '—', lbl: a }
+                    }),
+                  ].map(({ val, lbl }) => (
+                    <div key={lbl} className="bg-slate-900 border border-slate-800 rounded-xl h-24 flex flex-col items-center justify-center px-2">
+                      <p className="text-white text-2xl font-bold tabular-nums">{val}</p>
+                      <p className="text-slate-500 text-xs uppercase tracking-wide mt-1 text-center leading-tight">{lbl}</p>
+                    </div>
+                  ))}
+                </div>
+                {context.landUse && (
+                  <p className="text-amber-400/80 text-sm mt-3">⚠ {context.landUse}</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Expand toggle */}
+        <button
+          onClick={() => setExpanded(v => !v)}
+          className="w-full py-4 text-sm text-emerald-400 hover:text-emerald-300 bg-emerald-950/60 hover:bg-emerald-950 border-y border-emerald-900/50 transition-colors flex items-center justify-center gap-2 uppercase tracking-widest font-semibold"
+        >
+          {expanded ? 'Gizlə ↑' : 'Detallara bax ↓'}
+        </button>
+
+        {/* Reset */}
+        <button
+          onClick={onReset}
+          className="w-full py-4 text-sm text-emerald-400 hover:text-emerald-300 bg-slate-900/60 hover:bg-slate-900 border-b border-emerald-900/50 transition-colors flex items-center justify-center gap-2 uppercase tracking-widest font-semibold"
+        >
+          ↩ {AZ.RESULT_RESET}
+        </button>
+      </div>
     </div>
   )
 }

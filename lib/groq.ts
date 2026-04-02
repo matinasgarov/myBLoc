@@ -14,7 +14,12 @@ function buildPrompt(
     ? `- XƏBƏRDARLIQ: Pin dəqiq olaraq "${ctx.landUse}" ərazisindədir (məsələn, qəbiristanlıq, hərbi zona və s.)`
     : ''
 
-  return `Sən biznes məsləhətçisisən. Sadə, aydın Azərbaycan dilində yaz — sanki dostuna izah edirsən.
+  const prosCount = score > 85 ? 5 : score < 45 ? 2 : 4
+  const consCount = score > 85 ? 3 : score < 45 ? 5 : 4
+  const prosTemplate = Array.from({ length: prosCount }, (_, i) => `"müsbət cəhət ${i + 1}"`).join(', ')
+  const consTemplate = Array.from({ length: consCount }, (_, i) => `"risk ${i + 1}"`).join(', ')
+
+  return `Sən Azərbaycandakı biznes sahələri və yerləri barəsində peşəkar biznes məsləhətçisisən. Aydın Azərbaycan dilində yaz.
 
 Məlumatlar:
 - Biznes növü: ${businessType}
@@ -23,14 +28,23 @@ Məlumatlar:
 - Yaxınlıqdakı obyektlər: ${ctx.amenities.length > 0 ? ctx.amenities.join(', ') : 'yoxdur'}
 - Ərazi tipi: ${ctx.areaType === 'commercial' ? 'ticarət' : ctx.areaType === 'mixed' ? 'qarışıq' : 'yaşayış'} məntəqəsi
 - Ərazidəki ümumi müəssisə sayı: ${ctx.totalBusinesses}
-- Ümumi bal: ${score}/100
+- Ümumi uğur balı: ${score}/95
 ${landUseNote}
 
-3 qısa müsbət cəhət və 3 qısa risk yaz. Hər cümlə maksimum 10-12 sözdən ibarət olsun. Texniki termin işlətmə. Yalnız bu JSON formatında cavab ver:
+Qaydalar:
+- Hər müsbət cəhət və risk yuxarıdakı konkret məlumatlara (rəqib sayı, ərazi tipi, yaxınlıqdakı obyektlər) əsaslanmalıdır.
+- Hər cümlə 20-35 sözdən ibarət olsun — dəqiq, konkret və əsaslı şəkildə.
+- Texniki terminlərdən istifadə edə bilərsən.
+- Cavabda yalnız aşağıdakı JSON formatı olsun, başqa heç bir mətn əlavə etmə.
+
+Tam olaraq ${prosCount} müsbət cəhət və ${consCount} risk yaz:
+
 {
-  "pros": ["müsbət cəhət 1", "müsbət cəhət 2", "müsbət cəhət 3"],
-  "cons": ["risk 1", "risk 2", "risk 3"],
-  "verdict": "Bir sadə cümlə ilə ümumi qiymətləndirmə."
+  "summary": "Bu biznesin bu ərazidə ümumi mənzərəsini bir cümlə ilə ifadə et — konkret olsun.",
+  "detail": "5-6 konkret cümlə ilə ətraflı təhlil — rəqabət, trafik, ərazi tipi, inkişaf perspektivi, müştəri potensialı barədə yazılsın. Hər cümlə fərqli aspektə toxunsun.",
+  "pros": [${prosTemplate}],
+  "cons": [${consTemplate}],
+  "verdict": "6 konkret cümlə ilə ümumi qiymətləndirmə — bu biznesin bu ərazidə perspektivi barədə."
 }`
 }
 
@@ -41,13 +55,15 @@ function parseResponse(content: string, score: number): AnalysisResult {
     .trim()
   const parsed = JSON.parse(cleaned) as Omit<AnalysisResult, 'score'>
   if (
+    typeof parsed.summary !== 'string' ||
+    typeof parsed.detail !== 'string' ||
     !Array.isArray(parsed.pros) ||
     !Array.isArray(parsed.cons) ||
     typeof parsed.verdict !== 'string'
   ) {
     throw new Error('Invalid response shape')
   }
-  return { score, pros: parsed.pros, cons: parsed.cons, verdict: parsed.verdict }
+  return { score, summary: parsed.summary, detail: parsed.detail, pros: parsed.pros, cons: parsed.cons, verdict: parsed.verdict }
 }
 
 export async function analyzeLocation(

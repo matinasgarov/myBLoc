@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { useState } from 'react'
 import type { Strings } from '@/lib/i18n'
 import type { Lang } from '@/lib/i18n'
 
@@ -57,33 +58,130 @@ function FloatingPaths({ position }: { position: number }) {
   )
 }
 
+function FeedbackForm({ strings }: { strings: Strings }) {
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [message, setMessage] = useState('')
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!message.trim()) return
+    setStatus('sending')
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, message }),
+      })
+      setStatus(res.ok ? 'sent' : 'error')
+    } catch {
+      setStatus('error')
+    }
+  }
+
+  if (status === 'sent') {
+    return (
+      <div className="bg-emerald-950/40 border border-emerald-800/40 rounded-2xl p-10 text-center">
+        <p className="text-emerald-400 text-2xl font-bold mb-2">{strings.FEEDBACK_THANKS}</p>
+        <p className="text-slate-400">{strings.FEEDBACK_SENT_MESSAGE}</p>
+      </div>
+    )
+  }
+
+  const inputCls = "w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 text-sm focus:outline-none focus:border-slate-500 transition-colors"
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid sm:grid-cols-2 gap-4">
+        <input
+          type="text"
+          placeholder={strings.FEEDBACK_NAME_PLACEHOLDER}
+          value={name}
+          onChange={e => setName(e.target.value)}
+          className={inputCls}
+        />
+        <input
+          type="email"
+          placeholder={strings.FEEDBACK_EMAIL_PLACEHOLDER}
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          className={inputCls}
+        />
+      </div>
+      <textarea
+        placeholder={strings.FEEDBACK_MESSAGE_PLACEHOLDER}
+        value={message}
+        onChange={e => setMessage(e.target.value)}
+        rows={5}
+        required
+        className={`${inputCls} resize-none`}
+      />
+      {status === 'error' && (
+        <p className="text-red-400 text-sm">{strings.FEEDBACK_ERROR}</p>
+      )}
+      <button
+        type="submit"
+        disabled={status === 'sending' || !message.trim()}
+        className="w-full py-3.5 rounded-xl font-semibold text-sm bg-white text-slate-950 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      >
+        {status === 'sending' ? strings.FEEDBACK_SENDING : strings.FEEDBACK_SEND}
+      </button>
+    </form>
+  )
+}
+
+
 export default function LandingPage({ onStart, strings, lang, onLangChange }: Props) {
   const brandLetters = 'myblocate'.split('')
 
+  const navLinks = [
+    { id: 'hero', label: strings.NAV_HOME },
+    { id: 'mission', label: strings.NAV_MISSION },
+    { id: 'scoring', label: strings.NAV_SCORING },
+    { id: 'contact', label: strings.NAV_CONTACT },
+  ]
+
   return (
-    <div className="min-h-screen overflow-y-auto bg-slate-950 text-white">
-      {/* Language toggle */}
-      <div className="fixed top-6 right-6 z-50 flex gap-1 bg-white/10 backdrop-blur-sm rounded-full p-1">
-        <button
-          onClick={() => onLangChange('az')}
-          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-            lang === 'az' ? 'bg-white text-slate-950' : 'text-white/70 hover:text-white'
-          }`}
-        >
-          AZ
-        </button>
-        <button
-          onClick={() => onLangChange('en')}
-          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-            lang === 'en' ? 'bg-white text-slate-950' : 'text-white/70 hover:text-white'
-          }`}
-        >
-          EN
-        </button>
-      </div>
+    <div className="min-h-screen overflow-y-auto bg-slate-950 text-white scroll-smooth">
+      {/* Navigation bar */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/50">
+        <div className="px-8 h-14 flex items-center justify-between">
+          <span className="text-lg font-bold text-white tracking-tight">myblocate</span>
+          <div className="flex items-center gap-5">
+            {navLinks.map(link => (
+              <a
+                key={link.id}
+                href={`#${link.id}`}
+                className="text-sm text-slate-400 hover:text-white transition-colors hidden sm:block"
+              >
+                {link.label}
+              </a>
+            ))}
+            <div className="flex gap-0.5 bg-white/8 rounded-full p-0.5 ml-2">
+              <button
+                onClick={() => onLangChange('az')}
+                className={`px-2 py-0.5 rounded-full text-[11px] font-medium transition-colors leading-none ${
+                  lang === 'az' ? 'bg-white text-slate-950' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                AZ
+              </button>
+              <button
+                onClick={() => onLangChange('en')}
+                className={`px-2 py-0.5 rounded-full text-[11px] font-medium transition-colors leading-none ${
+                  lang === 'en' ? 'bg-white text-slate-950' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                EN
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
 
       {/* Hero section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <section id="hero" className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
           <FloatingPaths position={1} />
           <FloatingPaths position={-1} />
@@ -157,7 +255,7 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
       </section>
 
       {/* Mission section */}
-      <section className="py-24 px-6">
+      <section id="mission" className="py-24 px-6">
         <div className="max-w-2xl mx-auto text-center">
           <motion.h2
             initial={{ opacity: 0, y: 30 }}
@@ -180,28 +278,148 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
         </div>
       </section>
 
-      {/* Contact section */}
-      <section className="py-24 px-6 border-t border-slate-800">
-        <div className="max-w-2xl mx-auto text-center">
+      {/* How score is calculated */}
+      <section id="scoring" className="py-24 px-6 border-t border-slate-800">
+        <div className="max-w-3xl mx-auto">
           <motion.h2
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-100px' }}
             transition={{ duration: 0.6 }}
-            className="text-3xl sm:text-4xl font-bold mb-6 text-white"
+            className="text-3xl sm:text-4xl font-bold mb-4 text-white text-center"
+          >
+            {strings.LANDING_SCORE_TITLE}
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-100px' }}
+            transition={{ duration: 0.6, delay: 0.15 }}
+            className="text-slate-400 text-center mb-12"
+          >
+            {strings.LANDING_SCORE_SUBTITLE}
+          </motion.p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-4xl mx-auto">
+            {[
+              {
+                title: strings.LANDING_SCORE_COMPETITION,
+                sub: strings.LANDING_SCORE_COMPETITION_SUB,
+                icon: '🏪',
+                color: 'from-emerald-500/15 to-transparent',
+                border: 'border-emerald-500/20 hover:border-emerald-500/40',
+                accent: 'text-emerald-400',
+                glow: 'bg-emerald-500/10',
+                desc: strings.LANDING_SCORE_DESC_COMPETITION,
+              },
+              {
+                title: strings.LANDING_SCORE_FOOT_TRAFFIC,
+                sub: null,
+                icon: '👥',
+                color: 'from-sky-500/15 to-transparent',
+                border: 'border-sky-500/20 hover:border-sky-500/40',
+                accent: 'text-sky-400',
+                glow: 'bg-sky-500/10',
+                desc: strings.LANDING_SCORE_DESC_FOOT_TRAFFIC,
+              },
+              {
+                title: strings.LANDING_SCORE_AREA_TYPE,
+                sub: null,
+                icon: '🏙️',
+                color: 'from-violet-500/15 to-transparent',
+                border: 'border-violet-500/20 hover:border-violet-500/40',
+                accent: 'text-violet-400',
+                glow: 'bg-violet-500/10',
+                desc: strings.LANDING_SCORE_DESC_AREA_TYPE,
+              },
+              {
+                title: strings.LANDING_SCORE_TOTAL_SHOPS,
+                sub: null,
+                icon: '🛒',
+                color: 'from-amber-500/15 to-transparent',
+                border: 'border-amber-500/20 hover:border-amber-500/40',
+                accent: 'text-amber-400',
+                glow: 'bg-amber-500/10',
+                desc: strings.LANDING_SCORE_DESC_TOTAL_SHOPS,
+              },
+              {
+                title: strings.LANDING_SCORE_TRANSPORT,
+                sub: null,
+                icon: '🚏',
+                color: 'from-rose-500/15 to-transparent',
+                border: 'border-rose-500/20 hover:border-rose-500/40',
+                accent: 'text-rose-400',
+                glow: 'bg-rose-500/10',
+                desc: strings.LANDING_SCORE_DESC_TRANSPORT,
+              },
+              {
+                title: strings.LANDING_SCORE_SERVICES,
+                sub: null,
+                icon: '🏥',
+                color: 'from-teal-500/15 to-transparent',
+                border: 'border-teal-500/20 hover:border-teal-500/40',
+                accent: 'text-teal-400',
+                glow: 'bg-teal-500/10',
+                desc: strings.LANDING_SCORE_DESC_SERVICES,
+              },
+            ].map((item, i) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-60px' }}
+                transition={{ duration: 0.45, delay: (i % 3) * 0.1 }}
+                className={`relative bg-gradient-to-b ${item.color} border ${item.border} rounded-2xl p-6 transition-colors duration-300`}
+              >
+                <span className="text-3xl mb-4 block">{item.icon}</span>
+                <h3 className={`text-sm font-bold uppercase tracking-wide mb-1 ${item.accent}`}>{item.title}</h3>
+                {item.sub && <p className="text-slate-500 text-xs mb-2">{item.sub}</p>}
+                <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="text-slate-600 text-xs text-center mt-10"
+          >
+            {strings.LANDING_SCORE_FOOTNOTE}
+          </motion.p>
+        </div>
+      </section>
+
+      {/* Feedback form */}
+      <section id="contact" className="py-24 px-6 border-t border-slate-800">
+        <div className="max-w-xl mx-auto">
+          <motion.h2
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-100px' }}
+            transition={{ duration: 0.6 }}
+            className="text-3xl sm:text-4xl font-bold mb-4 text-white text-center"
           >
             {strings.LANDING_CONTACT_TITLE}
           </motion.h2>
-          <motion.a
-            href={`mailto:${strings.LANDING_CONTACT_EMAIL}`}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-100px' }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-slate-400 text-center mb-10"
+          >
+            {strings.LANDING_CONTACT_SUBTITLE}
+          </motion.p>
+          <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-100px' }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-slate-400 text-lg hover:text-white transition-colors"
           >
-            {strings.LANDING_CONTACT_EMAIL}
-          </motion.a>
+            <FeedbackForm strings={strings} />
+          </motion.div>
         </div>
       </section>
 

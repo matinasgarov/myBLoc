@@ -18,11 +18,10 @@ export default function Home() {
   const [appState, setAppState] = useState<AppState>('landing')
   const [pin, setPin] = useState<LatLng | null>(null)
   const [businessType, setBusinessType] = useState('')
-  const [loadingStep, setLoadingStep] = useState<1 | 2>(1)
+  const [loadingStep, setLoadingStep] = useState<1 | 2 | 3 | 4>(1)
   const [result, setResult] = useState<AnalysisResult | null>(null)
   const [placesContext, setPlacesContext] = useState<PlacesContext | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [showHistory, setShowHistory] = useState(false)
   const [analyses, setAnalyses] = useState<SavedAnalysis[]>([])
   const [lang, setLang] = useState<Lang>('az')
 
@@ -61,14 +60,22 @@ export default function Home() {
     setLoadingStep(1)
     setError(null)
 
+    // Simulate steps 2 and 3 while the places API loads
+    const t2 = setTimeout(() => setLoadingStep(2), 2000)
+    const t3 = setTimeout(() => setLoadingStep(3), 4000)
+
     try {
       const placesRes = await fetch('/api/places', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lat: pin.lat, lng: pin.lng, businessType: business }),
       })
+      clearTimeout(t2)
+      clearTimeout(t3)
       if (!placesRes.ok) throw new Error('places')
-      setLoadingStep(2)
+
+      // Step 4: AI analysis begins
+      setLoadingStep(4)
       const fetchedContext = await placesRes.json()
       setPlacesContext(fetchedContext)
 
@@ -89,11 +96,14 @@ export default function Home() {
         lat: pin.lat,
         lng: pin.lng,
         business,
+        context: fetchedContext,
         ...analysisResult,
       }
       saveAnalysis(saved)
       setAnalyses(getAnalyses())
     } catch (err) {
+      clearTimeout(t2)
+      clearTimeout(t3)
       const msg =
         (err as Error).message === 'places' ? strings.ERROR_NO_DATA : strings.ERROR_ANALYSIS_FAILED
       setError(msg)
@@ -110,7 +120,7 @@ export default function Home() {
     setError(null)
   }
 
-  const isDimmed = appState === 'loading' || appState === 'result'
+  const isDimmed = appState === 'loading'
 
   if (appState === 'landing') {
     return (
@@ -127,52 +137,51 @@ export default function Home() {
     <main className="relative w-screen h-screen overflow-hidden flex flex-col">
 
       {/* Header bar */}
-      <div className="flex-none h-14 bg-white border-b border-gray-100 shadow-sm flex items-center justify-between px-4 z-[1100]">
-        <span className="text-lg font-bold text-blue-600 tracking-tight">
+      <div className="flex-none h-14 bg-black border-b border-gray-800 shadow-sm flex items-center px-4 z-[1100]">
+        <span className="text-lg font-bold text-gray-200 tracking-tight">
           {strings.HEADER_BRAND}
         </span>
-        <button
-          onClick={() => setShowHistory((h) => !h)}
-          title={strings.HISTORY_BUTTON_LABEL}
-          className="bg-gray-50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-gray-100 transition-colors text-lg border border-gray-200"
-        >
-          🕐
-        </button>
       </div>
 
-      {/* Map container — flex-1 fills remaining height; min-h-0 prevents overflow */}
-      <div className="relative flex-1 min-h-0">
-        <Map onPinDrop={handlePinDrop} pin={pin} dimmed={isDimmed} />
+      {/* Content area: map + persistent history sidebar */}
+      <div className="flex flex-1 min-h-0">
 
-        {appState === 'map' && (
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[500] bg-white/90 backdrop-blur-sm rounded-full px-5 py-2 text-sm text-gray-600 shadow-md pointer-events-none select-none">
-            {strings.MAP_INSTRUCTION}
+        {/* Left: map + result panel stacked */}
+        <div className="flex-1 min-h-0 flex flex-col">
+
+          {/* Map area */}
+          <div className="relative flex-1 min-h-0">
+            <Map onPinDrop={handlePinDrop} pin={pin} dimmed={isDimmed} />
+
+            {appState === 'map' && (
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[500] bg-white/90 backdrop-blur-sm rounded-full px-5 py-2 text-sm text-gray-600 shadow-md pointer-events-none select-none">
+                {strings.MAP_INSTRUCTION}
+              </div>
+            )}
+
+            {error && (
+              <div className="absolute top-5 left-1/2 -translate-x-1/2 z-[1001] bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl shadow-md max-w-xs text-center">
+                {error}
+              </div>
+            )}
+
+            {appState === 'input' && (
+              <BusinessInputModal onSubmit={handleBusinessSubmit} onClose={handleReset} />
+            )}
+
+            {appState === 'loading' && <LoadingOverlay step={loadingStep} />}
           </div>
-        )}
 
-        {error && (
-          <div className="absolute top-5 left-1/2 -translate-x-1/2 z-[1001] bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl shadow-md max-w-xs text-center">
-            {error}
-          </div>
-        )}
-
-        {appState === 'input' && (
-          <BusinessInputModal onSubmit={handleBusinessSubmit} onClose={handleReset} />
-        )}
-
-        {appState === 'loading' && <LoadingOverlay step={loadingStep} />}
-
-        {appState === 'result' && result && (
-          <>
-            <div className="absolute inset-0 z-[999]" onClick={handleReset} />
+          {/* Result panel — below map */}
+          {appState === 'result' && result && (
             <ResultSheet business={businessType} result={result} context={placesContext} onReset={handleReset} />
-          </>
-        )}
-      </div>
+          )}
 
-      {showHistory && (
-        <HistorySidebar analyses={analyses} onClose={() => setShowHistory(false)} />
-      )}
+        </div>
+
+        {/* Persistent history sidebar */}
+        <HistorySidebar analyses={analyses} />
+      </div>
     </main>
   )
 }

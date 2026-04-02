@@ -21,6 +21,8 @@ export interface PlacesContext {
 
 export interface AnalysisResult {
   score: number
+  summary: string
+  detail: string
   pros: string[]
   cons: string[]
   verdict: string
@@ -33,7 +35,10 @@ export interface SavedAnalysis {
   lng: number
   business: string
   score: number
+  summary?: string
+  detail?: string
   pros: string[]
   cons: string[]
   verdict: string
+  context?: PlacesContext
 }

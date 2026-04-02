@@ -29,6 +29,8 @@ describe('analyzeLocation', () => {
 
   it('returns AnalysisResult with provided score and AI-generated pros/cons/verdict', async () => {
     const mockPayload = {
+      summary: 'Bu ərazidə biznes üçün yaxşı şərait mövcuddur.',
+      detail: 'Ətraflı məlumat burada.',
       pros: ['Yaxşı trafik', 'Az rəqabət'],
       cons: ['Yüksək icarə'],
       verdict: 'Bu biznes üçün yaxşı yer.',
@@ -51,7 +53,7 @@ describe('analyzeLocation', () => {
   })
 
   it('retries once on invalid JSON then returns result', async () => {
-    const mockPayload = { pros: ['a'], cons: ['b'], verdict: 'Orta.' }
+    const mockPayload = { summary: 'Xülasə.', detail: 'Ətraflı.', pros: ['a'], cons: ['b'], verdict: 'Orta.' }
     const mockCreate = jest.fn()
       .mockResolvedValueOnce({ choices: [{ message: { content: 'not valid json' } }] })
       .mockResolvedValueOnce({ choices: [{ message: { content: JSON.stringify(mockPayload) } }] })
