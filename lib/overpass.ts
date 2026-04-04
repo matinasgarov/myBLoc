@@ -1,5 +1,8 @@
 import type { OSMElement, PlacesContext } from './types'
 import { countAzCompetitors } from './az-competitors'
+import { haversineMetres } from './geo'
+import { getNearestMetro } from './metro-stations'
+import { getUrbanTier } from './settlements'
 
 const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
@@ -32,29 +35,51 @@ function buildQuery(lat: number, lng: number): string {
     `way["amenity"](around:${r},${lat},${lng});` +
     `way["leisure"](around:${r},${lat},${lng});` +
     `way["office"](around:${r},${lat},${lng});` +
-    `);out tags;`
+    `way["highway"~"^(primary|secondary|tertiary|trunk)$"](around:${r},${lat},${lng});` +
+    `);out body center;`
   )
 }
 
 async function fetchFromOverpass(query: string): Promise<{ elements: OSMElement[] }> {
   let lastError: Error = new Error('Overpass unavailable')
   for (const url of OVERPASS_ENDPOINTS) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 15000)
     try {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `data=${encodeURIComponent(query)}`,
+        signal: controller.signal,
       })
+      clearTimeout(timeoutId)
       if (!response.ok) {
         lastError = new Error(`Overpass API error: ${response.status}`)
         continue
       }
       return (await response.json()) as { elements: OSMElement[] }
     } catch (err) {
+      clearTimeout(timeoutId)
       lastError = err as Error
     }
   }
   throw lastError
+}
+
+const MAJOR_ROAD_TAGS = new Set(['primary', 'secondary', 'tertiary', 'trunk'])
+
+/** Separates major road way elements from business/amenity elements. */
+function splitElements(elements: OSMElement[]): {
+  businessElements: OSMElement[]
+  roadElements: OSMElement[]
+} {
+  const roadElements = elements.filter(
+    (e) => e.type === 'way' && e.tags?.highway && MAJOR_ROAD_TAGS.has(e.tags.highway)
+  )
+  const businessElements = elements.filter(
+    (e) => !(e.type === 'way' && e.tags?.highway && MAJOR_ROAD_TAGS.has(e.tags.highway))
+  )
+  return { businessElements, roadElements }
 }
 
 function inferAreaType(elements: OSMElement[]): 'residential' | 'commercial' | 'mixed' {
@@ -104,13 +129,29 @@ function extractAmenities(elements: OSMElement[]): string[] {
   return result
 }
 
+function extractBusStops(elements: OSMElement[]): number {
+  return elements.filter(
+    (e) => e.tags?.highway === 'bus_stop' || e.tags?.amenity === 'bus_station'
+  ).length
+}
+
+function extractParking(elements: OSMElement[]): number {
+  return elements.filter((e) => e.tags?.amenity === 'parking').length
+}
+
+const GROCERY_SHOP_TAGS = new Set(['supermarket', 'convenience', 'grocery', 'food'])
+
+function extractGroceryStores(elements: OSMElement[]): number {
+  return elements.filter((e) => e.tags?.shop && GROCERY_SHOP_TAGS.has(e.tags.shop)).length
+}
+
 // Maps Azerbaijani business keywords → OSM tag values used in amenity/shop/leisure
 const COMPETITOR_ALIASES: Array<[string[], string[]]> = [
   [['restoran', 'restaurant'], ['restaurant', 'fast_food', 'food_court', 'cafe']],
   [['kafe', 'cafe', 'kofe', 'qəhvə'], ['cafe', 'coffee_shop', 'restaurant', 'fast_food']],
   [['pizza'], ['pizza', 'restaurant', 'fast_food']],
   [['fast food', 'fastfood', 'burger'], ['fast_food', 'restaurant']],
-  [['apteka', 'eczane', 'dərman', 'pharmacy'], ['pharmacy']],
+  [['aptek', 'apteka', 'eczane', 'dərman', 'pharmacy'], ['pharmacy']],
   [['bank', 'maliyyə'], ['bank']],
   [['supermarket', 'bazar', 'market', 'ərzaq'], ['supermarket', 'convenience', 'grocery', 'mall', 'general']],
   [['mağaza', 'butik', 'geyim', 'paltar'], ['clothes', 'boutique', 'fashion', 'shoes', 'department_store']],
@@ -138,27 +179,52 @@ function resolveOSMTags(businessType: string): string[] | null {
   return null
 }
 
-function countCompetitors(elements: OSMElement[], businessType: string): number {
+/** Returns element centre coordinates if available (node: lat/lon, way: center). */
+function elementCoords(e: OSMElement): { lat: number; lng: number } | null {
+  if (e.lat !== undefined && e.lon !== undefined) return { lat: e.lat, lng: e.lon }
+  if (e.center) return { lat: e.center.lat, lng: e.center.lon }
+  return null
+}
+
+/**
+ * Distance-weighted competitor count.
+ * < 200 m: weight 1.0   |   200–500 m: weight 0.5   |   no coords: weight 0.5
+ */
+function countCompetitors(
+  elements: OSMElement[],
+  businessType: string,
+  pinLat: number,
+  pinLng: number
+): number {
   const lower = businessType.toLowerCase()
   const osmTags = resolveOSMTags(businessType)
 
-  return elements.filter((e) => {
+  let weighted = 0
+  for (const e of elements) {
     const name = (e.tags?.name || '').toLowerCase()
-    if (name.includes(lower)) return true
+    const amenity = e.tags?.amenity || ''
+    const shop = e.tags?.shop || ''
+    const leisure = e.tags?.leisure || ''
 
-    if (osmTags) {
-      const amenity = e.tags?.amenity || ''
-      const shop = e.tags?.shop || ''
-      const leisure = e.tags?.leisure || ''
-      return osmTags.includes(amenity) || osmTags.includes(shop) || osmTags.includes(leisure)
+    const isMatch =
+      name.includes(lower) ||
+      (osmTags
+        ? osmTags.includes(amenity) || osmTags.includes(shop) || osmTags.includes(leisure)
+        : amenity.toLowerCase().includes(lower) ||
+          shop.toLowerCase().includes(lower) ||
+          leisure.toLowerCase().includes(lower))
+
+    if (!isMatch) continue
+
+    const coords = elementCoords(e)
+    if (coords) {
+      const dist = haversineMetres(pinLat, pinLng, coords.lat, coords.lng)
+      weighted += dist < 200 ? 1 : 0.5
+    } else {
+      weighted += 0.5
     }
-
-    // Fallback: substring match on OSM tags (handles unmapped types)
-    const amenity = (e.tags?.amenity || '').toLowerCase()
-    const shop = (e.tags?.shop || '').toLowerCase()
-    const leisure = (e.tags?.leisure || '').toLowerCase()
-    return amenity.includes(lower) || shop.includes(lower) || leisure.includes(lower)
-  }).length
+  }
+  return Math.round(weighted)
 }
 
 const BAD_LAND_USES = new Set([
@@ -180,22 +246,35 @@ export async function fetchPlacesContext(
   businessType: string
 ): Promise<PlacesContext> {
   const [businessData, landUseData] = await Promise.all([
-    fetchFromOverpass(buildQuery(lat, lng)),
-    fetchFromOverpass(buildLandUseQuery(lat, lng)).catch(() => ({ elements: [] })),
+    fetchFromOverpass(buildQuery(lat, lng)).catch(() => ({ elements: [] as OSMElement[] })),
+    fetchFromOverpass(buildLandUseQuery(lat, lng)).catch(() => ({ elements: [] as OSMElement[] })),
   ])
-  const elements = businessData.elements || []
+
+  const allElements = businessData.elements || []
+  const { businessElements, roadElements } = splitElements(allElements)
   const landUse = extractLandUse(landUseData.elements || [])
-  // Use AZ government dataset for competitor count (better Azerbaijani type matching)
-  // Fall back to OSM-based count if no mapping exists
+
   const azCount = countAzCompetitors(lat, lng, businessType)
-  const osmCount = countCompetitors(elements, businessType)
+  const osmCount = countCompetitors(businessElements, businessType, lat, lng)
   const competitors = azCount >= 0 ? Math.max(azCount, osmCount) : osmCount
+  const recognized = resolveOSMTags(businessType) !== null || azCount >= 0
+
+  const metro = getNearestMetro(lat, lng)
+  const urbanTier = getUrbanTier(lat, lng)
 
   return {
     competitors,
-    areaType: inferAreaType(elements),
-    amenities: extractAmenities(elements),
-    totalBusinesses: elements.length,
+    areaType: inferAreaType(businessElements),
+    amenities: extractAmenities(businessElements),
+    totalBusinesses: businessElements.length,
     landUse,
+    recognized,
+    busStops: extractBusStops(businessElements),
+    parking: extractParking(businessElements),
+    groceryStores: extractGroceryStores(businessElements),
+    majorRoads: roadElements.length,
+    metroDistance: metro?.distance ?? null,
+    metroRidership: metro?.ridership ?? null,
+    urbanTier,
   }
 }
