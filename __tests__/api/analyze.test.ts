@@ -23,6 +23,15 @@ const validBody = {
     areaType: 'commercial',
     amenities: ['1 məktəb/universitet'],
     totalBusinesses: 15,
+    landUse: null,
+    recognized: true,
+    busStops: 1,
+    parking: 0,
+    groceryStores: 1,
+    majorRoads: 1,
+    metroDistance: 400,
+    metroRidership: 20000,
+    urbanTier: 'city',
   },
 }
 
@@ -39,7 +48,7 @@ describe('POST /api/analyze', () => {
     ;(groqLib.analyzeLocation as jest.Mock).mockResolvedValue(mockResult)
     const res = await POST(makeRequest(validBody))
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual(mockResult)
+    expect(await res.json()).toMatchObject(mockResult)
   })
 
   it('returns 400 when placesContext is missing', async () => {

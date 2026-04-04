@@ -1,13 +1,17 @@
 'use client'
 import { useState } from 'react'
 import { AZ } from '@/lib/az'
-import type { AnalysisResult, PlacesContext } from '@/lib/types'
+import { getStrings } from '@/lib/i18n'
+import type { AnalysisResult, PlacesContext, FactorKey } from '@/lib/types'
+
+type Strings = ReturnType<typeof getStrings>
 
 interface Props {
   business: string
   result: AnalysisResult
   context: PlacesContext | null
   onReset: () => void
+  strings: Strings
 }
 
 function scoreColor(score: number) {
@@ -36,15 +40,19 @@ function ScoreBar({ label, value, max }: BarProps) {
   )
 }
 
-export default function ResultSheet({ business, result, context, onReset }: Props) {
+const FACTOR_LABEL_KEYS: Record<FactorKey, keyof Strings> = {
+  competition: 'FACTOR_COMPETITION',
+  footTraffic: 'FACTOR_FOOT_TRAFFIC',
+  areaType: 'FACTOR_AREA_TYPE',
+  urbanTier: 'FACTOR_URBAN_TIER',
+  accessibility: 'FACTOR_ACCESSIBILITY',
+  nearbyServices: 'FACTOR_NEARBY_SERVICES',
+  businessDensity: 'FACTOR_BUSINESS_DENSITY',
+}
+
+export default function ResultSheet({ business, result, context, onReset, strings }: Props) {
   const [expanded, setExpanded] = useState(false)
   const score = scoreColor(result.score)
-
-  const competitionScore = context ? Math.max(5, 50 - context.competitors * 8) : 0
-  const footTrafficScore = context ? Math.min(30, context.amenities.length * 8) : 0
-  const areaScore = context
-    ? context.areaType === 'commercial' ? 20 : context.areaType === 'mixed' ? 12 : 5
-    : 0
 
   const analysisText = [result.detail, result.verdict].filter(Boolean).join(' ')
 
@@ -123,13 +131,18 @@ export default function ResultSheet({ business, result, context, onReset }: Prop
               </div>
             )}
 
-            {context && (
+            {result.factors && result.factors.length > 0 && (
               <div>
-                <Label>{AZ.RESULT_SCORE_BREAKDOWN}</Label>
+                <Label>{strings.RESULT_FACTOR_BREAKDOWN}</Label>
                 <div className="space-y-4">
-                  <ScoreBar label={AZ.RESULT_COMPETITION} value={competitionScore} max={50} />
-                  <ScoreBar label={AZ.RESULT_FOOT_TRAFFIC} value={footTrafficScore} max={30} />
-                  <ScoreBar label={AZ.RESULT_AREA_TYPE} value={areaScore} max={20} />
+                  {result.factors.map((f) => (
+                    <ScoreBar
+                      key={f.key}
+                      label={strings[FACTOR_LABEL_KEYS[f.key]] as string}
+                      value={f.score}
+                      max={f.max}
+                    />
+                  ))}
                 </div>
               </div>
             )}

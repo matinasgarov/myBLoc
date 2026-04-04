@@ -86,4 +86,15 @@ export const EN = {
   NAV_MISSION: 'Mission',
   NAV_SCORING: 'Scoring',
   NAV_CONTACT: 'Contact',
+  WARN_UNKNOWN_TYPE: 'This business type was not recognized. Results may be less accurate.',
+  MAP_ERROR: 'Map failed to load. Please refresh the page.',
+  // Factor breakdown labels
+  FACTOR_COMPETITION: 'Competition',
+  FACTOR_FOOT_TRAFFIC: 'Foot Traffic',
+  FACTOR_AREA_TYPE: 'Area Type',
+  FACTOR_URBAN_TIER: 'Urban Tier',
+  FACTOR_ACCESSIBILITY: 'Accessibility',
+  FACTOR_NEARBY_SERVICES: 'Nearby Services',
+  FACTOR_BUSINESS_DENSITY: 'Business Density',
+  RESULT_FACTOR_BREAKDOWN: 'Factor Breakdown',
 } as const

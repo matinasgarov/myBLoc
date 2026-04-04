@@ -86,4 +86,15 @@ export const AZ = {
   NAV_MISSION: 'Missiya',
   NAV_SCORING: 'Hesablama',
   NAV_CONTACT: 'Əlaqə',
+  WARN_UNKNOWN_TYPE: 'Bu biznes növü tanınmadı. Nəticələr daha az dəqiq ola bilər.',
+  MAP_ERROR: 'Xəritə yüklənmədi. Səhifəni yeniləyin.',
+  // Factor breakdown labels
+  FACTOR_COMPETITION: 'Rəqabət',
+  FACTOR_FOOT_TRAFFIC: 'Piyada Axını',
+  FACTOR_AREA_TYPE: 'Ərazi Tipi',
+  FACTOR_URBAN_TIER: 'Şəhər Tipi',
+  FACTOR_ACCESSIBILITY: 'Əlçatanlıq',
+  FACTOR_NEARBY_SERVICES: 'Yaxınlıqdakı Xidmətlər',
+  FACTOR_BUSINESS_DENSITY: 'Biznes Sıxlığı',
+  RESULT_FACTOR_BREAKDOWN: 'Faktor Bölgüsü',
 } as const

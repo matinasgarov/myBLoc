@@ -8,6 +8,7 @@ import LoadingOverlay from '@/components/LoadingOverlay'
 import ResultSheet from '@/components/ResultSheet'
 import HistorySidebar from '@/components/HistorySidebar'
 import LandingPage from '@/components/LandingPage'
+import MapErrorBoundary from '@/components/MapErrorBoundary'
 import type { AnalysisResult, LatLng, PlacesContext, SavedAnalysis } from '@/lib/types'
 
 const Map = dynamic(() => import('@/components/Map'), { ssr: false })
@@ -22,8 +23,10 @@ export default function Home() {
   const [result, setResult] = useState<AnalysisResult | null>(null)
   const [placesContext, setPlacesContext] = useState<PlacesContext | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [warning, setWarning] = useState<string | null>(null)
   const [analyses, setAnalyses] = useState<SavedAnalysis[]>([])
   const [lang, setLang] = useState<Lang>('az')
+  const [mapKey, setMapKey] = useState(0)
 
   const strings = getStrings(lang)
 
@@ -78,6 +81,8 @@ export default function Home() {
       setLoadingStep(4)
       const fetchedContext = await placesRes.json()
       setPlacesContext(fetchedContext)
+      if (!fetchedContext.recognized) setWarning(strings.WARN_UNKNOWN_TYPE)
+      else setWarning(null)
 
       const analyzeRes = await fetch('/api/analyze', {
         method: 'POST',
@@ -118,6 +123,8 @@ export default function Home() {
     setPlacesContext(null)
     setBusinessType('')
     setError(null)
+    setWarning(null)
+    setMapKey(k => k + 1)
   }
 
   const isDimmed = appState === 'loading'
@@ -151,7 +158,9 @@ export default function Home() {
 
           {/* Map area */}
           <div className="relative flex-1 min-h-0">
-            <Map onPinDrop={handlePinDrop} pin={pin} dimmed={isDimmed} />
+            <MapErrorBoundary message={strings.MAP_ERROR}>
+              <Map key={mapKey} onPinDrop={handlePinDrop} pin={pin} dimmed={isDimmed} />
+            </MapErrorBoundary>
 
             {appState === 'map' && (
               <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[500] bg-white/90 backdrop-blur-sm rounded-full px-5 py-2 text-sm text-gray-600 shadow-md pointer-events-none select-none">
@@ -165,6 +174,12 @@ export default function Home() {
               </div>
             )}
 
+            {warning && !error && (
+              <div className="absolute top-5 left-1/2 -translate-x-1/2 z-[1001] bg-amber-50 border border-amber-200 text-amber-700 text-sm px-4 py-3 rounded-xl shadow-md max-w-xs text-center">
+                {warning}
+              </div>
+            )}
+
             {appState === 'input' && (
               <BusinessInputModal onSubmit={handleBusinessSubmit} onClose={handleReset} />
             )}
@@ -174,7 +189,7 @@ export default function Home() {
 
           {/* Result panel — below map */}
           {appState === 'result' && result && (
-            <ResultSheet business={businessType} result={result} context={placesContext} onReset={handleReset} />
+            <ResultSheet business={businessType} result={result} context={placesContext} onReset={handleReset} strings={strings} />
           )}
 
         </div>
