@@ -8,7 +8,25 @@ export interface OSMElement {
   id: number
   lat?: number
   lon?: number
+  center?: { lat: number; lon: number }
   tags?: Record<string, string>
+}
+
+export type UrbanTier = 'metro-city' | 'city' | 'town' | 'rural'
+
+export type FactorKey =
+  | 'competition'
+  | 'footTraffic'
+  | 'areaType'
+  | 'urbanTier'
+  | 'accessibility'
+  | 'nearbyServices'
+  | 'businessDensity'
+
+export interface FactorResult {
+  key: FactorKey
+  score: number
+  max: number
 }
 
 export interface PlacesContext {
@@ -17,6 +35,15 @@ export interface PlacesContext {
   amenities: string[]
   totalBusinesses: number
   landUse: string | null
+  recognized: boolean
+  // New fields
+  busStops: number
+  parking: number
+  groceryStores: number
+  majorRoads: number
+  metroDistance: number | null
+  metroRidership: number | null
+  urbanTier: UrbanTier
 }
 
 export interface AnalysisResult {
@@ -26,6 +53,7 @@ export interface AnalysisResult {
   pros: string[]
   cons: string[]
   verdict: string
+  factors?: FactorResult[]
 }
 
 export interface SavedAnalysis {
