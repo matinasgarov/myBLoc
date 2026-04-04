@@ -12,6 +12,15 @@ const mockContext = {
   areaType: 'commercial',
   amenities: ['2 yemək yeri'],
   totalBusinesses: 20,
+  landUse: null,
+  recognized: true,
+  busStops: 1,
+  parking: 0,
+  groceryStores: 2,
+  majorRoads: 1,
+  metroDistance: 500,
+  metroRidership: 15000,
+  urbanTier: 'city',
 }
 
 function makeRequest(body: unknown) {
@@ -44,5 +53,15 @@ describe('POST /api/places', () => {
     ;(overpass.fetchPlacesContext as jest.Mock).mockRejectedValue(new Error('timeout'))
     const res = await POST(makeRequest({ lat: 40.4093, lng: 49.8671, businessType: 'Restoran' }))
     expect(res.status).toBe(500)
+  })
+
+  it('returns 400 for gibberish business type', async () => {
+    const res = await POST(makeRequest({ lat: 40.4093, lng: 49.8671, businessType: '123!@#' }))
+    expect(res.status).toBe(400)
+  })
+
+  it('returns 400 for too-short business type', async () => {
+    const res = await POST(makeRequest({ lat: 40.4093, lng: 49.8671, businessType: 'a' }))
+    expect(res.status).toBe(400)
   })
 })

@@ -18,7 +18,22 @@ const mockCtx: PlacesContext = {
   areaType: 'commercial',
   amenities: ['2 məktəb/universitet', '1 nəqliyyat dayanacağı'],
   totalBusinesses: 47,
+  landUse: null,
+  recognized: true,
+  busStops: 2,
+  parking: 1,
+  groceryStores: 1,
+  majorRoads: 2,
+  metroDistance: 350,
+  metroRidership: 25000,
+  urbanTier: 'metro-city',
 }
+
+type MockGroqInstance = { chat: { completions: { create: jest.Mock } } }
+const mockGroq = (instance: MockGroqInstance) =>
+  (Groq as jest.MockedClass<typeof Groq>).mockImplementation(
+    () => instance as unknown as InstanceType<typeof Groq>
+  )
 
 describe('analyzeLocation', () => {
   beforeEach(() => {
@@ -35,7 +50,7 @@ describe('analyzeLocation', () => {
       cons: ['Yüksək icarə'],
       verdict: 'Bu biznes üçün yaxşı yer.',
     }
-    ;(Groq as jest.MockedClass<typeof Groq>).mockImplementation(() => ({
+    mockGroq({
       chat: {
         completions: {
           create: jest.fn().mockResolvedValue({
@@ -43,7 +58,7 @@ describe('analyzeLocation', () => {
           }),
         },
       },
-    } as any))
+    })
 
     const result = await analyzeLocation(40.4093, 49.8671, 'Oyun Klubu', mockCtx, 75)
     expect(result.score).toBe(75)
@@ -58,9 +73,7 @@ describe('analyzeLocation', () => {
       .mockResolvedValueOnce({ choices: [{ message: { content: 'not valid json' } }] })
       .mockResolvedValueOnce({ choices: [{ message: { content: JSON.stringify(mockPayload) } }] })
 
-    ;(Groq as jest.MockedClass<typeof Groq>).mockImplementation(() => ({
-      chat: { completions: { create: mockCreate } },
-    } as any))
+    mockGroq({ chat: { completions: { create: mockCreate } } })
 
     const result = await analyzeLocation(40.4093, 49.8671, 'Restoran', mockCtx, 60)
     expect(mockCreate).toHaveBeenCalledTimes(2)
@@ -71,21 +84,19 @@ describe('analyzeLocation', () => {
     const mockCreate = jest.fn().mockResolvedValue({
       choices: [{ message: { content: 'not json' } }],
     })
-    ;(Groq as jest.MockedClass<typeof Groq>).mockImplementation(() => ({
-      chat: { completions: { create: mockCreate } },
-    } as any))
+    mockGroq({ chat: { completions: { create: mockCreate } } })
 
     await expect(analyzeLocation(40.4093, 49.8671, 'Kafe', mockCtx, 50)).rejects.toThrow()
   })
 
   it('throws when Groq API call itself fails', async () => {
-    ;(Groq as jest.MockedClass<typeof Groq>).mockImplementation(() => ({
+    mockGroq({
       chat: {
         completions: {
           create: jest.fn().mockRejectedValue(new Error('Network error')),
         },
       },
-    } as any))
+    })
 
     await expect(analyzeLocation(40.4093, 49.8671, 'Kafe', mockCtx, 50)).rejects.toThrow('Network error')
   })
