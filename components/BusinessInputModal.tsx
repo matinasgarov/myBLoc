@@ -39,14 +39,14 @@ export default function BusinessInputModal({ onSubmit, onClose, lang, strings }:
 
   return (
     <div className="absolute inset-0 flex items-end sm:items-center justify-center z-[1000] pointer-events-none">
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:w-[420px] mx-0 sm:mx-4 pointer-events-auto flex flex-col max-h-[85vh]">
+      <div className="bg-slate-900 border border-slate-700 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:w-[420px] mx-0 sm:mx-4 pointer-events-auto flex flex-col max-h-[85vh]">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
-          <h2 className="text-sm font-semibold text-gray-800 leading-tight">{strings.MODAL_TITLE}</h2>
+          <h2 className="text-sm font-semibold text-slate-200 leading-tight">{strings.MODAL_TITLE}</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors text-lg leading-none ml-3 shrink-0"
+            className="text-slate-500 hover:text-slate-200 transition-colors text-lg leading-none ml-3 shrink-0"
             aria-label={strings.MODAL_CLOSE}
           >
             ✕
@@ -64,21 +64,21 @@ export default function BusinessInputModal({ onSubmit, onClose, lang, strings }:
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={strings.MODAL_SEARCH}
                 autoFocus
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 bg-slate-800 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
             {/* Category grid */}
             <div className="overflow-y-auto flex-1 px-4 pb-3">
               {visible.length === 0 ? (
-                <p className="text-center text-gray-400 text-sm py-8">{strings.MODAL_NO_RESULTS}</p>
+                <p className="text-center text-slate-500 text-sm py-8">{strings.MODAL_NO_RESULTS}</p>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   {visible.map((cat) => (
                     <button
                       key={cat.key}
                       onClick={() => onSubmit(cat.key)}
-                      className="text-left px-3 py-3 rounded-xl border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-colors text-sm text-gray-700 font-medium"
+                      className="text-left px-3 py-3 rounded-xl border border-slate-700 hover:border-blue-500 hover:bg-slate-800 transition-colors text-sm text-slate-200 font-medium"
                     >
                       {lang === 'az' ? cat.labelAz : cat.labelEn}
                     </button>
@@ -91,7 +91,7 @@ export default function BusinessInputModal({ onSubmit, onClose, lang, strings }:
             {!isSearching && (
               <button
                 onClick={() => setExpanded(false)}
-                className="shrink-0 w-full text-center text-sm text-blue-600 hover:text-blue-800 py-3 border-t border-gray-100 transition-colors"
+                className="shrink-0 w-full text-center text-sm text-blue-400 hover:text-blue-300 py-3 border-t border-slate-700 transition-colors"
               >
                 {strings.MODAL_SHOW_LESS} ↑
               </button>
@@ -108,7 +108,7 @@ export default function BusinessInputModal({ onSubmit, onClose, lang, strings }:
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={strings.MODAL_SEARCH}
                 autoFocus
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 bg-slate-800 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             <div className="grid grid-cols-3 gap-2 px-4 pb-2">
@@ -116,7 +116,7 @@ export default function BusinessInputModal({ onSubmit, onClose, lang, strings }:
                 <button
                   key={cat.key}
                   onClick={() => onSubmit(cat.key)}
-                  className="py-4 rounded-xl border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-colors text-xs text-gray-700 font-medium text-center leading-tight"
+                  className="py-4 rounded-xl border border-slate-700 hover:border-blue-500 hover:bg-slate-800 transition-colors text-xs text-slate-200 font-medium text-center leading-tight"
                 >
                   {lang === 'az' ? cat.labelAz : cat.labelEn}
                 </button>
@@ -125,7 +125,7 @@ export default function BusinessInputModal({ onSubmit, onClose, lang, strings }:
             {/* Expand button */}
             <button
               onClick={() => setExpanded(true)}
-              className="w-full text-center text-sm text-blue-600 hover:text-blue-800 py-3 border-t border-gray-100 transition-colors"
+              className="w-full text-center text-sm text-blue-400 hover:text-blue-300 py-3 border-t border-slate-700 transition-colors"
             >
               {strings.MODAL_SHOW_ALL} ↓
             </button>

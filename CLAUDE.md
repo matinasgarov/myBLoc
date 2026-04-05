@@ -11,13 +11,13 @@ A Next.js 16 / React 19 / TypeScript web app that scores business locations in A
 | `lib/overpass.ts` | OSM data fetch + competitor matching + `recognized` flag + new signals |
 | `lib/az-competitors.ts` | AZ government dataset competitor lookup |
 | `lib/score.ts` | 7-factor deterministic scoring (0–95 max, land use caps), returns `ScoreResult` |
-| `lib/groq.ts` | Groq AI prompt, model: `llama-3.3-70b-versatile`, retry on bad JSON |
+| `lib/groq.ts` | Groq AI prompt, model: `llama-3.3-70b-versatile`, retry on bad JSON, grammar correction pipeline |
 | `lib/geo.ts` | Shared haversine distance utility (metres) used across lib/ |
 | `lib/metro-stations.ts` | 27 Baku metro stations with exit coords + 2025 avg daily ridership |
 | `lib/settlements.ts` | 4,589 AZ settlements with urban tier (`metro-city`/`city`/`town`/`rural`) |
 | `app/api/places/route.ts` | Validates input (2–100 chars, `/[\p{L}]{2,}/u`), returns PlacesContext |
 | `lib/i18n.ts` | `getStrings(lang)` — lang is `'az'` or `'en'`, stored in localStorage |
-| `next.config.ts` | CSP headers — img-src only allows `*.tile.openstreetmap.org` |
+| `next.config.ts` | CSP headers — img-src allows `*.tile.openstreetmap.org` |
 
 ## Map lifecycle — CRITICAL
 
@@ -54,6 +54,11 @@ The score is calculated in `lib/score.ts` before the AI call. `calculateScore(ct
 
 ## Business type matching
 Both `overpass.ts` (`COMPETITOR_ALIASES`) and `az-competitors.ts` (`BUSINESS_TO_AZ_TYPES`) must be updated together when adding new business type keywords. Both currently include `'aptek'`/`'apteka'` for pharmacy. The `recognized` flag is `true` only if at least one alias list matches the input.
+
+`lib/categories.ts` defines the `BusinessCategory` interface (`key`, `labelAz`, `labelEn`, `synonyms[]`, `pinned?`) and exports `BUSINESS_CATEGORIES` — ~60 entries covering retail, food, health, services, transport, agriculture, professional, and entertainment. The `pinned` flag marks the 3 default cards shown in the collapsed modal state.
+
+## Groq grammar correction
+`lib/groq.ts` post-processes all LLM output fields through `fixAzerbaijaniGrammar()` before returning to the client. The `AZ_CORRECTIONS` array contains regex replacements for known Azerbaijani grammar errors (e.g. `çoxluq →  çoxlu`). The prompt also includes explicit contradiction-prevention rules: if `competitors > 0`, the LLM is forbidden from writing "no competitor" pros; if `competitors = 0`, it is forbidden from writing "high competition" cons.
 
 ## Input validation
 `/api/places` rejects business types that are < 2 chars, > 100 chars, or contain no consecutive letter sequence (`/[\p{L}]{2,}/u`). This handles Azerbaijani characters (ə, ş, ğ, etc.) correctly.

@@ -158,7 +158,21 @@ Queries the public **Overpass API** (OpenStreetMap) for a 500 m radius around th
 `COMPETITOR_ALIASES` in `overpass.ts` maps Azerbaijani/English keywords → OSM tag values.
 `BUSINESS_TO_AZ_TYPES` in `az-competitors.ts` maps keywords → AZ dataset TYPE codes.
 
-Both lists include `'aptek'` / `'apteka'` for pharmacy.
+Both lists include `'aptek'` / `'apteka'` for pharmacy. When adding a new business category to `lib/categories.ts`, also add entries to both `COMPETITOR_ALIASES` and `BUSINESS_TO_AZ_TYPES`.
+
+### Business Categories (`lib/categories.ts`)
+
+`BUSINESS_CATEGORIES` (~60 entries) covers:
+- **Retail**: restoran, supermarket, kafe, fast food, çay evi, aptek, elektronika, geyim, mebel, bərbər/gözəllik, kitab, oyuncaq, çiçəkçi, avtomobil malları, qida mağazası, kosmetika, idman malları, zərgərlik, topdan
+- **Health/Wellness**: klinika, diş, masaj, optika, baytarlıq
+- **Services**: minik avtomobili, hüquq, mühasibat, sığorta, əmlak, təmizlik, çatdırılma, foto, reklam, IT xidmət, avtomobil satış, çap, tərcümə
+- **Transport/Logistics**: taksi, yük daşıma, anbar, turizm
+- **Education**: məktəb/kurs, tədris mərkəzi, mühəndislik, arxitektura
+- **Entertainment**: idman, park/istirahət, kinoteatr, musiqi
+- **Agriculture**: kənd təsərrüfatı, heyvandarlıq, balıqçılıq, bağçılıq, kənd malları
+- **Other**: tikinti/materiallar, digər
+
+Each entry has: `key` (used for OSM matching), `labelAz`, `labelEn`, `synonyms[]` (searched alongside label/key), and optional `pinned` (3 pinned categories shown in collapsed modal: restoran, supermarket, aptek).
 
 ---
 
@@ -179,6 +193,8 @@ Returns `400` for invalid input, `500` only if something unexpected throws.
 - **Prompt strategy**: provides pre-calculated score + OSM context, asks for `{ summary, detail, pros, cons, verdict }` as JSON
 - **Retry logic**: retries once on invalid JSON; throws after 2 failed attempts
 - **Required env var**: `GROQ_API_KEY` in `.env.local`
+- **Contradiction prevention**: prompt explicitly forbids the LLM from writing "no competitor" pros when `competitors > 0`, and "high competition" cons when `competitors = 0`
+- **Grammar correction**: `AZ_CORRECTIONS` regex map applied to all output fields via `fixAzerbaijaniGrammar()` before returning (fixes common errors like `çoxluq rəqib → çoxlu rəqib`)
 
 ---
 
@@ -214,6 +230,7 @@ When `handleReset()` is called, `mapKey` is incremented in `page.tsx`. The Map r
 ### Why not `invalidateSize()`?
 `invalidateSize()` only works if tiles are already loaded. A fresh mount guarantees correct container dimensions from the start.
 
+
 ---
 
 ## Key Design Decisions
@@ -240,6 +257,26 @@ Defined in `next.config.ts`. Key directives:
 
 ### i18n
 Language is stored in `localStorage` under `myblocate-lang`. `getStrings(lang)` from `lib/i18n.ts` returns the full string map. Language toggles on the landing page and header persist across sessions.
+
+Notable recent string additions: `RESULT_OSM_BUS_STOPS`, `RESULT_OSM_GROCERY`, `RESULT_OSM_PARKING`, `RESULT_OSM_METRO`, `RESULT_LOW_SCORE_WARNING`, `MODAL_SHOW_ALL`, `MODAL_SHOW_LESS`.
+
+---
+
+## Result Sheet (`components/ResultSheet.tsx`)
+
+The expandable bottom sheet shows:
+- **Score badge** — color-coded (green ≥70, amber ≥40, red <40) with ring
+- **Dominant competitor warning** — red banner when a major chain is within radius
+- **Summary** — one-paragraph AI summary
+- **Pros / Cons** — two-column grid from Groq output
+- **Expandable section** (toggle button) — reveals:
+  - Full AI analysis text
+  - **Factor breakdown** — 7 color-coded progress bars (`ScoreBar`); competition bar shows inline competitor count note (e.g. `· 71 rəqib`)
+  - **OSM data grid** — always 6 fixed cards: competitors, total businesses, bus stops, grocery stores, parking, metro distance
+  - **Low-score warning banner** — red text above OSM grid when `result.score < 45`
+  - Land use note (amber) if relevant
+
+`ScoreBar` fills: green (`bg-emerald-500`) ≥70%, amber (`bg-amber-500`) 40–70%, red (`bg-red-500`) <40%. Track is red when fill is red, slate otherwise. Empty bars (0 pts) render no fill div.
 
 ---
 

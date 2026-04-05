@@ -32,7 +32,7 @@ export default function Map({ onPinDrop, pin, dimmed }: MapProps) {
     if (!containerRef.current || mapRef.current) return
     const map = L.map(containerRef.current).setView(BAKU_CENTER, INITIAL_ZOOM)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+      attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
       maxZoom: 19,
     }).addTo(map)
     map.on('click', (e: L.LeafletMouseEvent) => dropRef.current(e.latlng.lat, e.latlng.lng))

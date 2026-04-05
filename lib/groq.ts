@@ -44,7 +44,7 @@ Məlumatlar:
 - Ərzaq mağazası (500m): ${ctx.groceryStores}
 - Parkinq (500m): ${ctx.parking > 0 ? 'var' : 'yoxdur'}
 - Şəhər tipi: ${urbanTierAz}
-- Ümumi uğur balı: ${score}/95
+- Ümumi uğur balı: ${score}/99
 ${landUseNote}
 
 Qaydalar:

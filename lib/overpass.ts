@@ -175,6 +175,23 @@ const COMPETITOR_ALIASES: Array<[string[], string[]]> = [
   [['qəhvəxana', 'çayxana', 'teahouse', 'çay'], ['cafe', 'coffee_shop']],
   [['məktəb', 'təhsil', 'kurs', 'dərs', 'tədris', 'university', 'school'], ['school', 'college', 'university', 'language_school', 'music_school']],
   [['tikinti', 'material', 'inşaat', 'building', 'hardware', 'təmir'], ['doityourself', 'hardware', 'building_materials', 'construction']],
+  // Extended categories
+  [['kosmetika', 'parfüm', 'parfümeri', 'makeup', 'perfume', 'cosmetics'], ['cosmetics', 'perfumery', 'beauty']],
+  [['idman malları', 'sport goods', 'velosiped', 'bicycle', 'equipment'], ['sports', 'bicycle', 'outdoor', 'sporting_goods']],
+  [['zərgərlik', 'qızıl', 'gümüş', 'jewelry', 'jewellery', 'aksesuar', 'saat', 'watch'], ['jewelry', 'watches', 'accessories']],
+  [['optika', 'gözlük', 'linza', 'optician', 'glasses', 'lens'], ['optician']],
+  [['masaj', 'spa', 'massage', 'wellness'], ['massage', 'spa']],
+  [['baytarlıq', 'heyvan', 'veterinary', 'pet clinic'], ['veterinary']],
+  [['avtomobil satış', 'car dealer', 'ikinci əl', 'used car'], ['car', 'car_dealership']],
+  [['hüquq', 'vəkil', 'notariat', 'notary', 'lawyer'], ['lawyers', 'notary']],
+  [['sığorta', 'insurance', 'icbari', 'OSAGO'], ['insurance']],
+  [['əmlak', 'real estate', 'estate agent', 'property'], ['estate_agent']],
+  [['çap', 'printing', 'poliqrafiya', 'copyshop', 'banner'], ['copyshop', 'printing']],
+  [['turizm', 'səyahət', 'travel', 'tour agent', 'bilet'], ['travel_agency']],
+  [['kinoteatr', 'cinema', 'kino'], ['cinema', 'theatre']],
+  [['musiqi', 'music school', 'musiqi məktəbi', 'incəsənət'], ['music_school', 'musical_instrument', 'arts_centre']],
+  [['tədris mərkəzi', 'kurs mərkəzi', 'dil mərkəzi', 'language school', 'repetitor'], ['language_school', 'music_school', 'school']],
+  [['foto', 'fotoqraf', 'fotostudia', 'photographer'], ['photographer', 'studio']],
 ]
 
 function resolveOSMTags(businessType: string): string[] | null {

@@ -25,16 +25,20 @@ function Label({ children }: { children: React.ReactNode }) {
   )
 }
 
-interface BarProps { label: string; value: number; max: number }
-function ScoreBar({ label, value, max }: BarProps) {
+interface BarProps { label: string; value: number; max: number; note?: string }
+function ScoreBar({ label, value, max, note }: BarProps) {
   const pct = Math.round((value / max) * 100)
+  const barColor = pct >= 70 ? 'bg-emerald-500' : pct >= 40 ? 'bg-amber-500' : 'bg-red-500'
+  const trackColor = pct < 40 ? 'bg-red-950' : 'bg-slate-800'
   return (
     <div className="flex items-center gap-3">
       <span className="text-slate-400 text-sm w-36 shrink-0">{label}</span>
-      <div className="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden">
-        <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+      <div className={`flex-1 h-1 ${trackColor} rounded-full overflow-hidden`}>
+        {pct > 0 && <div className={`h-full ${barColor} rounded-full transition-all`} style={{ width: `${pct}%` }} />}
       </div>
-      <span className="text-slate-400 text-sm w-14 text-right shrink-0 tabular-nums font-medium">{value}/{max}</span>
+      <span className="text-slate-400 text-sm text-right shrink-0 tabular-nums font-medium">
+        {value}/{max}{note ? <span className="text-slate-600 text-xs ml-1">· {note}</span> : null}
+      </span>
     </div>
   )
 }
@@ -151,6 +155,7 @@ export default function ResultSheet({ business, result, context, onReset, string
                       label={strings[FACTOR_LABEL_KEYS[f.key]] as string}
                       value={f.score}
                       max={f.max}
+                      note={f.key === 'competition' && context ? `${context.competitors} rəqib` : undefined}
                     />
                   ))}
                 </div>
