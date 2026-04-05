@@ -147,28 +147,34 @@ function extractGroceryStores(elements: OSMElement[]): number {
 
 // Maps Azerbaijani business keywords → OSM tag values used in amenity/shop/leisure
 const COMPETITOR_ALIASES: Array<[string[], string[]]> = [
-  [['restoran', 'restaurant'], ['restaurant', 'fast_food', 'food_court', 'cafe']],
-  [['kafe', 'cafe', 'kofe', 'qəhvə'], ['cafe', 'coffee_shop', 'restaurant', 'fast_food']],
+  [['restoran', 'restaurant', 'yemək', 'yemek', 'xörək'], ['restaurant', 'fast_food', 'food_court', 'cafe']],
+  [['kafe', 'cafe', 'kofe', 'qəhvə', 'kahve', 'coffee'], ['cafe', 'coffee_shop', 'restaurant', 'fast_food']],
   [['pizza'], ['pizza', 'restaurant', 'fast_food']],
   [['fast food', 'fastfood', 'burger'], ['fast_food', 'restaurant']],
-  [['aptek', 'apteka', 'eczane', 'dərman', 'pharmacy'], ['pharmacy']],
-  [['bank', 'maliyyə'], ['bank']],
-  [['supermarket', 'bazar', 'market', 'ərzaq'], ['supermarket', 'convenience', 'grocery', 'mall', 'general']],
-  [['mağaza', 'butik', 'geyim', 'paltar'], ['clothes', 'boutique', 'fashion', 'shoes', 'department_store']],
-  [['fitnes', 'idman', 'gym', 'zal', 'fitness'], ['fitness_centre', 'sports_centre', 'gym']],
-  [['salon', 'gözəllik', 'beauty', 'kosmetik'], ['beauty', 'hairdresser', 'cosmetics']],
-  [['bərbər', 'barber', 'saç'], ['hairdresser', 'barber']],
-  [['çörək', 'çörəkçi', 'bakery', 'konfet', 'şirniyyat'], ['bakery', 'confectionery', 'pastry']],
-  [['bar', 'pub', 'içki'], ['bar', 'pub', 'nightclub', 'biergarten']],
-  [['oyun', 'gaming', 'klub', 'bilyard'], ['arcade', 'casino']],
-  [['stomatolog', 'diş', 'dentist'], ['dentist']],
-  [['həkim', 'klinika', 'tibb', 'hospital'], ['clinic', 'hospital', 'doctors']],
-  [['otel', 'hotel', 'hostel', 'qonaq'], ['hotel', 'hostel', 'guest_house', 'motel']],
-  [['yanacaq', 'benzin', 'fuel', 'neft'], ['fuel']],
-  [['uşaq', 'körpə', 'bağça'], ['kindergarten', 'childcare', 'playground']],
-  [['kitab', 'kitabxana', 'book'], ['books', 'library']],
-  [['elektrik', 'texnika', 'elektronik'], ['electronics', 'computer', 'mobile_phone']],
-  [['eczane', 'tibb ləvazimatı'], ['medical_supply', 'pharmacy']],
+  [['aptek', 'apteka', 'eczane', 'dərman', 'pharmacy', 'əczaçılıq'], ['pharmacy']],
+  [['bank', 'maliyyə', 'kredit'], ['bank']],
+  [['supermarket', 'bazar', 'market', 'ərzaq', 'ərzaq mağazası', 'bakkal'], ['supermarket', 'convenience', 'grocery', 'mall', 'general']],
+  [['mağaza', 'butik', 'geyim', 'paltar', 'kişi geyim', 'qadin geyim', 'fashion', 'clothes'], ['clothes', 'boutique', 'fashion', 'shoes', 'department_store']],
+  [['fitnes', 'idman', 'gym', 'zal', 'fitness', 'crossfit', 'sport'], ['fitness_centre', 'sports_centre', 'gym']],
+  [['salon', 'gözəllik', 'beauty', 'kosmetik', 'gözəllik salonu', 'spa'], ['beauty', 'hairdresser', 'cosmetics']],
+  [['bərbər', 'barber', 'saç', 'həllaqlıq'], ['hairdresser', 'barber']],
+  [['çörək', 'çörəkçi', 'bakery', 'konfet', 'şirniyyat', 'tort', 'cake'], ['bakery', 'confectionery', 'pastry']],
+  [['bar', 'pub', 'içki', 'alkoqol'], ['bar', 'pub', 'nightclub', 'biergarten']],
+  [['oyun', 'gaming', 'klub', 'bilyard', 'oyun zalı', 'billiard'], ['arcade', 'casino']],
+  [['stomatolog', 'diş', 'dentist', 'diş həkimi'], ['dentist']],
+  [['həkim', 'klinika', 'tibb', 'hospital', 'xəstəxana', 'poliklinika', 'doctor'], ['clinic', 'hospital', 'doctors']],
+  [['otel', 'hotel', 'hostel', 'qonaq', 'motel', 'apart'], ['hotel', 'hostel', 'guest_house', 'motel']],
+  [['yanacaq', 'benzin', 'fuel', 'neft', 'qaz stansiya', 'doldurma'], ['fuel']],
+  [['uşaq', 'körpə', 'bağça', 'dayə', 'körpə uşaq'], ['kindergarten', 'childcare', 'playground']],
+  [['kitab', 'kitabxana', 'book', 'kağız', 'dəftər'], ['books', 'library']],
+  [['elektrik', 'texnika', 'elektronik', 'elektronika', 'komputer', 'computer', 'telefon', 'mobil', 'laptop', 'tablet', 'gadget', 'tech'], ['electronics', 'computer', 'mobile_phone']],
+  [['eczane', 'tibb ləvazimatı', 'tibb avadanlığı'], ['medical_supply', 'pharmacy']],
+  [['avtomobil', 'maşın', 'car', 'servis', 'avto', 'ehtiyat hissə'], ['car', 'car_repair', 'car_parts']],
+  [['çiçək', 'gül', 'flower', 'florist'], ['florist']],
+  [['ev əşyası', 'mebel', 'furniture', 'interior', 'dekor'], ['furniture', 'interior_decoration', 'doityourself']],
+  [['qəhvəxana', 'çayxana', 'teahouse', 'çay'], ['cafe', 'coffee_shop']],
+  [['məktəb', 'təhsil', 'kurs', 'dərs', 'tədris', 'university', 'school'], ['school', 'college', 'university', 'language_school', 'music_school']],
+  [['tikinti', 'material', 'inşaat', 'building', 'hardware', 'təmir'], ['doityourself', 'hardware', 'building_materials', 'construction']],
 ]
 
 function resolveOSMTags(businessType: string): string[] | null {
@@ -227,6 +233,49 @@ function countCompetitors(
   return Math.round(weighted)
 }
 
+import { BAKU_CHAINS, matchesChain } from './chains'
+
+/** Dominant competitor penalty only applies within this radius. */
+const DOMINANT_COMPETITOR_RADIUS = 300 // metres
+
+/**
+ * Returns the nearest same-category dominant chain within DOMINANT_COMPETITOR_RADIUS,
+ * or null if none found.
+ */
+function detectDominantCompetitor(
+  elements: OSMElement[],
+  businessType: string,
+  pinLat: number,
+  pinLng: number
+): { name: string; distance: number } | null {
+  const resolvedTags = resolveOSMTags(businessType)
+  if (!resolvedTags) return null
+
+  let closest: { name: string; distance: number } | null = null
+
+  for (const e of elements) {
+    const rawName = e.tags?.name || ''
+    if (!rawName) continue
+
+    const chain = BAKU_CHAINS.find((c) => matchesChain(rawName, c))
+    if (!chain) continue
+
+    if (!chain.osmCategories.some((cat) => resolvedTags.includes(cat))) continue
+
+    const coords = elementCoords(e)
+    if (!coords) continue
+
+    const dist = haversineMetres(pinLat, pinLng, coords.lat, coords.lng)
+    if (dist > DOMINANT_COMPETITOR_RADIUS) continue
+
+    if (!closest || dist < closest.distance) {
+      closest = { name: rawName, distance: Math.round(dist) }
+    }
+  }
+
+  return closest
+}
+
 const BAD_LAND_USES = new Set([
   'cemetery', 'grave_yard', 'military', 'industrial',
   'landfill', 'quarry', 'construction', 'prison',
@@ -261,6 +310,7 @@ export async function fetchPlacesContext(
 
   const metro = getNearestMetro(lat, lng)
   const urbanTier = getUrbanTier(lat, lng)
+  const dominantCompetitor = detectDominantCompetitor(businessElements, businessType, lat, lng)
 
   return {
     competitors,
@@ -276,5 +326,6 @@ export async function fetchPlacesContext(
     metroDistance: metro?.distance ?? null,
     metroRidership: metro?.ridership ?? null,
     urbanTier,
+    dominantCompetitor,
   }
 }

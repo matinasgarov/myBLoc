@@ -21,6 +21,7 @@ const mockContext = {
   metroDistance: 500,
   metroRidership: 15000,
   urbanTier: 'city',
+  dominantCompetitor: null,
 }
 
 function makeRequest(body: unknown) {

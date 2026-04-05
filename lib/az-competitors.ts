@@ -7,7 +7,7 @@ const BUSINESS_TO_AZ_TYPES: Array<[string[], string[]]> = [
   [['restoran', 'restaurant', 'yemək'], ['RESTAURANT', 'RESTAURANT_CAFES', 'RESTAURANT_FAST_FOOD', 'RESTAURANT_TEA']],
   [['kafe', 'cafe', 'kofe', 'qəhvə', 'çay evi', 'çayxana'], ['RESTAURANT_CAFES', 'RESTAURANT_TEA', 'RESTAURANT']],
   [['fast food', 'fastfood', 'burger', 'pizza'], ['RESTAURANT_FAST_FOOD', 'RESTAURANT']],
-  [['apteka', 'eczane', 'dərman', 'pharmacy'], ['PHARMACY']],
+  [['aptek', 'apteka', 'eczane', 'dərman', 'pharmacy'], ['PHARMACY']],
   [['bank', 'maliyyə', 'kredit'], ['BANK']],
   [['supermarket', 'market', 'ərzaq'], ['GROCERY_STORE', 'SHOPPING_CENTER']],
   [['geyim', 'paltar', 'butik', 'moda', 'mağaza'], ['CLOTHING_RETAIL', 'DEPARTMENT_STORE', 'SPECIALTY_RETAIL']],

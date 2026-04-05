@@ -36,7 +36,6 @@ export interface PlacesContext {
   totalBusinesses: number
   landUse: string | null
   recognized: boolean
-  // New fields
   busStops: number
   parking: number
   groceryStores: number
@@ -44,6 +43,7 @@ export interface PlacesContext {
   metroDistance: number | null
   metroRidership: number | null
   urbanTier: UrbanTier
+  dominantCompetitor: { name: string; distance: number } | null
 }
 
 export interface AnalysisResult {
@@ -68,5 +68,6 @@ export interface SavedAnalysis {
   pros: string[]
   cons: string[]
   verdict: string
+  factors?: FactorResult[]
   context?: PlacesContext
 }

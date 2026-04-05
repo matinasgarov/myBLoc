@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
+import { isRateLimited } from '@/lib/ratelimit'
+
+if (!process.env.RESEND_API_KEY) {
+  throw new Error('RESEND_API_KEY environment variable is not set')
+}
+if (!process.env.FEEDBACK_EMAIL) {
+  throw new Error('FEEDBACK_EMAIL environment variable is not set')
+}
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') ?? 'unknown'
+  if (isRateLimited(ip, 5, 60_000)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  }
+
   const body = await req.json().catch(() => null)
 
   if (!body || typeof body.message !== 'string' || !body.message.trim()) {
@@ -16,7 +29,7 @@ export async function POST(req: NextRequest) {
 
   const { error } = await resend.emails.send({
     from: 'myblocate Feedback <onboarding@resend.dev>',
-    to: 'matinasgarov21@gmail.com',
+    to: process.env.FEEDBACK_EMAIL!,
     subject: `Yeni rəy — ${name}`,
     text: [
       `Ad: ${name}`,

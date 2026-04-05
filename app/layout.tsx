@@ -9,8 +9,20 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Biznes Analizatoru',
-  description: 'Azərbaycanda biznesinizin uğur ehtimalını öyrənin',
+  title: 'myblocate — Biznes Analizatoru',
+  description: 'Azərbaycanda biznesinizin uğur ehtimalını öyrənin. 6 amil əsasında 0–100 bal ilə yerləşmə analizini əldə edin.',
+  openGraph: {
+    title: 'myblocate — Biznes Analizatoru',
+    description: 'Azərbaycanda biznesinizin uğur ehtimalını öyrənin.',
+    siteName: 'myblocate',
+    locale: 'az_AZ',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'myblocate — Biznes Analizatoru',
+    description: 'Azərbaycanda biznesinizin uğur ehtimalını öyrənin.',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

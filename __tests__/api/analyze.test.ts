@@ -32,6 +32,7 @@ const validBody = {
     metroDistance: 400,
     metroRidership: 20000,
     urbanTier: 'city',
+    dominantCompetitor: null,
   },
 }
 

@@ -27,6 +27,7 @@ const mockCtx: PlacesContext = {
   metroDistance: 350,
   metroRidership: 25000,
   urbanTier: 'metro-city',
+  dominantCompetitor: null,
 }
 
 type MockGroqInstance = { chat: { completions: { create: jest.Mock } } }

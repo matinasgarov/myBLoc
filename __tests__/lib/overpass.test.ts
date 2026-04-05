@@ -116,4 +116,38 @@ describe('fetchPlacesContext', () => {
     const result = await fetchPlacesContext(40.4093, 49.8671, 'xyzabc')
     expect(result.recognized).toBe(false)
   })
+
+  it('returns dominantCompetitor=null when no dominant chain is present', async () => {
+    const result = await fetchPlacesContext(40.4093, 49.8671, 'market')
+    expect(result.dominantCompetitor).toBeNull()
+  })
+
+  it('detects dominant competitor when Bravo is in OSM data for matching category', async () => {
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        elements: [
+          { type: 'node', id: 10, lat: 40.4094, lon: 49.8672, tags: { shop: 'supermarket', name: 'Bravo Market' } },
+        ],
+      }),
+    })
+    const result = await fetchPlacesContext(40.4093, 49.8671, 'market')
+    expect(result.dominantCompetitor).not.toBeNull()
+    expect(result.dominantCompetitor?.name).toBe('Bravo Market')
+    expect(typeof result.dominantCompetitor?.distance).toBe('number')
+  })
+
+  it('does not flag dominant competitor when category does not match', async () => {
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        elements: [
+          { type: 'node', id: 10, lat: 40.4094, lon: 49.8672, tags: { shop: 'supermarket', name: 'Bravo Market' } },
+        ],
+      }),
+    })
+    // Opening a dentist clinic near Bravo — no conflict
+    const result = await fetchPlacesContext(40.4093, 49.8671, 'dentist')
+    expect(result.dominantCompetitor).toBeNull()
+  })
 })

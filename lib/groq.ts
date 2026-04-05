@@ -52,6 +52,9 @@ Qaydalar:
 - Hər cümlə 20-35 sözdən ibarət olsun — dəqiq, konkret və əsaslı şəkildə.
 - Texniki terminlərdən istifadə edə bilərsən.
 - Cavabda yalnız aşağıdakı JSON formatı olsun, başqa heç bir mətn əlavə etmə.
+- DİL QAYDAları (Azərbaycan dili): "çoxluq" sözünü ismin önündə HEÇ VAXT işlətmə — əvəzinə "çoxlu" işlət (düzgün: "çoxlu rəqib", "çoxlu müştəri"; yanlış: "çoxluq rəqib", "çoxluq müştəri"). Digər düzgün formalar: "şiddətli rəqabət" (yox "güclü rəqabət sayı"), "yüksək keçicilik", "aşağı trafik", "böyük müştəri axını", "az sayda müştəri".
+- MÜTLƏQİ QADAĞA — ZİDDİYYƏTLİ BƏYANATLAR: Rəqib sayı ${ctx.competitors}-dir. ${ctx.competitors > 0 ? `Bu rəqəm sıfırdan böyük olduğundan, müsbət cəhətlərdə "rəqib yoxdur", "tək müəssisə olaraq fərqlənə bilər", "rəqabət azdır" və ya oxşar ifadələr TAMAMILƏ QADAĞANDIR.` : `Bu rəqəm sıfır olduğundan, risklərdə "çoxlu rəqib", "şiddətli rəqabət" və ya oxşar ifadələr TAMAMILƏ QADAĞANDIR.`}
+- Rəqabət barəsindəki bütün bəyanatlar yalnız yuxarıda göstərilən ${ctx.competitors} rəqib sayını əks etdirməlidir — fərqli rəqəm və ya əks fikir yazmaq qadağandır.
 
 Tam olaraq ${prosCount} müsbət cəhət və ${consCount} risk yaz:
 
@@ -62,6 +65,32 @@ Tam olaraq ${prosCount} müsbət cəhət və ${consCount} risk yaz:
   "cons": [${consTemplate}],
   "verdict": "6 konkret cümlə ilə ümumi qiymətləndirmə — bu biznesin bu ərazidə perspektivi barədə."
 }`
+}
+
+/** Known Azerbaijani grammar errors the LLM produces → correct form */
+const AZ_CORRECTIONS: [RegExp, string][] = [
+  [/çoxluq\s+/gi, 'çoxlu '],
+  [/çoxluğu\s+/gi, 'çoxluğu '],          // keep noun form only in noun contexts — not before another noun
+  [/güclü\s+rəqabət\s+sayı/gi, 'yüksək rəqib sayı'],
+  [/böyük\s+rəqabət\s+sayı/gi, 'yüksək rəqib sayı'],
+  [/yüksək\s+sayda\s+rəqib/gi, 'çoxlu rəqib'],
+  [/çox\s+sayda\s+rəqib/gi, 'çoxlu rəqib'],
+  [/çox\s+sayda\s+müştəri/gi, 'çoxlu müştəri'],
+  [/\bsay\s+çoxdur\b/gi, 'sayı çoxdur'],
+]
+
+function fixAzerbaijaniGrammar(text: string): string {
+  let out = text
+  for (const [pattern, replacement] of AZ_CORRECTIONS) {
+    out = out.replace(pattern, replacement)
+  }
+  return out
+}
+
+function fixStrings<T>(obj: T): T {
+  if (typeof obj === 'string') return fixAzerbaijaniGrammar(obj) as unknown as T
+  if (Array.isArray(obj)) return obj.map((item) => fixStrings(item)) as unknown as T
+  return obj
 }
 
 function parseResponse(content: string, score: number): AnalysisResult {
@@ -79,7 +108,14 @@ function parseResponse(content: string, score: number): AnalysisResult {
   ) {
     throw new Error('Invalid response shape')
   }
-  return { score, summary: parsed.summary, detail: parsed.detail, pros: parsed.pros, cons: parsed.cons, verdict: parsed.verdict }
+  return {
+    score,
+    summary: fixStrings(parsed.summary),
+    detail: fixStrings(parsed.detail),
+    pros: fixStrings(parsed.pros),
+    cons: fixStrings(parsed.cons),
+    verdict: fixStrings(parsed.verdict),
+  }
 }
 
 export async function analyzeLocation(

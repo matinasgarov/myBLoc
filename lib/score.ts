@@ -50,9 +50,15 @@ function densityScore(totalBusinesses: number): number {
   return 0
 }
 
+// Hard cap applied when a dominant same-category competitor is within 500 m
+const DOMINANT_COMPETITOR_CAP = 40
+
 export function calculateScore(ctx: PlacesContext): ScoreResult {
   // 1. Competition (0-22): 0 rivals = 22, linear to 0 at 10+
-  const competitionScore = Math.max(0, Math.round(22 - ctx.competitors * 2.2))
+  //    A dominant chain competitor (Bravo, Bolmart, etc.) in the same category adds
+  //    a 16-point penalty on top of the regular count, reflecting real-world risk.
+  const dominantPenalty = ctx.dominantCompetitor ? 16 : 0
+  const competitionScore = Math.max(0, Math.round(22 - ctx.competitors * 2.2 - dominantPenalty))
 
   // 2. Foot traffic (0-20): metro ridership tier (0-12) + major roads (0-8)
   const footTrafficScore = Math.min(20, metroTierScore(ctx.metroRidership) + roadScore(ctx.majorRoads))
@@ -82,10 +88,14 @@ export function calculateScore(ctx: PlacesContext): ScoreResult {
     accessibilityScore + nearbyServicesScore + businessDensityScore
   )
 
-  const cap =
+  // Land use caps take precedence; dominant competitor cap applies otherwise
+  const landUseCap =
     ctx.landUse && LAND_USE_CAPS[ctx.landUse] !== undefined
       ? LAND_USE_CAPS[ctx.landUse]
-      : 95
+      : null
+  const cap = landUseCap !== null
+    ? Math.min(landUseCap, ctx.dominantCompetitor ? DOMINANT_COMPETITOR_CAP : landUseCap)
+    : ctx.dominantCompetitor ? DOMINANT_COMPETITOR_CAP : 95
 
   const score = Math.min(raw, cap)
 

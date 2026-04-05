@@ -16,6 +16,7 @@ function ctx(overrides: Partial<PlacesContext>): PlacesContext {
     metroDistance: null,
     metroRidership: null,
     urbanTier: 'city',
+    dominantCompetitor: null,
     ...overrides,
   }
 }
@@ -135,6 +136,30 @@ describe('calculateScore', () => {
 
   it('applies land use cap for industrial', () => {
     expect(calculateScore(ctx({ landUse: 'industrial' })).score).toBeLessThanOrEqual(30)
+  })
+
+  it('dominant competitor caps score at 40', () => {
+    const result = calculateScore(ctx({
+      dominantCompetitor: { name: 'Bravo Market', distance: 80 },
+      competitors: 1,
+      metroRidership: 50000,
+      majorRoads: 3,
+      areaType: 'commercial',
+      urbanTier: 'metro-city',
+      busStops: 5,
+      parking: 2,
+      groceryStores: 5,
+      totalBusinesses: 100,
+    }))
+    expect(result.score).toBeLessThanOrEqual(40)
+  })
+
+  it('dominant competitor reduces competition score by 16 pts', () => {
+    const without = calculateScore(ctx({ competitors: 0, dominantCompetitor: null }))
+    const with_ = calculateScore(ctx({ competitors: 0, dominantCompetitor: { name: 'Bravo', distance: 50 } }))
+    const compWithout = without.factors.find(f => f.key === 'competition')!.score
+    const compWith = with_.factors.find(f => f.key === 'competition')!.score
+    expect(compWithout - compWith).toBe(16)
   })
 
   it('all factor scores are non-negative', () => {

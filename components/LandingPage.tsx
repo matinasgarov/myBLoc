@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { Strings } from '@/lib/i18n'
 import type { Lang } from '@/lib/i18n'
 
@@ -13,17 +13,22 @@ interface Props {
 }
 
 function FloatingPaths({ position }: { position: number }) {
-  const paths = Array.from({ length: 36 }, (_, i) => ({
-    id: i,
-    d: `M-${380 - i * 5 * position} -${189 + i * 6}C-${
-      380 - i * 5 * position
-    } -${189 + i * 6} -${312 - i * 5 * position} ${216 - i * 6} ${
-      152 - i * 5 * position
-    } ${343 - i * 6}C${616 - i * 5 * position} ${470 - i * 6} ${
-      684 - i * 5 * position
-    } ${875 - i * 6} ${684 - i * 5 * position} ${875 - i * 6}`,
-    width: 0.5 + i * 0.03,
-  }))
+  const paths = useMemo(
+    () =>
+      Array.from({ length: 36 }, (_, i) => ({
+        id: i,
+        d: `M-${380 - i * 5 * position} -${189 + i * 6}C-${
+          380 - i * 5 * position
+        } -${189 + i * 6} -${312 - i * 5 * position} ${216 - i * 6} ${
+          152 - i * 5 * position
+        } ${343 - i * 6}C${616 - i * 5 * position} ${470 - i * 6} ${
+          684 - i * 5 * position
+        } ${875 - i * 6} ${684 - i * 5 * position} ${875 - i * 6}`,
+        width: 0.5 + i * 0.03,
+        duration: 20 + Math.random() * 10,
+      })),
+    [position]
+  )
 
   return (
     <div className="absolute inset-0 pointer-events-none">
@@ -47,7 +52,7 @@ function FloatingPaths({ position }: { position: number }) {
               pathOffset: [0, 1, 0],
             }}
             transition={{
-              duration: 20 + Math.random() * 10,
+              duration: path.duration,
               repeat: Infinity,
               ease: 'linear',
             }}
@@ -66,7 +71,7 @@ function FeedbackForm({ strings }: { strings: Strings }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!message.trim()) return
+    if (!message.trim() || status === 'sending') return
     setStatus('sending')
     try {
       const res = await fetch('/api/feedback', {
@@ -309,17 +314,15 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
                 color: 'from-emerald-500/15 to-transparent',
                 border: 'border-emerald-500/20 hover:border-emerald-500/40',
                 accent: 'text-emerald-400',
-                glow: 'bg-emerald-500/10',
                 desc: strings.LANDING_SCORE_DESC_COMPETITION,
               },
               {
                 title: strings.LANDING_SCORE_FOOT_TRAFFIC,
                 sub: null,
-                icon: '👥',
+                icon: '🚇',
                 color: 'from-sky-500/15 to-transparent',
                 border: 'border-sky-500/20 hover:border-sky-500/40',
                 accent: 'text-sky-400',
-                glow: 'bg-sky-500/10',
                 desc: strings.LANDING_SCORE_DESC_FOOT_TRAFFIC,
               },
               {
@@ -329,38 +332,43 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
                 color: 'from-violet-500/15 to-transparent',
                 border: 'border-violet-500/20 hover:border-violet-500/40',
                 accent: 'text-violet-400',
-                glow: 'bg-violet-500/10',
                 desc: strings.LANDING_SCORE_DESC_AREA_TYPE,
               },
               {
-                title: strings.LANDING_SCORE_TOTAL_SHOPS,
+                title: strings.LANDING_SCORE_URBAN_TIER,
                 sub: null,
-                icon: '🛒',
-                color: 'from-amber-500/15 to-transparent',
-                border: 'border-amber-500/20 hover:border-amber-500/40',
-                accent: 'text-amber-400',
-                glow: 'bg-amber-500/10',
-                desc: strings.LANDING_SCORE_DESC_TOTAL_SHOPS,
+                icon: '🗺️',
+                color: 'from-indigo-500/15 to-transparent',
+                border: 'border-indigo-500/20 hover:border-indigo-500/40',
+                accent: 'text-indigo-400',
+                desc: strings.LANDING_SCORE_DESC_URBAN_TIER,
               },
               {
-                title: strings.LANDING_SCORE_TRANSPORT,
+                title: strings.LANDING_SCORE_ACCESSIBILITY,
                 sub: null,
                 icon: '🚏',
                 color: 'from-rose-500/15 to-transparent',
                 border: 'border-rose-500/20 hover:border-rose-500/40',
                 accent: 'text-rose-400',
-                glow: 'bg-rose-500/10',
-                desc: strings.LANDING_SCORE_DESC_TRANSPORT,
+                desc: strings.LANDING_SCORE_DESC_ACCESSIBILITY,
               },
               {
-                title: strings.LANDING_SCORE_SERVICES,
+                title: strings.LANDING_SCORE_NEARBY_SERVICES,
                 sub: null,
                 icon: '🏥',
                 color: 'from-teal-500/15 to-transparent',
                 border: 'border-teal-500/20 hover:border-teal-500/40',
                 accent: 'text-teal-400',
-                glow: 'bg-teal-500/10',
-                desc: strings.LANDING_SCORE_DESC_SERVICES,
+                desc: strings.LANDING_SCORE_DESC_NEARBY_SERVICES,
+              },
+              {
+                title: strings.LANDING_SCORE_BUSINESS_DENSITY,
+                sub: null,
+                icon: '🛒',
+                color: 'from-amber-500/15 to-transparent',
+                border: 'border-amber-500/20 hover:border-amber-500/40',
+                accent: 'text-amber-400',
+                desc: strings.LANDING_SCORE_DESC_BUSINESS_DENSITY,
               },
             ].map((item, i) => (
               <motion.div

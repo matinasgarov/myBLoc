@@ -1,6 +1,5 @@
 'use client'
 import { useState } from 'react'
-import { AZ } from '@/lib/az'
 import { getStrings } from '@/lib/i18n'
 import type { AnalysisResult, PlacesContext, FactorKey } from '@/lib/types'
 
@@ -65,7 +64,7 @@ export default function ResultSheet({ business, result, context, onReset, string
       {/* ── Header ───────────────────────────────────────── */}
       <div className="flex items-center gap-6 px-8 py-5 border-b border-slate-800 shrink-0">
         <div className="flex-1 min-w-0">
-          <p className="text-slate-500 text-xs uppercase tracking-widest mb-1">Biznes növü</p>
+          <p className="text-slate-500 text-xs uppercase tracking-widest mb-1">{strings.RESULT_BUSINESS_TYPE}</p>
           <h2 className="text-white font-bold text-lg tracking-tight truncate">{business}</h2>
         </div>
 
@@ -87,6 +86,17 @@ export default function ResultSheet({ business, result, context, onReset, string
       {/* ── Body ─────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
 
+        {/* Dominant competitor warning */}
+        {context?.dominantCompetitor && (
+          <div className="px-8 py-3 bg-red-950/70 border-b border-red-900/50 shrink-0">
+            <p className="text-red-400 text-sm font-medium">
+              {strings.WARN_DOMINANT_COMPETITOR
+                .replace('{name}', context.dominantCompetitor.name)
+                .replace('{dist}', String(context.dominantCompetitor.distance))}
+            </p>
+          </div>
+        )}
+
         {/* Summary */}
         {result.summary && (
           <div className="px-8 py-5 border-b border-slate-800/60">
@@ -97,7 +107,7 @@ export default function ResultSheet({ business, result, context, onReset, string
         {/* Pros / Cons */}
         <div className="grid grid-cols-2 border-b border-slate-800/60">
           <div className="px-8 py-6 border-r border-slate-800/60">
-            <Label>{AZ.RESULT_PROS}</Label>
+            <Label>{strings.RESULT_PROS}</Label>
             <ul className="space-y-3">
               {result.pros.map((p, i) => (
                 <li key={i} className="flex items-start gap-2.5 text-sm text-slate-300 leading-snug">
@@ -108,7 +118,7 @@ export default function ResultSheet({ business, result, context, onReset, string
             </ul>
           </div>
           <div className="px-8 py-6">
-            <Label>{AZ.RESULT_CONS}</Label>
+            <Label>{strings.RESULT_CONS}</Label>
             <ul className="space-y-3">
               {result.cons.map((c, i) => (
                 <li key={i} className="flex items-start gap-2.5 text-sm text-slate-300 leading-snug">
@@ -126,7 +136,7 @@ export default function ResultSheet({ business, result, context, onReset, string
 
             {analysisText && (
               <div>
-                <Label>Analiz</Label>
+                <Label>{strings.RESULT_ANALYSIS}</Label>
                 <p className="text-slate-400 text-sm leading-relaxed">{analysisText}</p>
               </div>
             )}
@@ -149,15 +159,23 @@ export default function ResultSheet({ business, result, context, onReset, string
 
             {context && (
               <div>
-                <Label>{AZ.RESULT_OSM_TITLE}</Label>
+                <Label>{strings.RESULT_OSM_TITLE}</Label>
+                {result.score < 45 && (
+                  <p className="text-red-400 text-xs mb-3 leading-snug">
+                    ⚠ {strings.RESULT_LOW_SCORE_WARNING}
+                  </p>
+                )}
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { val: String(context.competitors), lbl: AZ.RESULT_OSM_COMPETITORS },
-                    { val: String(context.totalBusinesses), lbl: 'Müəssisə' },
-                    ...context.amenities.map((a) => {
-                      const m = a.match(/^(\d+)\s+(.+)$/)
-                      return m ? { val: m[1], lbl: m[2] } : { val: '—', lbl: a }
-                    }),
+                    { val: String(context.competitors), lbl: strings.RESULT_OSM_COMPETITORS },
+                    { val: String(context.totalBusinesses), lbl: strings.RESULT_OSM_BUSINESSES },
+                    { val: String(context.busStops), lbl: strings.RESULT_OSM_BUS_STOPS },
+                    { val: String(context.groceryStores), lbl: strings.RESULT_OSM_GROCERY },
+                    { val: String(context.parking), lbl: strings.RESULT_OSM_PARKING },
+                    {
+                      val: context.metroDistance !== null ? `${context.metroDistance}m` : '—',
+                      lbl: strings.RESULT_OSM_METRO,
+                    },
                   ].map(({ val, lbl }) => (
                     <div key={lbl} className="bg-slate-900 border border-slate-800 rounded-xl h-24 flex flex-col items-center justify-center px-2">
                       <p className="text-white text-2xl font-bold tabular-nums">{val}</p>
@@ -186,7 +204,7 @@ export default function ResultSheet({ business, result, context, onReset, string
           onClick={onReset}
           className="w-full py-4 text-sm text-emerald-400 hover:text-emerald-300 bg-slate-900/60 hover:bg-slate-900 border-b border-emerald-900/50 transition-colors flex items-center justify-center gap-2 uppercase tracking-widest font-semibold"
         >
-          ↩ {AZ.RESULT_RESET}
+          ↩ {strings.RESULT_RESET}
         </button>
       </div>
     </div>

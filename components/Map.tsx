@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { LatLng } from '@/lib/types'
@@ -24,8 +24,9 @@ export default function Map({ onPinDrop, pin, dimmed }: MapProps) {
   const mapRef = useRef<L.Map | null>(null)
   const markerRef = useRef<L.Marker | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const dropRef = useRef(onPinDrop)
 
-  const stableDrop = useCallback(onPinDrop, [onPinDrop])
+  useEffect(() => { dropRef.current = onPinDrop }, [onPinDrop])
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
@@ -34,13 +35,15 @@ export default function Map({ onPinDrop, pin, dimmed }: MapProps) {
       attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
       maxZoom: 19,
     }).addTo(map)
-    map.on('click', (e: L.LeafletMouseEvent) => stableDrop(e.latlng.lat, e.latlng.lng))
+    map.on('click', (e: L.LeafletMouseEvent) => dropRef.current(e.latlng.lat, e.latlng.lng))
     mapRef.current = map
+
     return () => {
       map.remove()
       mapRef.current = null
     }
-  }, [stableDrop])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (!mapRef.current) return
@@ -54,11 +57,11 @@ export default function Map({ onPinDrop, pin, dimmed }: MapProps) {
       )
       marker.on('dragend', () => {
         const pos = marker.getLatLng()
-        stableDrop(pos.lat, pos.lng)
+        dropRef.current(pos.lat, pos.lng)
       })
       markerRef.current = marker
     }
-  }, [pin, stableDrop])
+  }, [pin])
 
   return (
     <div

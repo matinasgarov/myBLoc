@@ -116,6 +116,22 @@ export default function Home() {
     }
   }
 
+  const handleModalClose = () => {
+    setAppState('map')
+    setError(null)
+  }
+
+  const handleGoHome = () => {
+    setAppState('landing')
+    setPin(null)
+    setResult(null)
+    setPlacesContext(null)
+    setBusinessType('')
+    setError(null)
+    setWarning(null)
+    setMapKey(k => k + 1)
+  }
+
   const handleReset = () => {
     setAppState('map')
     setPin(null)
@@ -144,7 +160,18 @@ export default function Home() {
     <main className="relative w-screen h-screen overflow-hidden flex flex-col">
 
       {/* Header bar */}
-      <div className="flex-none h-14 bg-black border-b border-gray-800 shadow-sm flex items-center px-4 z-[1100]">
+      <div className="flex-none h-14 bg-black border-b border-gray-800 shadow-sm flex items-center px-4 z-[1100] gap-3">
+        <button
+          onClick={handleGoHome}
+          className="text-gray-400 hover:text-gray-200 transition-colors text-sm flex items-center gap-1 shrink-0"
+          aria-label={strings.BACK_HOME}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M10.5 3L5.5 8l5 5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          {strings.BACK_HOME}
+        </button>
+        <span className="w-px h-5 bg-gray-700 shrink-0" />
         <span className="text-lg font-bold text-gray-200 tracking-tight">
           {strings.HEADER_BRAND}
         </span>
@@ -181,7 +208,7 @@ export default function Home() {
             )}
 
             {appState === 'input' && (
-              <BusinessInputModal onSubmit={handleBusinessSubmit} onClose={handleReset} />
+              <BusinessInputModal onSubmit={handleBusinessSubmit} onClose={handleModalClose} lang={lang} strings={strings} />
             )}
 
             {appState === 'loading' && <LoadingOverlay step={loadingStep} />}

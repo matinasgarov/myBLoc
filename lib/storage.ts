@@ -3,9 +3,13 @@ import type { SavedAnalysis } from './types'
 const STORAGE_KEY = 'hanimenebiznes_analyses'
 
 export function saveAnalysis(analysis: SavedAnalysis): void {
-  const existing = getAnalyses()
-  existing.unshift(analysis)
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(existing))
+  try {
+    const existing = getAnalyses()
+    existing.unshift(analysis)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing))
+  } catch {
+    // Storage quota exceeded or private browsing mode — silently skip
+  }
 }
 
 export function getAnalyses(): SavedAnalysis[] {
