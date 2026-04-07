@@ -38,7 +38,18 @@ export default function Map({ onPinDrop, pin, dimmed }: MapProps) {
     map.on('click', (e: L.LeafletMouseEvent) => dropRef.current(e.latlng.lat, e.latlng.lng))
     mapRef.current = map
 
+    // Re-tile and re-center on the pin whenever the map container resizes
+    // (e.g. when the result panel appears/expands below the map)
+    const resizeObserver = new ResizeObserver(() => {
+      map.invalidateSize()
+      if (markerRef.current) {
+        map.panTo(markerRef.current.getLatLng())
+      }
+    })
+    resizeObserver.observe(containerRef.current!)
+
     return () => {
+      resizeObserver.disconnect()
       map.remove()
       mapRef.current = null
     }
@@ -60,6 +71,8 @@ export default function Map({ onPinDrop, pin, dimmed }: MapProps) {
         dropRef.current(pos.lat, pos.lng)
       })
       markerRef.current = marker
+      // Always pan to keep the pin visible, including after the map shrinks
+      mapRef.current.panTo([pin.lat, pin.lng])
     }
   }, [pin])
 

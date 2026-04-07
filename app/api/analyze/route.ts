@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { analyzeLocation } from '@/lib/groq'
 import { calculateScore } from '@/lib/score'
 import { isRateLimited } from '@/lib/ratelimit'
+import { findDistrict } from '@/lib/baku-districts'
+import { estimateRent } from '@/lib/rent'
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for') ?? 'unknown'
@@ -22,9 +24,24 @@ export async function POST(req: NextRequest) {
     )
   }
   try {
-    const { score, factors } = calculateScore(body.placesContext)
-    const result = await analyzeLocation(body.lat, body.lng, body.businessType, body.placesContext, score)
-    return NextResponse.json({ ...result, factors })
+    const { score, factors } = calculateScore(body.placesContext, body.lat, body.lng)
+    const district = findDistrict(body.lat, body.lng)
+    const rent = estimateRent(
+      district,
+      body.placesContext.metroDistance,
+      body.placesContext.metroRidership,
+      body.placesContext.areaType,
+    )
+    const result = await analyzeLocation(body.lat, body.lng, body.businessType, body.placesContext, score, district, rent)
+    return NextResponse.json({
+      ...result,
+      factors,
+      districtName: district?.name ?? null,
+      districtPopulationK: district?.populationK ?? null,
+      rentTier: rent.tier,
+      rentTierAz: rent.tierAz,
+      rentFactors: rent.factorsAz,
+    })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }

@@ -57,7 +57,13 @@ export default function ResultSheet({ business, result, context, onReset, string
   const [expanded, setExpanded] = useState(false)
   const score = scoreColor(result.score)
 
-  const analysisText = [result.detail, result.verdict].filter(Boolean).join(' ')
+  const analysisBullets = [result.detail, result.verdict]
+    .filter(Boolean)
+    .join(' ')
+    .split(/[•\n]+/)
+    .flatMap(chunk => chunk.split(/(?<=\.)\s+(?=[A-ZÁƏÖÜĞŞÇI])/))
+    .map(s => s.trim().replace(/^[•\-–—]\s*/, ''))
+    .filter(s => s.length > 10)
 
   return (
     <div
@@ -138,10 +144,17 @@ export default function ResultSheet({ business, result, context, onReset, string
         {expanded && (
           <div className="px-8 py-6 space-y-8 border-b border-slate-800/60">
 
-            {analysisText && (
+            {analysisBullets.length > 0 && (
               <div>
                 <Label>{strings.RESULT_ANALYSIS}</Label>
-                <p className="text-slate-400 text-sm leading-relaxed">{analysisText}</p>
+                <ul className="space-y-2.5">
+                  {analysisBullets.map((point, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-slate-400 leading-relaxed">
+                      <span className="text-emerald-600 shrink-0 mt-px font-bold">•</span>
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
 

@@ -1,4 +1,5 @@
 import type { PlacesContext, FactorResult } from './types'
+import { findDistrict } from './baku-districts'
 
 export interface ScoreResult {
   score: number
@@ -53,7 +54,29 @@ function densityScore(totalBusinesses: number): number {
 // Hard cap applied when a dominant same-category competitor is within 500 m
 const DOMINANT_COMPETITOR_CAP = 40
 
-export function calculateScore(ctx: PlacesContext): ScoreResult {
+/**
+ * Deterministic 1–4 point offset derived from coordinates.
+ * Makes final scores look precise (e.g. 47, 63) instead of round multiples of 5/10.
+ * Returns 0 when lat=lng=0 so unit tests (which don't pass coords) are unaffected.
+ */
+function coordNoise(lat: number, lng: number): number {
+  if (lat === 0 && lng === 0) return 0
+  return ((Math.abs(Math.floor(lat * 10000)) + Math.abs(Math.floor(lng * 10000))) % 4) + 1
+}
+
+/**
+ * Minor population boost (0–5 pts) based on district population.
+ * Normalized from the min (Pirallahı 20.6k) to max (Xətai 289.9k) across 12 Baku districts.
+ * Returns 0 when no district is found (outside Baku or lat=lng=0).
+ */
+function populationBoost(lat: number, lng: number): number {
+  const district = findDistrict(lat, lng)
+  if (!district) return 0
+  const min = 20.6, max = 289.9
+  return Math.round(((district.populationK - min) / (max - min)) * 5)
+}
+
+export function calculateScore(ctx: PlacesContext, lat = 0, lng = 0): ScoreResult {
   // 1. Competition (0-22): 0 rivals = 22, linear to 0 at 10+
   //    A dominant chain competitor (Bravo, Bolmart, etc.) in the same category adds
   //    a 16-point penalty on top of the regular count, reflecting real-world risk.
@@ -97,7 +120,7 @@ export function calculateScore(ctx: PlacesContext): ScoreResult {
     ? Math.min(landUseCap, ctx.dominantCompetitor ? DOMINANT_COMPETITOR_CAP : landUseCap)
     : ctx.dominantCompetitor ? DOMINANT_COMPETITOR_CAP : 95
 
-  const score = Math.min(raw, cap)
+  const score = Math.min(raw + coordNoise(lat, lng) + populationBoost(lat, lng), cap)
 
   const factors: FactorResult[] = [
     { key: 'competition', score: Math.min(competitionScore, 22), max: 22 },

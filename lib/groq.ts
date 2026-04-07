@@ -1,5 +1,7 @@
 import Groq from 'groq-sdk'
 import type { PlacesContext, AnalysisResult } from './types'
+import type { BakuDistrict } from './baku-districts'
+import type { RentResult } from './rent'
 
 const MODEL = 'llama-3.3-70b-versatile'
 
@@ -8,7 +10,9 @@ function buildPrompt(
   lng: number,
   businessType: string,
   ctx: PlacesContext,
-  score: number
+  score: number,
+  district: BakuDistrict | null,
+  rent: RentResult | null,
 ): string {
   const landUseNote = ctx.landUse
     ? `- XƏBƏRDARLIQ: Pin dəqiq olaraq "${ctx.landUse}" ərazisindədir (məsələn, qəbiristanlıq, hərbi zona və s.)`
@@ -17,6 +21,14 @@ function buildPrompt(
   const metroNote = ctx.metroDistance !== null
     ? `${ctx.metroDistance}m`
     : 'yoxdur'
+
+  const districtNote = district
+    ? `${district.name} rayonu (${Math.round(district.populationK * 1000).toLocaleString()} nəfər əhali)`
+    : 'məlum deyil'
+
+  const rentNote = rent && rent.factorsAz.length > 0
+    ? `${rent.tierAz} (${rent.factorsAz.join(' + ')})`
+    : rent?.tierAz ?? 'məlum deyil'
 
   const urbanTierAz =
     ctx.urbanTier === 'metro-city' ? 'metro şəhəri'
@@ -29,7 +41,7 @@ function buildPrompt(
   const prosTemplate = Array.from({ length: prosCount }, (_, i) => `"müsbət cəhət ${i + 1}"`).join(', ')
   const consTemplate = Array.from({ length: consCount }, (_, i) => `"risk ${i + 1}"`).join(', ')
 
-  return `Sən Azərbaycandakı biznes sahələri və yerləri barəsində peşəkar biznes məsləhətçisisən. Aydın Azərbaycan dilində yaz.
+  return `Sən Azərbaycandakı biznes sahələri və yerləri barəsində peşəkar biznes məsləhətçisisən. Yalnız rəsmi Azərbaycan dilində, latın əlifbası ilə yaz.
 
 Məlumatlar:
 - Biznes növü: ${businessType}
@@ -44,15 +56,19 @@ Məlumatlar:
 - Ərzaq mağazası (500m): ${ctx.groceryStores}
 - Parkinq (500m): ${ctx.parking > 0 ? 'var' : 'yoxdur'}
 - Şəhər tipi: ${urbanTierAz}
-- Ümumi uğur balı: ${score}/99
+- Rayon və əhali: ${districtNote}
+- Kira qiymət səviyyəsi: ${rentNote}
+- Ümumi uğur balı: ${score}/95
 ${landUseNote}
 
 Qaydalar:
 - Hər müsbət cəhət və risk yuxarıdakı konkret məlumatlara (rəqib sayı, ərazi tipi, yaxınlıqdakı obyektlər) əsaslanmalıdır.
-- Hər cümlə 20-35 sözdən ibarət olsun — dəqiq, konkret və əsaslı şəkildə.
-- Texniki terminlərdən istifadə edə bilərsən.
+- Hər müsbət cəhət (pros): ən azı 10 sözdən ibarət tam cümlə olsun.
+- Hər risk (cons): ən azı 10 sözdən ibarət tam, izahlı cümlə olsun — riskin niyə mövcud olduğunu izah et.
 - Cavabda yalnız aşağıdakı JSON formatı olsun, başqa heç bir mətn əlavə etmə.
-- DİL QAYDAları (Azərbaycan dili): "çoxluq" sözünü ismin önündə HEÇ VAXT işlətmə — əvəzinə "çoxlu" işlət (düzgün: "çoxlu rəqib", "çoxlu müştəri"; yanlış: "çoxluq rəqib", "çoxluq müştəri"). Digər düzgün formalar: "şiddətli rəqabət" (yox "güclü rəqabət sayı"), "yüksək keçicilik", "aşağı trafik", "böyük müştəri axını", "az sayda müştəri".
+- DİL: Yalnız latın əlifbası ilə Azərbaycan dili. KİRİL hərflər (rus, ukrayna, erməni) TAMAMILƏ QADAĞANDIR. Rusca söz, ifadə, ad yazmaq qadağandır.
+- DİL QAYDAları: "çoxluq" sözünü ismin önündə işlətmə — əvəzinə "çoxlu" işlət (düzgün: "çoxlu rəqib", "çoxlu müştəri"; yanlış: "çoxluq rəqib"). Düzgün formalar: "şiddətli rəqabət", "yüksək müştəri axını", "aşağı trafik", "geniş müştəri kütləsi", "az rəqib", "sıx ticarət məntəqəsi".
+- PARKINQ QAYDASİ: Parkinq mövcudluğu HƏMIŞƏ müsbət amildir. Onu yalnız müsbət cəhətlər (pros) arasında göstər — risklərdə (cons) QADAĞANDIR.
 - MÜTLƏQİ QADAĞA — ZİDDİYYƏTLİ BƏYANATLAR: Rəqib sayı ${ctx.competitors}-dir. ${ctx.competitors > 0 ? `Bu rəqəm sıfırdan böyük olduğundan, müsbət cəhətlərdə "rəqib yoxdur", "tək müəssisə olaraq fərqlənə bilər", "rəqabət azdır" və ya oxşar ifadələr TAMAMILƏ QADAĞANDIR.` : `Bu rəqəm sıfır olduğundan, risklərdə "çoxlu rəqib", "şiddətli rəqabət" və ya oxşar ifadələr TAMAMILƏ QADAĞANDIR.`}
 - Rəqabət barəsindəki bütün bəyanatlar yalnız yuxarıda göstərilən ${ctx.competitors} rəqib sayını əks etdirməlidir — fərqli rəqəm və ya əks fikir yazmaq qadağandır.
 
@@ -60,7 +76,7 @@ Tam olaraq ${prosCount} müsbət cəhət və ${consCount} risk yaz:
 
 {
   "summary": "Bu biznesin bu ərazidə ümumi mənzərəsini bir cümlə ilə ifadə et — konkret olsun.",
-  "detail": "5-6 konkret cümlə ilə ətraflı təhlil — rəqabət, trafik, ərazi tipi, inkişaf perspektivi, müştəri potensialı barədə yazılsın. Hər cümlə fərqli aspektə toxunsun.",
+  "detail": "5-6 konkret cümlə ilə ətraflı təhlil — rəqabət, trafik, ərazi tipi, inkişaf perspektivi, müştəri potensialı barədə yazılsın. Hər cümlə fərqli aspektə toxunsun. Son iki cümləni aşağıdakı formata uyğun yaz: • Bu ərazidə kira səviyyəsi ${rentNote}-dir. • ${districtNote.split('(')[0].trim()} əhalisinin böyüklüyü müştəri potensialına müsbət təsir edir.",
   "pros": [${prosTemplate}],
   "cons": [${consTemplate}],
   "verdict": "6 konkret cümlə ilə ümumi qiymətləndirmə — bu biznesin bu ərazidə perspektivi barədə."
@@ -70,13 +86,23 @@ Tam olaraq ${prosCount} müsbət cəhət və ${consCount} risk yaz:
 /** Known Azerbaijani grammar errors the LLM produces → correct form */
 const AZ_CORRECTIONS: [RegExp, string][] = [
   [/çoxluq\s+/gi, 'çoxlu '],
-  [/çoxluğu\s+/gi, 'çoxluğu '],          // keep noun form only in noun contexts — not before another noun
+  [/çoxluğu\s+/gi, 'çoxluğu '],
   [/güclü\s+rəqabət\s+sayı/gi, 'yüksək rəqib sayı'],
   [/böyük\s+rəqabət\s+sayı/gi, 'yüksək rəqib sayı'],
   [/yüksək\s+sayda\s+rəqib/gi, 'çoxlu rəqib'],
   [/çox\s+sayda\s+rəqib/gi, 'çoxlu rəqib'],
   [/çox\s+sayda\s+müştəri/gi, 'çoxlu müştəri'],
   [/\bsay\s+çoxdur\b/gi, 'sayı çoxdur'],
+  // Parking must stay positive — strip any "risk" framing
+  [/parkinq\s+mövcudluğu[^.]*?xərc[^.]*\./gi, ''],
+  [/parkinq\s+(?:əlavə\s+)?xərc[^.]*\./gi, ''],
+  // Common unnatural phrasings
+  [/\bkomersiya\b/gi, 'ticarət'],
+  [/\bpozitiv\b/gi, 'müsbət'],
+  [/\bnegativ\b/gi, 'mənfi'],
+  [/\bpotensial\s+müştərilər\b/gi, 'potensial müştəri kütləsi'],
+  [/\byüksək\s+rəqabət\s+mühiti\b/gi, 'rəqabətli mühit'],
+  [/\binfrastruktur\s+çatışmazlığı\b/gi, 'infrastruktur imkanlarının məhdudluğu'],
 ]
 
 function fixAzerbaijaniGrammar(text: string): string {
@@ -84,6 +110,8 @@ function fixAzerbaijaniGrammar(text: string): string {
   for (const [pattern, replacement] of AZ_CORRECTIONS) {
     out = out.replace(pattern, replacement)
   }
+  // Strip any Cyrillic characters that slipped through (Russian words, etc.)
+  out = out.replace(/[\u0400-\u04FF]+/g, '').replace(/\s{2,}/g, ' ').trim()
   return out
 }
 
@@ -123,13 +151,15 @@ export async function analyzeLocation(
   lng: number,
   businessType: string,
   ctx: PlacesContext,
-  score: number
+  score: number,
+  district?: BakuDistrict | null,
+  rent?: RentResult | null,
 ): Promise<AnalysisResult> {
   if (!process.env.GROQ_API_KEY) {
     throw new Error('GROQ_API_KEY environment variable is not set')
   }
   const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
-  const prompt = buildPrompt(lat, lng, businessType, ctx, score)
+  const prompt = buildPrompt(lat, lng, businessType, ctx, score, district ?? null, rent ?? null)
 
   for (let attempt = 0; attempt < 2; attempt++) {
     const response = await client.chat.completions.create({

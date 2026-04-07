@@ -54,6 +54,12 @@ export interface AnalysisResult {
   cons: string[]
   verdict: string
   factors?: FactorResult[]
+  // District & rent enrichment (computed server-side, not LLM-generated)
+  districtName?: string
+  districtPopulationK?: number  // in thousands, e.g. 222.6
+  rentTier?: string             // 'Low' | 'Medium' | 'High' | 'Very High'
+  rentTierAz?: string           // e.g. 'Çox Yüksək'
+  rentFactors?: string[]        // contributing factor labels in Azerbaijani
 }
 
 export interface SavedAnalysis {

@@ -286,7 +286,8 @@ function detectDominantCompetitor(
     if (dist > DOMINANT_COMPETITOR_RADIUS) continue
 
     if (!closest || dist < closest.distance) {
-      closest = { name: rawName, distance: Math.round(dist) }
+      const cleanName = rawName.replace(/[\u0400-\u04FF]/g, '').replace(/\s{2,}/g, ' ').trim()
+      closest = { name: cleanName || rawName, distance: Math.round(dist) }
     }
   }
 
