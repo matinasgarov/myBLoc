@@ -6,8 +6,12 @@ A Next.js 16 / React 19 / TypeScript web app that scores business locations in A
 ## Key files to know
 | File | Purpose |
 |---|---|
-| `app/page.tsx` | State machine (`landing`/`map`/`input`/`loading`/`result`), all UI wiring |
+| `app/page.tsx` | State machine (`landing`/`map`/`input`/`loading`/`cuisine`/`result`), all UI wiring |
 | `components/Map.tsx` | Leaflet map — read the lifecycle section below before touching |
+| `components/LocationSearch.tsx` | Nominatim geocoding search input overlaid on the map; debounced fetch, dropdown results, triggers `flyToTarget` |
+| `components/HistorySidebar.tsx` | Slide-in drawer (right) triggered by hamburger button; uses `isOpen`/`onClose`/`strings` props |
+| `components/ResultSheet.tsx` | Result bottom panel; reset strip always visible below score header; expandable detail section |
+| `components/LandingPage.tsx` | Marketing landing page; mission section has phone mockup image (left) + text (right) with scroll-driven Framer Motion animation |
 | `components/PdfDownloadButton.tsx` | jsPDF-based PDF export — Roboto TTF, AZ characters, factor bars, OSM grid |
 | `lib/overpass.ts` | OSM data fetch + competitor matching + `recognized` flag + new signals |
 | `lib/az-competitors.ts` | AZ government dataset competitor lookup |
@@ -18,7 +22,7 @@ A Next.js 16 / React 19 / TypeScript web app that scores business locations in A
 | `lib/settlements.ts` | 4,589 AZ settlements with urban tier (`metro-city`/`city`/`town`/`rural`) |
 | `app/api/places/route.ts` | Validates input (2–100 chars, `/[\p{L}]{2,}/u`), returns PlacesContext |
 | `lib/i18n.ts` | `getStrings(lang)` — lang is `'az'` or `'en'`, stored in localStorage |
-| `next.config.ts` | CSP headers — img-src allows `*.tile.openstreetmap.org` |
+| `next.config.ts` | CSP headers — img-src allows `*.tile.openstreetmap.org` and `nominatim.openstreetmap.org` |
 
 ## Map lifecycle — CRITICAL
 
@@ -74,7 +78,7 @@ Both Overpass queries use `.catch(() => ({ elements: [] }))` so the API never re
 - When adding new UI strings, add to both `az.ts` and `en.ts`
 - **AI response language is controlled by `lang`**: `page.tsx` passes `lang` in the fetch body → `/api/analyze` extracts it → `analyzeLocation(... lang)` → `buildPromptEn()` or `buildPrompt()` in `lib/groq.ts`. Language switch does **not** reset map/pin/score state.
 - English prompt uses `rent.tier` ('Low'/'Medium'/'High'/'Very High'); AZ prompt uses `rent.tierAz` ('Aşağı'/'Orta'/'Yüksək'/'Çox Yüksək')
-- Recent string keys added: `RESULT_TOGGLE_EXPAND`, `RESULT_TOGGLE_COLLAPSE`, `RESULT_COMPETITORS_NOTE`
+- Recent string keys added: `RESULT_TOGGLE_EXPAND`, `RESULT_TOGGLE_COLLAPSE`, `RESULT_COMPETITORS_NOTE`, `HISTORY_OPEN`, `LOCATION_SEARCH_PLACEHOLDER`, `LOCATION_SEARCH_NO_RESULTS`
 
 ## PDF export (`components/PdfDownloadButton.tsx`)
 - Uses `jsPDF` (dynamic import, client-only)
@@ -91,8 +95,31 @@ Both Overpass queries use `.catch(() => ({ elements: [] }))` so the API never re
 - PDF header: `14×14 mm` at `(M, 6)` in the 26mm dark header band
 - Do not hardcode a wide aspect ratio — the logo is an icon mark, not a banner
 
+## Location search (Nominatim)
+`components/LocationSearch.tsx` is a floating search input rendered over the map when `appState === 'map'` or `'input'`. It:
+- Debounces queries 300ms, calls `https://nominatim.openstreetmap.org/search?q=...&countrycodes=az&format=json&limit=5`
+- On result select: calls `handlePinDrop(lat, lng)` AND `setFlyToTarget({ lat, lng })` in page.tsx
+- `flyToTarget: LatLng | null` is a new state in page.tsx passed to `<Map>` as a prop
+- Map.tsx watches `flyToTarget` in a `useEffect` and calls `map.flyTo([lat, lng], 17, { duration: 1.2 })`
+- Dismisses dropdown on click-outside or Escape key
+
+## History drawer
+`HistorySidebar` is always rendered in the DOM (for CSS transition). It slides in from the right with `translate-x-0` / `translate-x-full` controlled by `isOpen` prop. A hamburger button in the app header (`ml-auto`) sets `historyOpen` state in page.tsx. A backdrop div with `bg-black/50` is rendered conditionally behind the drawer (z-[1200]) while the drawer sits at z-[1300].
+
+## ResultSheet reset strip
+The "Başqa Yer Təhlil Et" / reset button is a `shrink-0` strip between the header and the scrollable body — always visible without scrolling. The old bottom-of-scroll reset button was removed.
+
+## LandingPage mission section
+The mission section uses a two-column flex layout (`flex-col md:flex-row`):
+- **Left**: phone mockup image (`/phone-mockup.png`) with `shrink-0`, negative vertical margins (`-my-96`) to bleed into adjacent hero/scoring sections, `relative z-10`
+- **Right**: mission title + text
+- Scroll animation via Framer Motion `useScroll` + `useTransform` on a `missionRef` attached to the section:
+  - `imageY`: `[0, 0.3]` → `[80, 0]` — image rises as section enters viewport
+  - `imageOpacity`: `[0.55, 0.9]` → `[1, 0]` — image fades as section scrolls out
+- Nav bar uses `relative` container with `absolute left-8` logo, `mx-auto` centered nav links, `absolute right-8` lang switcher
+
 ## Testing
-`npm test` — 56 tests across 6 files, all must pass. Tests use Jest + ts-jest. API route tests use `@jest-environment node`. Mocks: `jest.mock('@/lib/overpass')`, `jest.mock('groq-sdk')`, `jest.mock('@/lib/metro-stations')`, `jest.mock('@/lib/settlements')`.
+`npm test` — 61 tests across 7 files, all must pass. Tests use Jest + ts-jest. API route tests use `@jest-environment node`. Mocks: `jest.mock('@/lib/overpass')`, `jest.mock('groq-sdk')`, `jest.mock('@/lib/metro-stations')`, `jest.mock('@/lib/settlements')`.
 
 Test files:
 - `__tests__/lib/geo.test.ts` — haversine distance
