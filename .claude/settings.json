@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node -e ':*)"
+      "Bash(node -e ':*)",
+      "Bash(curl -sL -o \"c:/Users/Matin Asgarov/Desktop/Projects/hanimenebiznes/public/fonts/Roboto-Regular.ttf\" \"https://fonts.gstatic.com/s/roboto/v32/KFOmCnqEu92Fr1Mu4mxP.ttf\")",
+      "Bash(curl -sL -o \"c:/Users/Matin Asgarov/Desktop/Projects/hanimenebiznes/public/fonts/Roboto-Bold.ttf\" \"https://fonts.gstatic.com/s/roboto/v32/KFOlCnqEu92Fr1MmWUlfBBc9.ttf\")",
+      "Bash(curl -sL -o Roboto-Regular.ttf \"https://github.com/google/fonts/raw/main/apache/roboto/static/Roboto-Regular.ttf\")",
+      "Bash(curl -sL -o Roboto-Bold.ttf \"https://github.com/google/fonts/raw/main/apache/roboto/static/Roboto-Bold.ttf\")",
+      "Bash(ls -lh *.ttf)",
+      "Bash(python -c \"import struct,zlib; d=open\\('public/logo.png','rb'\\).read\\(\\); print\\('PNG size:', struct.unpack\\('>II',d[16:24]\\)\\)\")",
+      "Bash(file \"c:/Users/Matin Asgarov/Desktop/Projects/hanimenebiznes/public/fonts/\"*)",
+      "Bash(xxd)",
+      "Bash(ls \"c:/Users/Matin Asgarov/Desktop/Projects/hanimenebiznes/\"*.md)"
     ]
   }
 }

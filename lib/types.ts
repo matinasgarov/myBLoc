@@ -44,6 +44,8 @@ export interface PlacesContext {
   metroRidership: number | null
   urbanTier: UrbanTier
   dominantCompetitor: { name: string; distance: number } | null
+  /** Nearby chain restaurants/cafes (populated for food business types only). */
+  nearbyChains?: { name: string; distance: number; cuisine?: string }[]
 }
 
 export interface AnalysisResult {
@@ -60,6 +62,7 @@ export interface AnalysisResult {
   rentTier?: string             // 'Low' | 'Medium' | 'High' | 'Very High'
   rentTierAz?: string           // e.g. 'Çox Yüksək'
   rentFactors?: string[]        // contributing factor labels in Azerbaijani
+  luxuryMismatch?: boolean      // luxury business in low-wealth district
 }
 
 export interface SavedAnalysis {

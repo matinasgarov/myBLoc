@@ -8,6 +8,7 @@ A Next.js 16 / React 19 / TypeScript web app that scores business locations in A
 |---|---|
 | `app/page.tsx` | State machine (`landing`/`map`/`input`/`loading`/`result`), all UI wiring |
 | `components/Map.tsx` | Leaflet map — read the lifecycle section below before touching |
+| `components/PdfDownloadButton.tsx` | jsPDF-based PDF export — Roboto TTF, AZ characters, factor bars, OSM grid |
 | `lib/overpass.ts` | OSM data fetch + competitor matching + `recognized` flag + new signals |
 | `lib/az-competitors.ts` | AZ government dataset competitor lookup |
 | `lib/score.ts` | 7-factor deterministic scoring (0–95 max, land use caps), returns `ScoreResult` |
@@ -58,7 +59,7 @@ Both `overpass.ts` (`COMPETITOR_ALIASES`) and `az-competitors.ts` (`BUSINESS_TO_
 `lib/categories.ts` defines the `BusinessCategory` interface (`key`, `labelAz`, `labelEn`, `synonyms[]`, `pinned?`) and exports `BUSINESS_CATEGORIES` — ~60 entries covering retail, food, health, services, transport, agriculture, professional, and entertainment. The `pinned` flag marks the 3 default cards shown in the collapsed modal state.
 
 ## Groq grammar correction
-`lib/groq.ts` post-processes all LLM output fields through `fixAzerbaijaniGrammar()` before returning to the client. The `AZ_CORRECTIONS` array contains regex replacements for known Azerbaijani grammar errors (e.g. `çoxluq →  çoxlu`). The prompt also includes explicit contradiction-prevention rules: if `competitors > 0`, the LLM is forbidden from writing "no competitor" pros; if `competitors = 0`, it is forbidden from writing "high competition" cons.
+`lib/groq.ts` post-processes all LLM output fields through `fixAzerbaijaniGrammar()` before returning to the client. The `AZ_CORRECTIONS` array contains regex replacements for known Azerbaijani grammar errors (e.g. `çoxluq →  çoxlu`) and English-word leakage fixes. The prompt also includes explicit contradiction-prevention rules: if `competitors > 0`, the LLM is forbidden from writing "no competitor" pros; if `competitors = 0`, it is forbidden from writing "high competition" cons. Grammar correction is **skipped entirely for English responses** (would corrupt EN text).
 
 ## Input validation
 `/api/places` rejects business types that are < 2 chars, > 100 chars, or contain no consecutive letter sequence (`/[\p{L}]{2,}/u`). This handles Azerbaijani characters (ə, ş, ğ, etc.) correctly.
@@ -71,6 +72,24 @@ Both Overpass queries use `.catch(() => ({ elements: [] }))` so the API never re
 - `lib/i18n.ts` exports `getStrings(lang)` and the `Lang` type
 - Language persisted in `localStorage` under `'myblocate-lang'`
 - When adding new UI strings, add to both `az.ts` and `en.ts`
+- **AI response language is controlled by `lang`**: `page.tsx` passes `lang` in the fetch body → `/api/analyze` extracts it → `analyzeLocation(... lang)` → `buildPromptEn()` or `buildPrompt()` in `lib/groq.ts`. Language switch does **not** reset map/pin/score state.
+- English prompt uses `rent.tier` ('Low'/'Medium'/'High'/'Very High'); AZ prompt uses `rent.tierAz` ('Aşağı'/'Orta'/'Yüksək'/'Çox Yüksək')
+- Recent string keys added: `RESULT_TOGGLE_EXPAND`, `RESULT_TOGGLE_COLLAPSE`, `RESULT_COMPETITORS_NOTE`
+
+## PDF export (`components/PdfDownloadButton.tsx`)
+- Uses `jsPDF` (dynamic import, client-only)
+- **Font**: Roboto TTF loaded from `public/fonts/Roboto-Regular.ttf` + `public/fonts/Roboto-Bold.ttf` (real binary TTF, 515 KB each — do not replace with HTML or WOFF files)
+- Covers all AZ Latin chars: ə U+0259, ğ U+011F, ı U+0131, İ U+0130, ş U+015F, ç U+00E7, ö U+00F6, ü U+00FC
+- **Logo**: `public/logo.png` is 319×330 px (≈square) — PDF uses `14×14 mm` in the dark header
+- PDF layout: dark header → score block (business name + score pill) → rent tier → summary → pros/cons columns → factor breakdown bars → OSM data grid → footer
+- District name (`districtName`) is intentionally **not** shown in PDF — only rent tier is shown
+- jsPDF `addFont` fires errors via internal PubSub (not JS throw). The font is verified via `doc.getFontList()` before use if registration is uncertain
+
+## Logo
+- `public/logo.png` — 319×330 px (nearly square, ratio 0.97:1)
+- LandingPage nav: `h-10 w-auto` (40px tall, aspect-correct, fits within h-14 navbar)
+- PDF header: `14×14 mm` at `(M, 6)` in the 26mm dark header band
+- Do not hardcode a wide aspect ratio — the logo is an icon mark, not a banner
 
 ## Testing
 `npm test` — 56 tests across 6 files, all must pass. Tests use Jest + ts-jest. API route tests use `@jest-environment node`. Mocks: `jest.mock('@/lib/overpass')`, `jest.mock('groq-sdk')`, `jest.mock('@/lib/metro-stations')`, `jest.mock('@/lib/settlements')`.
@@ -95,3 +114,8 @@ Test files:
 - Add `.env` values to git — `GROQ_API_KEY` goes in `.env.local` only
 - Use Tailwind v3 syntax (`@tailwind base` etc.)
 - Replace the `key={mapKey}` reset pattern with `invalidateSize()` hacks
+- Replace `public/fonts/Roboto-*.ttf` with WOFF/WOFF2 or HTML files — jsPDF needs real binary TTF
+- Set `fontFamily = 'Roboto'` in PdfDownloadButton without verifying via `doc.getFontList()` — jsPDF `addFont` errors are silent (PubSub, not JS throw)
+- Show `districtName` in the PDF — only rent tier is shown by design
+- Hardcode any UI strings in Azerbaijani — use `strings.*` from `getStrings(lang)` so language switch works
+- Assume the logo is wide-format — it is 319×330 px (square icon mark)

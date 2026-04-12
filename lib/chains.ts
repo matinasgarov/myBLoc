@@ -2,6 +2,8 @@ export interface ChainDefinition {
   keywords: string[]
   nameVariants: string[]
   osmCategories: string[]
+  /** Cuisine category for restaurant chains — used for scoring comparison. */
+  cuisine?: 'burger' | 'pizza' | 'coffee' | 'other'
 }
 
 export function normalizeChainName(raw: string): string {
@@ -222,47 +224,56 @@ export const BAKU_CHAINS: ChainDefinition[] = [
     keywords: ["mcdonald's", 'mcdonalds'],
     nameVariants: ['макдоналдс', 'mак donald', 'mcdonald'],
     osmCategories: ['fast_food', 'restaurant'],
+    cuisine: 'burger',
   },
   {
     keywords: ['kfc'],
     nameVariants: ['kentucky fried chicken', 'кфс', 'k.f.c'],
     osmCategories: ['fast_food', 'restaurant'],
+    cuisine: 'burger',
   },
   {
     keywords: ['burger king'],
     nameVariants: ['burgerking', 'бургер кинг'],
     osmCategories: ['fast_food', 'restaurant'],
+    cuisine: 'burger',
   },
   {
     keywords: ["domino's", 'dominos'],
     nameVariants: ['dominos pizza', "domino's pizza", 'доминос'],
     osmCategories: ['fast_food', 'restaurant'],
+    cuisine: 'pizza',
   },
   {
     keywords: ['subway'],
     nameVariants: ['subway restaurant', 'сабвей'],
     osmCategories: ['fast_food', 'restaurant'],
+    cuisine: 'other',
   },
   {
     keywords: ["hardee's", 'hardees'],
     nameVariants: ['хардис', 'hardies'],
     osmCategories: ['fast_food', 'restaurant'],
+    cuisine: 'burger',
   },
   // ── CAFES & COFFEE ──────────────────────────────────────────────────────
   {
     keywords: ['gloria jeans', "gloria jean's coffees"],
     nameVariants: ['gloria jean coffees', 'глория джинс', 'gloria jeans coffee'],
     osmCategories: ['cafe', 'coffee_shop'],
+    cuisine: 'coffee',
   },
   {
     keywords: ['coffeemania'],
     nameVariants: ['coffee mania', 'кофемания'],
     osmCategories: ['cafe', 'coffee_shop'],
+    cuisine: 'coffee',
   },
   {
     keywords: ['paul'],
     nameVariants: ['paul bakery', 'paul café', 'paul cafe', 'поль'],
     osmCategories: ['cafe', 'coffee_shop', 'bakery'],
+    cuisine: 'coffee',
   },
   // ── FASHION ─────────────────────────────────────────────────────────────
   {

@@ -255,6 +255,9 @@ import { BAKU_CHAINS, matchesChain } from './chains'
 /** Dominant competitor penalty only applies within this radius. */
 const DOMINANT_COMPETITOR_RADIUS = 300 // metres
 
+/** Cuisine prompt only triggers when a chain is this close to the pin. */
+const FOOD_CHAIN_PROMPT_RADIUS = 50 // metres
+
 /**
  * Returns the nearest same-category dominant chain within DOMINANT_COMPETITOR_RADIUS,
  * or null if none found.
@@ -294,6 +297,55 @@ function detectDominantCompetitor(
   return closest
 }
 
+const FOOD_OSM_TAGS = new Set(['restaurant', 'fast_food', 'cafe', 'food_court'])
+
+/**
+ * Returns unique chain food businesses within DOMINANT_COMPETITOR_RADIUS,
+ * sorted nearest-first. Only runs for food business types.
+ */
+function detectNearbyFoodChains(
+  elements: OSMElement[],
+  businessType: string,
+  pinLat: number,
+  pinLng: number,
+): { name: string; distance: number; cuisine?: string }[] {
+  const resolvedTags = resolveOSMTags(businessType)
+  if (!resolvedTags) return []
+  if (!resolvedTags.some(t => FOOD_OSM_TAGS.has(t))) return []
+
+  // Map from chain index → nearest match
+  const found = new Map<number, { name: string; distance: number; cuisine?: string }>()
+
+  for (const e of elements) {
+    const rawName = e.tags?.name || ''
+    if (!rawName) continue
+
+    const chainIdx = BAKU_CHAINS.findIndex(c => matchesChain(rawName, c))
+    if (chainIdx < 0) continue
+    const chain = BAKU_CHAINS[chainIdx]
+
+    if (!chain.osmCategories.some(cat => resolvedTags.includes(cat))) continue
+
+    const coords = elementCoords(e)
+    if (!coords) continue
+
+    const dist = haversineMetres(pinLat, pinLng, coords.lat, coords.lng)
+    if (dist > FOOD_CHAIN_PROMPT_RADIUS) continue
+
+    const existing = found.get(chainIdx)
+    if (!existing || dist < existing.distance) {
+      const cleanName = rawName.replace(/[\u0400-\u04FF]/g, '').replace(/\s{2,}/g, ' ').trim()
+      found.set(chainIdx, {
+        name: cleanName || rawName,
+        distance: Math.round(dist),
+        cuisine: chain.cuisine,
+      })
+    }
+  }
+
+  return Array.from(found.values()).sort((a, b) => a.distance - b.distance)
+}
+
 const BAD_LAND_USES = new Set([
   'cemetery', 'grave_yard', 'military', 'industrial',
   'landfill', 'quarry', 'construction', 'prison',
@@ -329,6 +381,15 @@ export async function fetchPlacesContext(
   const metro = getNearestMetro(lat, lng)
   const urbanTier = getUrbanTier(lat, lng)
   const dominantCompetitor = detectDominantCompetitor(businessElements, businessType, lat, lng)
+  const nearbyChains = detectNearbyFoodChains(businessElements, businessType, lat, lng)
+
+  // When the user is opening a grocery/supermarket business, the AZ dataset may report
+  // many competitors that are the same stores as "erzaq magazaları". Unify both counts
+  // so the UI never shows "37 rəqib / 0 Ərzaq Mağazası" for the same category.
+  const osmGroceryCount = extractGroceryStores(businessElements)
+  const resolvedForBusiness = resolveOSMTags(businessType) ?? []
+  const isGroceryBusiness = resolvedForBusiness.some((t) => GROCERY_SHOP_TAGS.has(t))
+  const groceryStores = isGroceryBusiness ? Math.max(osmGroceryCount, competitors) : osmGroceryCount
 
   return {
     competitors,
@@ -339,11 +400,12 @@ export async function fetchPlacesContext(
     recognized,
     busStops: extractBusStops(businessElements),
     parking: extractParking(businessElements),
-    groceryStores: extractGroceryStores(businessElements),
+    groceryStores,
     majorRoads: roadElements.length,
     metroDistance: metro?.distance ?? null,
     metroRidership: metro?.ridership ?? null,
     urbanTier,
     dominantCompetitor,
+    nearbyChains,
   }
 }

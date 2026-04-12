@@ -1,5 +1,6 @@
 import type { PlacesContext, FactorResult } from './types'
 import { findDistrict } from './baku-districts'
+import type { WealthLevel } from './baku-districts'
 
 export interface ScoreResult {
   score: number
@@ -51,8 +52,46 @@ function densityScore(totalBusinesses: number): number {
   return 0
 }
 
-// Hard cap applied when a dominant same-category competitor is within 500 m
-const DOMINANT_COMPETITOR_CAP = 40
+// ── Dominant competitor cap — dynamic by business/cuisine type ────────────
+const MARKET_KEYWORDS = ['supermarket', 'market', 'ərzaq', 'mağaza', 'grocery']
+const RESTAURANT_KEYWORDS = ['restoran', 'restaurant', 'kafe', 'cafe', 'fast food', 'pizza', 'qəhvəxana']
+
+function dominantCap(businessType: string, cuisineMatch?: string): number {
+  const lower = businessType.toLowerCase()
+  if (MARKET_KEYWORDS.some(kw => lower.includes(kw))) return 35
+  if (RESTAURANT_KEYWORDS.some(kw => lower.includes(kw))) {
+    if (cuisineMatch === 'same') return 35
+    if (cuisineMatch === 'different') return 45
+    if (cuisineMatch === 'multiple') return 57
+    return 38
+  }
+  return 40
+}
+
+// ── Luxury business scoring ───────────────────────────────────────────────
+const LUXURY_KEYWORDS = ['otel', 'hotel', 'spa', 'butik', 'boutique', 'lüks', 'luxury', 'premium', 'resort', 'villa']
+
+export function isLuxuryBusiness(businessType: string): boolean {
+  const lower = businessType.toLowerCase()
+  return LUXURY_KEYWORDS.some(kw => lower.includes(kw))
+}
+
+const WEALTH_LUXURY_BOOST: Record<WealthLevel, number> = {
+  'Elite': 8,
+  'High': 5,
+  'Medium-High': 2,
+  'Medium-Growing': 0,
+  'Medium': -3,
+  'Below Average': -8,
+  'Low': -12,
+}
+
+function luxuryBoost(businessType: string, lat: number, lng: number): number {
+  if (!isLuxuryBusiness(businessType)) return 0
+  const district = findDistrict(lat, lng)
+  if (!district) return 0
+  return WEALTH_LUXURY_BOOST[district.wealth] ?? 0
+}
 
 /**
  * Deterministic 1–4 point offset derived from coordinates.
@@ -76,7 +115,13 @@ function populationBoost(lat: number, lng: number): number {
   return Math.round(((district.populationK - min) / (max - min)) * 5)
 }
 
-export function calculateScore(ctx: PlacesContext, lat = 0, lng = 0): ScoreResult {
+export function calculateScore(
+  ctx: PlacesContext,
+  lat = 0,
+  lng = 0,
+  businessType = '',
+  cuisineMatch?: string,
+): ScoreResult {
   // 1. Competition (0-22): 0 rivals = 22, linear to 0 at 10+
   //    A dominant chain competitor (Bravo, Bolmart, etc.) in the same category adds
   //    a 16-point penalty on top of the regular count, reflecting real-world risk.
@@ -116,11 +161,15 @@ export function calculateScore(ctx: PlacesContext, lat = 0, lng = 0): ScoreResul
     ctx.landUse && LAND_USE_CAPS[ctx.landUse] !== undefined
       ? LAND_USE_CAPS[ctx.landUse]
       : null
+  const dc = dominantCap(businessType, cuisineMatch)
   const cap = landUseCap !== null
-    ? Math.min(landUseCap, ctx.dominantCompetitor ? DOMINANT_COMPETITOR_CAP : landUseCap)
-    : ctx.dominantCompetitor ? DOMINANT_COMPETITOR_CAP : 95
+    ? Math.min(landUseCap, ctx.dominantCompetitor ? dc : landUseCap)
+    : ctx.dominantCompetitor ? dc : 95
 
-  const score = Math.min(raw + coordNoise(lat, lng) + populationBoost(lat, lng), cap)
+  const score = Math.min(
+    raw + coordNoise(lat, lng) + populationBoost(lat, lng) + luxuryBoost(businessType, lat, lng),
+    cap,
+  )
 
   const factors: FactorResult[] = [
     { key: 'competition', score: Math.min(competitionScore, 22), max: 22 },

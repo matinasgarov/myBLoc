@@ -100,7 +100,7 @@ export default function BusinessInputModal({ onSubmit, onClose, lang, strings }:
         ) : (
           /* ── Collapsed layout: 3 pinned cards + expand button ─────────── */
           <div className="pb-1">
-            {/* Pinned cards — single search input row for immediate typing */}
+            {/* Search input */}
             <div className="px-5 pb-3 shrink-0">
               <input
                 type="search"

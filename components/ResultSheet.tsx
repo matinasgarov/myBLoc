@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { getStrings } from '@/lib/i18n'
 import type { AnalysisResult, PlacesContext, FactorKey } from '@/lib/types'
+import PdfDownloadButton from './PdfDownloadButton'
 
 type Strings = ReturnType<typeof getStrings>
 
@@ -12,6 +13,7 @@ interface Props {
   onReset: () => void
   strings: Strings
 }
+
 
 function scoreColor(score: number) {
   if (score >= 70) return { text: 'text-emerald-400', bg: 'bg-emerald-400/10', ring: 'ring-emerald-500/30' }
@@ -80,7 +82,7 @@ export default function ResultSheet({ business, result, context, onReset, string
 
         <div className={`flex items-center gap-3 px-5 py-3 rounded-2xl ring-1 ${score.bg} ${score.ring}`}>
           <div>
-            <p className="text-slate-500 text-xs uppercase tracking-widest mb-0.5">Uğur ehtimalı</p>
+            <p className="text-slate-500 text-xs uppercase tracking-widest mb-0.5">{strings.RESULT_PROBABILITY}</p>
             <span className={`text-3xl font-bold tabular-nums ${score.text}`}>{result.score}%</span>
           </div>
         </div>
@@ -95,6 +97,15 @@ export default function ResultSheet({ business, result, context, onReset, string
 
       {/* ── Body ─────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
+
+        {/* Luxury mismatch warning */}
+        {result.luxuryMismatch && (
+          <div className="px-8 py-3 bg-amber-950/70 border-b border-amber-900/50 shrink-0">
+            <p className="text-amber-400 text-sm font-medium">
+              ⚠ {strings.WARN_LUXURY_MISMATCH}
+            </p>
+          </div>
+        )}
 
         {/* Dominant competitor warning */}
         {context?.dominantCompetitor && (
@@ -168,7 +179,7 @@ export default function ResultSheet({ business, result, context, onReset, string
                       label={strings[FACTOR_LABEL_KEYS[f.key]] as string}
                       value={f.score}
                       max={f.max}
-                      note={f.key === 'competition' && context ? `${context.competitors} rəqib` : undefined}
+                      note={f.key === 'competition' && context ? strings.RESULT_COMPETITORS_NOTE.replace('{n}', String(context.competitors)) : undefined}
                     />
                   ))}
                 </div>
@@ -214,8 +225,16 @@ export default function ResultSheet({ business, result, context, onReset, string
           onClick={() => setExpanded(v => !v)}
           className="w-full py-4 text-sm text-emerald-400 hover:text-emerald-300 bg-emerald-950/60 hover:bg-emerald-950 border-y border-emerald-900/50 transition-colors flex items-center justify-center gap-2 uppercase tracking-widest font-semibold"
         >
-          {expanded ? 'Gizlə ↑' : 'Detallara bax ↓'}
+          {expanded ? strings.RESULT_TOGGLE_COLLAPSE : strings.RESULT_TOGGLE_EXPAND}
         </button>
+
+        {/* PDF Download */}
+        <PdfDownloadButton
+          business={business}
+          result={result}
+          context={context}
+          label={strings.RESULT_PDF_DOWNLOAD}
+        />
 
         {/* Reset */}
         <button

@@ -6,15 +6,16 @@
 
 ## What the App Does
 
-1. **Landing page** — introduces the app with an AI disclaimer before anything else
+1. **Landing page** — introduces the app with an AI disclaimer before anything else; language toggle (AZ/EN) persists across sessions
 2. **Map view** — user clicks any point in Azerbaijan to drop a pin (OpenStreetMap, Leaflet)
 3. **Business input** — modal asks what kind of business they plan to open (validated: min 2 chars, must contain letters)
 4. **Data collection** — app queries OpenStreetMap (Overpass API) + AZ government business dataset for real businesses within 500 m of the pin; also looks up nearest Baku metro station and urban tier from static datasets
 5. **Scoring** — a deterministic 7-factor algorithm calculates a 0–95 score from the collected data, returning both the score and a per-factor breakdown
-6. **AI analysis** — Groq AI receives the score and OSM context, returns pros/cons/verdict in Azerbaijani
-7. **Result sheet** — shows the score, pros, cons, verdict; reset button re-initializes the map for a new analysis
-8. **History** — past analyses are stored in `localStorage` and viewable in a sidebar
-9. **Warning banner** — shown (amber) when the business type is unrecognized by the matching system
+6. **AI analysis** — Groq AI receives the score and OSM context, returns pros/cons/verdict in the user's active language (AZ or EN)
+7. **Result sheet** — shows the score, pros, cons, verdict, factor breakdown bars, OSM data grid; reset button re-initializes the map for a new analysis
+8. **PDF export** — downloads a formatted A4 PDF report with logo, score pill, pros/cons, factor bars, and OSM data grid
+9. **History** — past analyses are stored in `localStorage` and viewable in a sidebar
+10. **Warning banner** — shown (amber) when the business type is unrecognized by the matching system
 
 ---
 
@@ -58,6 +59,7 @@ hanimenebiznes/
 │   ├── BusinessInputModal.tsx   # Business type input modal
 │   ├── LoadingOverlay.tsx       # 4-step loading animation
 │   ├── ResultSheet.tsx          # Score display with expandable details
+│   ├── PdfDownloadButton.tsx    # jsPDF-based A4 PDF export with Roboto font
 │   └── HistorySidebar.tsx       # localStorage history panel
 ├── lib/
 │   ├── types.ts                 # Shared TypeScript interfaces (PlacesContext, AnalysisResult, FactorResult, etc.)
@@ -189,12 +191,15 @@ Returns `400` for invalid input, `500` only if something unexpected throws.
 ## AI Integration (`lib/groq.ts`)
 
 - **Model**: `llama-3.3-70b-versatile` (via Groq)
-- **Prompt language**: Azerbaijani
+- **Prompt language**: controlled by `lang` parameter — `buildPrompt()` for Azerbaijani, `buildPromptEn()` for English
+- **Language routing**: `page.tsx` passes `lang` in the fetch body → `/api/analyze/route.ts` extracts it → `analyzeLocation(..., lang)` selects the correct prompt builder. Language switch does **not** reset map/pin/score state.
+- **English prompt differences**: uses `rent.tier` ('Low'/'Medium'/'High'/'Very High') instead of `rent.tierAz`; maps `urbanTier` to English strings; no Azerbaijani grammar rules
 - **Prompt strategy**: provides pre-calculated score + OSM context, asks for `{ summary, detail, pros, cons, verdict }` as JSON
 - **Retry logic**: retries once on invalid JSON; throws after 2 failed attempts
 - **Required env var**: `GROQ_API_KEY` in `.env.local`
-- **Contradiction prevention**: prompt explicitly forbids the LLM from writing "no competitor" pros when `competitors > 0`, and "high competition" cons when `competitors = 0`
-- **Grammar correction**: `AZ_CORRECTIONS` regex map applied to all output fields via `fixAzerbaijaniGrammar()` before returning (fixes common errors like `çoxluq rəqib → çoxlu rəqib`)
+- **Contradiction prevention**: prompt explicitly forbids the LLM from writing "no competitor" pros when `competitors > 0`, and "high competition" cons when `competitors = 0`; also forbids English words leaking into AZ responses
+- **Grammar correction**: `AZ_CORRECTIONS` regex map applied to all output fields via `fixAzerbaijaniGrammar()` before returning (fixes common errors like `çoxluq rəqib → çoxlu rəqib`). **Skipped for English responses.**
+- **Chain cuisine radius**: cuisine-based context hint (e.g. "KFC nearby") only triggers if the competitor is within **50 m** (not 300 m)
 
 ---
 
@@ -206,9 +211,9 @@ Returns `400` for invalid input, `500` only if something unexpected throws.
 **Output:** `PlacesContext` — `{ competitors, areaType, amenities, totalBusinesses, landUse, recognized, busStops, parking, groceryStores, majorRoads, metroDistance, metroRidership, urbanTier }`
 
 ### `POST /api/analyze`
-**Input:** `{ lat, lng, businessType, placesContext }`
+**Input:** `{ lat, lng, businessType, placesContext, lang? }`
 **Output:** `AnalysisResult` — `{ score, factors, summary, detail, pros, cons, verdict }`
-Calls `calculateScore(ctx)` first (returns `{ score, factors }`), merges both into the Groq result before responding.
+Calls `calculateScore(ctx)` first (returns `{ score, factors }`), merges both into the Groq result before responding. `lang` ('az' | 'en') controls the AI response language.
 
 ---
 
@@ -258,7 +263,9 @@ Defined in `next.config.ts`. Key directives:
 ### i18n
 Language is stored in `localStorage` under `myblocate-lang`. `getStrings(lang)` from `lib/i18n.ts` returns the full string map. Language toggles on the landing page and header persist across sessions.
 
-Notable recent string additions: `RESULT_OSM_BUS_STOPS`, `RESULT_OSM_GROCERY`, `RESULT_OSM_PARKING`, `RESULT_OSM_METRO`, `RESULT_LOW_SCORE_WARNING`, `MODAL_SHOW_ALL`, `MODAL_SHOW_LESS`.
+The AI response language is also controlled by `lang` — it is passed through the entire call chain so the Groq prompt changes language without resetting any UI state.
+
+All UI strings must use `strings.*` keys — never hardcode Azerbaijani text in components. Recent string additions: `RESULT_OSM_BUS_STOPS`, `RESULT_OSM_GROCERY`, `RESULT_OSM_PARKING`, `RESULT_OSM_METRO`, `RESULT_LOW_SCORE_WARNING`, `MODAL_SHOW_ALL`, `MODAL_SHOW_LESS`, `RESULT_TOGGLE_EXPAND`, `RESULT_TOGGLE_COLLAPSE`, `RESULT_COMPETITORS_NOTE`.
 
 ---
 
@@ -277,6 +284,34 @@ The expandable bottom sheet shows:
   - Land use note (amber) if relevant
 
 `ScoreBar` fills: green (`bg-emerald-500`) ≥70%, amber (`bg-amber-500`) 40–70%, red (`bg-red-500`) <40%. Track is red when fill is red, slate otherwise. Empty bars (0 pts) render no fill div.
+
+---
+
+## PDF Export (`components/PdfDownloadButton.tsx`)
+
+Generates an A4 PDF report client-side via `jsPDF` (dynamic import).
+
+**Font setup:**
+- Loads `public/fonts/Roboto-Regular.ttf` and `public/fonts/Roboto-Bold.ttf` via `fetch` + base64 encoding
+- Files must be real binary TTF (magic bytes `00 01 00 00`), **not** WOFF/WOFF2 or HTML — jsPDF's TTF parser rejects everything else
+- Covers all AZ Latin characters: ə, ğ, ı, İ, ş, ç, ö, ü
+- `addFont` fires errors via jsPDF's internal PubSub (not JS throw) — verify registration with `doc.getFontList()` if unsure
+
+**Logo:**
+- `public/logo.png` is **319×330 px** (nearly square, ratio 0.97:1) — it is an icon mark, not a wide banner
+- Placed at `14×14 mm` at position `(M, 6)` inside the 26 mm dark header band
+
+**PDF layout (top to bottom):**
+1. Dark header (`#0f172a`) with logo (14×14 mm) + date (right-aligned)
+2. Business name + score pill (color-coded green/amber/red)
+3. Rent tier (`Kira: Çox Yüksək`) — district name is intentionally omitted
+4. Horizontal rule
+5. AI summary paragraph
+6. Pros / Cons two-column layout
+7. Horizontal rule
+8. Factor breakdown — 7 bars with `score/max` labels (green ≥70%, amber 40–70%, red <40%)
+9. OSM data grid — 6 cards: competitors, total businesses, bus stops, grocery stores, parking, metro distance
+10. Footer — `myblocate.az · Bu hesabat məlumat xarakter daşıyır.`
 
 ---
 

@@ -13,7 +13,24 @@ import type { AnalysisResult, LatLng, PlacesContext, SavedAnalysis } from '@/lib
 
 const Map = dynamic(() => import('@/components/Map'), { ssr: false })
 
-type AppState = 'landing' | 'map' | 'input' | 'loading' | 'result'
+type AppState = 'landing' | 'map' | 'input' | 'loading' | 'cuisine' | 'result'
+
+/** Maps user's cuisine selection + detected chain cuisine → cuisineMatch for scoring. */
+function deriveCuisineMatch(
+  userCuisine: string,
+  nearbyChains: { cuisine?: string }[],
+): 'same' | 'different' | 'multiple' {
+  if (nearbyChains.length >= 2) return 'multiple'
+  const chainCuisine = nearbyChains[0]?.cuisine
+  if (!chainCuisine || chainCuisine === 'other') return 'different'
+  if (userCuisine === chainCuisine) return 'same'
+  // pizza and italian are treated as the same category
+  if (
+    (userCuisine === 'pizza' || userCuisine === 'italian') &&
+    (chainCuisine === 'pizza' || chainCuisine === 'italian')
+  ) return 'same'
+  return 'different'
+}
 
 export default function Home() {
   const [appState, setAppState] = useState<AppState>('landing')
@@ -56,6 +73,54 @@ export default function Home() {
     [appState]
   )
 
+  // Shared analyze + save logic — called from both handleBusinessSubmit and handleCuisineSubmit
+  async function runAnalyze(
+    ctx: PlacesContext,
+    cuisineMatch: string | undefined,
+    business: string,
+    location: LatLng,
+  ) {
+    const analyzeRes = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        lat: location.lat,
+        lng: location.lng,
+        businessType: business,
+        placesContext: ctx,
+        lang,
+        ...(cuisineMatch ? { cuisineMatch } : {}),
+      }),
+    })
+
+    if (analyzeRes.status === 422) {
+      const data = await analyzeRes.json().catch(() => ({}))
+      if (data.error === 'RESTRICTED_ZONE') {
+        setError(strings.ERROR_RESTRICTED_ZONE)
+        setPin(null)
+        setMapKey(k => k + 1)
+        setAppState('map')
+        return
+      }
+    }
+    if (!analyzeRes.ok) throw new Error('analyze')
+
+    const analysisResult: AnalysisResult = await analyzeRes.json()
+    setResult(analysisResult)
+    setAppState('result')
+
+    saveAnalysis({
+      id: crypto.randomUUID(),
+      date: new Date().toISOString().split('T')[0],
+      lat: location.lat,
+      lng: location.lng,
+      business,
+      context: ctx,
+      ...analysisResult,
+    })
+    setAnalyses(getAnalyses())
+  }
+
   const handleBusinessSubmit = async (business: string) => {
     if (!pin) return
     setBusinessType(business)
@@ -63,7 +128,6 @@ export default function Home() {
     setLoadingStep(1)
     setError(null)
 
-    // Simulate steps 2 and 3 while the places API loads
     const t2 = setTimeout(() => setLoadingStep(2), 2000)
     const t3 = setTimeout(() => setLoadingStep(3), 4000)
 
@@ -77,41 +141,39 @@ export default function Home() {
       clearTimeout(t3)
       if (!placesRes.ok) throw new Error('places')
 
-      // Step 4: AI analysis begins
-      setLoadingStep(4)
-      const fetchedContext = await placesRes.json()
+      const fetchedContext: PlacesContext = await placesRes.json()
       setPlacesContext(fetchedContext)
       if (!fetchedContext.recognized) setWarning(strings.WARN_UNKNOWN_TYPE)
       else setWarning(null)
 
-      const analyzeRes = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat: pin.lat, lng: pin.lng, businessType: business, placesContext: fetchedContext }),
-      })
-      if (!analyzeRes.ok) throw new Error('analyze')
-
-      const analysisResult: AnalysisResult = await analyzeRes.json()
-      setResult(analysisResult)
-      setAppState('result')
-
-      const saved: SavedAnalysis = {
-        id: crypto.randomUUID(),
-        date: new Date().toISOString().split('T')[0],
-        lat: pin.lat,
-        lng: pin.lng,
-        business,
-        context: fetchedContext,
-        ...analysisResult,
+      // Cuisine prompt: pause if nearby food chains detected
+      if ((fetchedContext.nearbyChains ?? []).length > 0) {
+        setAppState('cuisine')
+        return
       }
-      saveAnalysis(saved)
-      setAnalyses(getAnalyses())
+
+      setLoadingStep(4)
+      await runAnalyze(fetchedContext, undefined, business, pin)
     } catch (err) {
       clearTimeout(t2)
       clearTimeout(t3)
       const msg =
         (err as Error).message === 'places' ? strings.ERROR_NO_DATA : strings.ERROR_ANALYSIS_FAILED
       setError(msg)
+      setAppState('map')
+    }
+  }
+
+  const handleCuisineSubmit = async (userCuisine?: string) => {
+    if (!pin || !placesContext) return
+    const chains = placesContext.nearbyChains ?? []
+    const cuisineMatch = userCuisine ? deriveCuisineMatch(userCuisine, chains) : undefined
+    setAppState('loading')
+    setLoadingStep(4)
+    try {
+      await runAnalyze(placesContext, cuisineMatch, businessType, pin)
+    } catch {
+      setError(strings.ERROR_ANALYSIS_FAILED)
       setAppState('map')
     }
   }
@@ -172,9 +234,7 @@ export default function Home() {
           {strings.BACK_HOME}
         </button>
         <span className="w-px h-5 bg-gray-700 shrink-0" />
-        <span className="text-lg font-bold text-gray-200 tracking-tight">
-          {strings.HEADER_BRAND}
-        </span>
+        <img src="/logo.png" alt="myblocate" className="h-7 w-auto" />
       </div>
 
       {/* Content area: map + persistent history sidebar */}
@@ -212,6 +272,46 @@ export default function Home() {
             )}
 
             {appState === 'loading' && <LoadingOverlay step={loadingStep} />}
+
+            {appState === 'cuisine' && placesContext?.nearbyChains && placesContext.nearbyChains.length > 0 && (
+              <div className="absolute inset-0 flex items-end sm:items-center justify-center z-[1000] pointer-events-none">
+                <div className="bg-slate-900 border border-slate-700 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:w-[420px] mx-0 sm:mx-4 pointer-events-auto flex flex-col">
+                  <div className="px-5 pt-5 pb-3">
+                    <h2 className="text-sm font-semibold text-slate-200">{strings.MODAL_CUISINE_TITLE}</h2>
+                    <p className="text-xs text-amber-400 mt-1">
+                      {placesContext.nearbyChains[0].name} · {placesContext.nearbyChains[0].distance}m
+                    </p>
+                    <p className="text-xs text-slate-400 mt-2">{strings.MODAL_CUISINE_PROMPT}</p>
+                  </div>
+                  <div className="px-5 pb-3 grid grid-cols-2 gap-2">
+                    {(
+                      [
+                        { key: 'doner', label: strings.MODAL_CUISINE_DONER },
+                        { key: 'burger', label: strings.MODAL_CUISINE_BURGER },
+                        { key: 'azerbaijani', label: strings.MODAL_CUISINE_AZ },
+                        { key: 'italian', label: strings.MODAL_CUISINE_ITALIAN },
+                        { key: 'pizza', label: strings.MODAL_CUISINE_PIZZA },
+                        { key: 'other', label: strings.MODAL_CUISINE_OTHER },
+                      ] as const
+                    ).map(({ key, label }) => (
+                      <button
+                        key={key}
+                        onClick={() => handleCuisineSubmit(key)}
+                        className="px-3 py-3 rounded-xl border border-slate-700 hover:border-blue-500 hover:bg-slate-800 transition-colors text-sm text-slate-200 font-medium text-center"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => handleCuisineSubmit(undefined)}
+                    className="w-full text-center px-4 py-3 text-sm text-slate-500 hover:text-slate-300 transition-colors border-t border-slate-700"
+                  >
+                    {strings.MODAL_CUISINE_SKIP}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Result panel — below map */}

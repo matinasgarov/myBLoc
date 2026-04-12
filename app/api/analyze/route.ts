@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { analyzeLocation } from '@/lib/groq'
-import { calculateScore } from '@/lib/score'
+import { calculateScore, isLuxuryBusiness } from '@/lib/score'
 import { isRateLimited } from '@/lib/ratelimit'
 import { findDistrict } from '@/lib/baku-districts'
 import { estimateRent } from '@/lib/rent'
+
+const RESTRICTED_LAND_USE = new Set(['cemetery', 'grave_yard', 'military'])
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for') ?? 'unknown'
@@ -23,8 +25,22 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     )
   }
+
+  // Fix 1: Block analysis for restricted land use zones
+  const landUse: string | null = body.placesContext.landUse ?? null
+  if (landUse && RESTRICTED_LAND_USE.has(landUse)) {
+    return NextResponse.json({ error: 'RESTRICTED_ZONE' }, { status: 422 })
+  }
+
   try {
-    const { score, factors } = calculateScore(body.placesContext, body.lat, body.lng)
+    const cuisineMatch: string | undefined = body.cuisineMatch ?? undefined
+    const { score, factors } = calculateScore(
+      body.placesContext,
+      body.lat,
+      body.lng,
+      body.businessType,
+      cuisineMatch,
+    )
     const district = findDistrict(body.lat, body.lng)
     const rent = estimateRent(
       district,
@@ -32,7 +48,15 @@ export async function POST(req: NextRequest) {
       body.placesContext.metroRidership,
       body.placesContext.areaType,
     )
-    const result = await analyzeLocation(body.lat, body.lng, body.businessType, body.placesContext, score, district, rent)
+    const lang: string = body.lang === 'en' ? 'en' : 'az'
+    const result = await analyzeLocation(body.lat, body.lng, body.businessType, body.placesContext, score, district, rent, lang)
+
+    // Feature 4: luxury business in low-wealth district
+    const luxuryMismatch =
+      isLuxuryBusiness(body.businessType) &&
+      district !== null &&
+      (district.wealth === 'Low' || district.wealth === 'Below Average')
+
     return NextResponse.json({
       ...result,
       factors,
@@ -41,6 +65,7 @@ export async function POST(req: NextRequest) {
       rentTier: rent.tier,
       rentTierAz: rent.tierAz,
       rentFactors: rent.factorsAz,
+      luxuryMismatch,
     })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
