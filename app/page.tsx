@@ -9,6 +9,7 @@ import ResultSheet from '@/components/ResultSheet'
 import HistorySidebar from '@/components/HistorySidebar'
 import LandingPage from '@/components/LandingPage'
 import MapErrorBoundary from '@/components/MapErrorBoundary'
+import LocationSearch from '@/components/LocationSearch'
 import type { AnalysisResult, LatLng, PlacesContext, SavedAnalysis } from '@/lib/types'
 
 const Map = dynamic(() => import('@/components/Map'), { ssr: false })
@@ -44,6 +45,8 @@ export default function Home() {
   const [analyses, setAnalyses] = useState<SavedAnalysis[]>([])
   const [lang, setLang] = useState<Lang>('az')
   const [mapKey, setMapKey] = useState(0)
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [flyToTarget, setFlyToTarget] = useState<LatLng | null>(null)
 
   const strings = getStrings(lang)
 
@@ -225,7 +228,7 @@ export default function Home() {
       <div className="flex-none h-14 bg-black border-b border-gray-800 shadow-sm flex items-center px-4 z-[1100] gap-3">
         <button
           onClick={handleGoHome}
-          className="text-gray-400 hover:text-gray-200 transition-colors text-sm flex items-center gap-1 shrink-0"
+          className="text-gray-400 hover:text-gray-200 transition-colors text-base flex items-center gap-1 shrink-0"
           aria-label={strings.BACK_HOME}
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
@@ -235,19 +238,56 @@ export default function Home() {
         </button>
         <span className="w-px h-5 bg-gray-700 shrink-0" />
         <img src="/logo.png" alt="myblocate" className="h-7 w-auto" />
+        <button
+          onClick={() => setHistoryOpen(true)}
+          className="ml-auto text-gray-400 hover:text-gray-200 transition-colors p-1.5 rounded-md hover:bg-gray-800"
+          aria-label={strings.HISTORY_OPEN}
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <line x1="3" y1="5" x2="17" y2="5"/>
+            <line x1="3" y1="10" x2="17" y2="10"/>
+            <line x1="3" y1="15" x2="17" y2="15"/>
+          </svg>
+        </button>
       </div>
 
-      {/* Content area: map + persistent history sidebar */}
+      {/* Backdrop for history drawer */}
+      {historyOpen && (
+        <div className="fixed inset-0 z-[1200] bg-black/50" onClick={() => setHistoryOpen(false)} />
+      )}
+
+      {/* History drawer */}
+      <HistorySidebar
+        analyses={analyses}
+        isOpen={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        strings={strings}
+      />
+
+      {/* Content area: map + result panel stacked, full width */}
       <div className="flex flex-1 min-h-0">
 
-        {/* Left: map + result panel stacked */}
+        {/* Map + result panel */}
         <div className="flex-1 min-h-0 flex flex-col">
 
           {/* Map area */}
           <div className="relative flex-1 min-h-0">
             <MapErrorBoundary message={strings.MAP_ERROR}>
-              <Map key={mapKey} onPinDrop={handlePinDrop} pin={pin} dimmed={isDimmed} />
+              <Map key={mapKey} onPinDrop={handlePinDrop} pin={pin} dimmed={isDimmed} flyToTarget={flyToTarget} />
             </MapErrorBoundary>
+
+            {(appState === 'map' || appState === 'input') && (
+              <div className="absolute top-4 left-4 z-[600] w-72">
+                <LocationSearch
+                  onLocationSelect={(lat, lng) => {
+                    handlePinDrop(lat, lng)
+                    setFlyToTarget({ lat, lng })
+                  }}
+                  placeholder={strings.LOCATION_SEARCH_PLACEHOLDER}
+                  noResultsText={strings.LOCATION_SEARCH_NO_RESULTS}
+                />
+              </div>
+            )}
 
             {appState === 'map' && (
               <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[500] bg-white/90 backdrop-blur-sm rounded-full px-5 py-2 text-sm text-gray-600 shadow-md pointer-events-none select-none">
@@ -321,8 +361,6 @@ export default function Home() {
 
         </div>
 
-        {/* Persistent history sidebar */}
-        <HistorySidebar analyses={analyses} />
       </div>
     </main>
   )

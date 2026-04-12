@@ -130,4 +130,7 @@ export const EN = {
   RESULT_TOGGLE_EXPAND: 'View Details ↓',
   RESULT_TOGGLE_COLLAPSE: 'Collapse ↑',
   RESULT_COMPETITORS_NOTE: '{n} competitors',
+  HISTORY_OPEN: 'Analysis history',
+  LOCATION_SEARCH_PLACEHOLDER: 'Search location... (e.g. "28 Mall")',
+  LOCATION_SEARCH_NO_RESULTS: 'No results found',
 } as const

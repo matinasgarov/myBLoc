@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchPlacesContext } from '@/lib/overpass'
-import { isRateLimited } from '@/lib/ratelimit'
+import { isRateLimited, extractIp, isCrossOrigin } from '@/lib/ratelimit'
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for') ?? 'unknown'
+  if (isCrossOrigin(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+  const ip = extractIp(req)
   if (isRateLimited(ip, 10, 60_000)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
@@ -33,6 +36,7 @@ export async function POST(req: NextRequest) {
     const context = await fetchPlacesContext(body.lat, body.lng, bt)
     return NextResponse.json(context)
   } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 })
+    console.error('[places] fetchPlacesContext failed:', err)
+    return NextResponse.json({ error: 'Location analysis failed' }, { status: 500 })
   }
 }

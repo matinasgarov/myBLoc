@@ -252,10 +252,15 @@ export async function analyzeLocation(
     throw new Error('GROQ_API_KEY environment variable is not set')
   }
   const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
+  // Sanitize user-supplied input before injecting into the LLM prompt
+  const safeBusinessType = businessType.replace(/[\n\r`]/g, ' ').trim()
+  const safeCtx: PlacesContext = ctx.landUse
+    ? { ...ctx, landUse: ctx.landUse.replace(/[\n\r`]/g, ' ').trim() }
+    : ctx
   const resolvedLang: 'az' | 'en' = lang === 'en' ? 'en' : 'az'
   const prompt = resolvedLang === 'en'
-    ? buildPromptEn(lat, lng, businessType, ctx, score, district ?? null, rent ?? null)
-    : buildPrompt(lat, lng, businessType, ctx, score, district ?? null, rent ?? null)
+    ? buildPromptEn(lat, lng, safeBusinessType, safeCtx, score, district ?? null, rent ?? null)
+    : buildPrompt(lat, lng, safeBusinessType, safeCtx, score, district ?? null, rent ?? null)
 
   for (let attempt = 0; attempt < 2; attempt++) {
     const response = await client.chat.completions.create({

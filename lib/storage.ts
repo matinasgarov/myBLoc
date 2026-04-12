@@ -12,12 +12,26 @@ export function saveAnalysis(analysis: SavedAnalysis): void {
   }
 }
 
+function isValidAnalysis(obj: unknown): obj is SavedAnalysis {
+  if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) return false
+  const a = obj as Record<string, unknown>
+  return (
+    typeof a.id === 'string' &&
+    typeof a.lat === 'number' &&
+    typeof a.lng === 'number' &&
+    typeof a.business === 'string' &&
+    typeof a.score === 'number'
+  )
+}
+
 export function getAnalyses(): SavedAnalysis[] {
   if (typeof window === 'undefined') return []
   const raw = localStorage.getItem(STORAGE_KEY)
   if (!raw) return []
   try {
-    return JSON.parse(raw) as SavedAnalysis[]
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter(isValidAnalysis)
   } catch {
     return []
   }

@@ -95,6 +95,14 @@ export default function ResultSheet({ business, result, context, onReset, string
         </button>
       </div>
 
+      {/* Reset strip — always visible without scrolling */}
+      <button
+        onClick={onReset}
+        className="shrink-0 w-full py-2.5 text-xs text-slate-400 hover:text-emerald-400 bg-slate-900/40 hover:bg-slate-900 border-b border-slate-800/60 transition-colors flex items-center justify-center gap-1.5 uppercase tracking-widest font-medium"
+      >
+        ↩ {strings.RESULT_RESET}
+      </button>
+
       {/* ── Body ─────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
 
@@ -236,13 +244,6 @@ export default function ResultSheet({ business, result, context, onReset, string
           label={strings.RESULT_PDF_DOWNLOAD}
         />
 
-        {/* Reset */}
-        <button
-          onClick={onReset}
-          className="w-full py-4 text-sm text-emerald-400 hover:text-emerald-300 bg-slate-900/60 hover:bg-slate-900 border-b border-emerald-900/50 transition-colors flex items-center justify-center gap-2 uppercase tracking-widest font-semibold"
-        >
-          ↩ {strings.RESULT_RESET}
-        </button>
       </div>
     </div>
   )

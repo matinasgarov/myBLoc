@@ -130,4 +130,7 @@ export const AZ = {
   RESULT_TOGGLE_EXPAND: 'Detallara bax ↓',
   RESULT_TOGGLE_COLLAPSE: 'Gizlə ↑',
   RESULT_COMPETITORS_NOTE: '{n} rəqib',
+  HISTORY_OPEN: 'Keçmiş təhlillər',
+  LOCATION_SEARCH_PLACEHOLDER: 'Yer axtar... (məs. "Nizami küçəsi")',
+  LOCATION_SEARCH_NO_RESULTS: 'Nəticə tapılmadı',
 } as const

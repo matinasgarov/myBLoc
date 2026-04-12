@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { analyzeLocation } from '@/lib/groq'
 import { calculateScore, isLuxuryBusiness } from '@/lib/score'
-import { isRateLimited } from '@/lib/ratelimit'
+import { isRateLimited, extractIp, isCrossOrigin } from '@/lib/ratelimit'
 import { findDistrict } from '@/lib/baku-districts'
 import { estimateRent } from '@/lib/rent'
 
 const RESTRICTED_LAND_USE = new Set(['cemetery', 'grave_yard', 'military'])
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for') ?? 'unknown'
+  if (isCrossOrigin(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+  const ip = extractIp(req)
   if (isRateLimited(ip, 10, 60_000)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
@@ -68,6 +71,7 @@ export async function POST(req: NextRequest) {
       luxuryMismatch,
     })
   } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 })
+    console.error('[analyze] analyzeLocation failed:', err)
+    return NextResponse.json({ error: 'Analysis failed' }, { status: 500 })
   }
 }

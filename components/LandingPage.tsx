@@ -1,7 +1,7 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { useState, useMemo } from 'react'
+import { motion, useScroll, useTransform } from 'framer-motion'
+import { useState, useMemo, useRef } from 'react'
 import type { Strings } from '@/lib/i18n'
 import type { Lang } from '@/lib/i18n'
 
@@ -139,6 +139,13 @@ function FeedbackForm({ strings }: { strings: Strings }) {
 
 export default function LandingPage({ onStart, strings, lang, onLangChange }: Props) {
   const brandLetters = 'myblocate'.split('')
+  const missionRef = useRef<HTMLElement>(null)
+  const { scrollYProgress } = useScroll({
+    target: missionRef,
+    offset: ['start end', 'end start'],
+  })
+  const imageY = useTransform(scrollYProgress, [0, 0.3], [80, 0])
+  const imageOpacity = useTransform(scrollYProgress, [0.55, 0.9], [1, 0])
 
   const navLinks = [
     { id: 'hero', label: strings.NAV_HOME },
@@ -151,36 +158,39 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
     <div className="min-h-screen overflow-y-auto bg-slate-950 text-white scroll-smooth">
       {/* Navigation bar */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/50">
-        <div className="px-8 h-14 flex items-center justify-between">
-          <img src="/logo.png" alt="myblocate" className="h-10 w-auto" />
-          <div className="flex items-center gap-5">
+        <div className="px-8 h-14 flex items-center relative">
+          {/* Logo — absolute left */}
+          <img src="/logo.png" alt="myblocate" className="h-10 w-auto absolute left-8" />
+          {/* Nav links — centered */}
+          <div className="flex items-center gap-6 mx-auto">
             {navLinks.map(link => (
               <a
                 key={link.id}
                 href={`#${link.id}`}
-                className="text-sm text-slate-400 hover:text-white transition-colors hidden sm:block"
+                className="text-base text-slate-400 hover:text-white transition-colors hidden sm:block"
               >
                 {link.label}
               </a>
             ))}
-            <div className="flex gap-0.5 bg-white/8 rounded-full p-0.5 ml-2">
-              <button
-                onClick={() => onLangChange('az')}
-                className={`px-2 py-0.5 rounded-full text-[11px] font-medium transition-colors leading-none ${
-                  lang === 'az' ? 'bg-white text-slate-950' : 'text-white/60 hover:text-white'
-                }`}
-              >
-                AZ
-              </button>
-              <button
-                onClick={() => onLangChange('en')}
-                className={`px-2 py-0.5 rounded-full text-[11px] font-medium transition-colors leading-none ${
-                  lang === 'en' ? 'bg-white text-slate-950' : 'text-white/60 hover:text-white'
-                }`}
-              >
-                EN
-              </button>
-            </div>
+          </div>
+          {/* Lang switcher — absolute right */}
+          <div className="flex gap-0.5 bg-white/8 rounded-full p-0.5 absolute right-8">
+            <button
+              onClick={() => onLangChange('az')}
+              className={`px-2 py-0.5 rounded-full text-[11px] font-medium transition-colors leading-none ${
+                lang === 'az' ? 'bg-white text-slate-950' : 'text-white/60 hover:text-white'
+              }`}
+            >
+              AZ
+            </button>
+            <button
+              onClick={() => onLangChange('en')}
+              className={`px-2 py-0.5 rounded-full text-[11px] font-medium transition-colors leading-none ${
+                lang === 'en' ? 'bg-white text-slate-950' : 'text-white/60 hover:text-white'
+              }`}
+            >
+              EN
+            </button>
           </div>
         </div>
       </nav>
@@ -260,26 +270,46 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
       </section>
 
       {/* Mission section */}
-      <section id="mission" className="py-24 px-6">
-        <div className="max-w-2xl mx-auto text-center">
-          <motion.h2
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
+      <section ref={missionRef} id="mission" className="py-24 px-6 overflow-visible relative">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12 md:gap-16">
+          {/* Image side — LEFT, bleeds into adjacent sections */}
+          <motion.div
+            initial={{ opacity: 0, x: -40 }}
+            whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: '-100px' }}
-            transition={{ duration: 0.6 }}
-            className="text-3xl sm:text-4xl font-bold mb-6 text-white"
+            transition={{ duration: 0.7, delay: 0.15 }}
+            style={{ y: imageY, opacity: imageOpacity }}
+            className="shrink-0 flex justify-center md:justify-start -my-96 relative z-10"
           >
-            {strings.LANDING_MISSION_TITLE}
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-100px' }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-slate-400 text-lg leading-relaxed"
-          >
-            {strings.LANDING_MISSION_TEXT}
-          </motion.p>
+            <img
+              src="/phone-mockup.png"
+              alt="myblocate app preview"
+              style={{ width: '360px', height: 'auto' }}
+              className="drop-shadow-2xl"
+            />
+          </motion.div>
+
+          {/* Text side — RIGHT */}
+          <div className="flex-1 text-center md:text-left">
+            <motion.h2
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-100px' }}
+              transition={{ duration: 0.6 }}
+              className="text-3xl sm:text-4xl font-bold mb-6 text-white"
+            >
+              {strings.LANDING_MISSION_TITLE}
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-100px' }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="text-slate-400 text-lg leading-relaxed"
+            >
+              {strings.LANDING_MISSION_TEXT}
+            </motion.p>
+          </div>
         </div>
       </section>
 

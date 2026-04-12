@@ -8,6 +8,7 @@ interface MapProps {
   onPinDrop: (lat: number, lng: number) => void
   pin: LatLng | null
   dimmed: boolean
+  flyToTarget: LatLng | null
 }
 
 const BAKU_CENTER: [number, number] = [40.4093, 49.8671]
@@ -20,7 +21,7 @@ const PIN_ICON = L.divIcon({
   className: '',
 })
 
-export default function Map({ onPinDrop, pin, dimmed }: MapProps) {
+export default function Map({ onPinDrop, pin, dimmed, flyToTarget }: MapProps) {
   const mapRef = useRef<L.Map | null>(null)
   const markerRef = useRef<L.Marker | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -75,6 +76,11 @@ export default function Map({ onPinDrop, pin, dimmed }: MapProps) {
       mapRef.current.panTo([pin.lat, pin.lng])
     }
   }, [pin])
+
+  useEffect(() => {
+    if (!flyToTarget || !mapRef.current) return
+    mapRef.current.flyTo([flyToTarget.lat, flyToTarget.lng], 17, { duration: 1.2 })
+  }, [flyToTarget])
 
   return (
     <div

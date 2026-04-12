@@ -283,7 +283,7 @@ export default function PdfDownloadButton({ business, result, context, label }: 
     doc.setTextColor(LIGHT)
     doc.text('myblocate.az  ·  Bu hesabat məlumat xarakter daşıyır.', W / 2, 290, { align: 'center' })
 
-    const filename = `myblocate-${safeBusiness.replace(/\s+/g, '-').toLowerCase()}.pdf`
+    const filename = `myblocate-${safeBusiness.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || 'report'}.pdf`
     doc.save(filename)
     } catch (err) {
       console.error('[PdfDownloadButton] PDF generation failed:', err)
