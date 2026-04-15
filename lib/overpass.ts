@@ -16,7 +16,9 @@ function buildLandUseQuery(lat: number, lng: number): string {
     `is_in(${lat},${lng})->.here;` +
     `(way(pivot.here)["landuse"];relation(pivot.here)["landuse"];` +
     `way(pivot.here)["amenity"~"^(grave_yard|prison)$"];` +
-    `way(pivot.here)["leisure"~"^(nature_reserve|cemetery)$"];);` +
+    `way(pivot.here)["leisure"~"^(nature_reserve|cemetery)$"];` +
+    `way(pivot.here)["natural"~"^(water|coastline)$"];relation(pivot.here)["natural"~"^(water|coastline)$"];` +
+    `way(pivot.here)["waterway"~"^(river|lake|stream|canal)$"];relation(pivot.here)["waterway"];);` +
     `out tags;`
   )
 }
@@ -50,6 +52,7 @@ async function fetchFromOverpass(query: string): Promise<{ elements: OSMElement[
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `data=${encodeURIComponent(query)}`,
+        cache: 'no-store',
         signal: controller.signal,
       })
       clearTimeout(timeoutId)
@@ -256,7 +259,7 @@ import { BAKU_CHAINS, matchesChain } from './chains'
 const DOMINANT_COMPETITOR_RADIUS = 300 // metres
 
 /** Cuisine prompt only triggers when a chain is this close to the pin. */
-const FOOD_CHAIN_PROMPT_RADIUS = 50 // metres
+const FOOD_CHAIN_PROMPT_RADIUS = 20 // metres
 
 /**
  * Returns the nearest same-category dominant chain within DOMINANT_COMPETITOR_RADIUS,
@@ -349,12 +352,20 @@ function detectNearbyFoodChains(
 const BAD_LAND_USES = new Set([
   'cemetery', 'grave_yard', 'military', 'industrial',
   'landfill', 'quarry', 'construction', 'prison',
+  'reservoir', 'basin',
 ])
+
+const WATER_NATURAL = new Set(['water', 'coastline'])
+const WATER_WAYS = new Set(['river', 'lake', 'stream', 'canal'])
 
 function extractLandUse(elements: OSMElement[]): string | null {
   for (const e of elements) {
     const lu = e.tags?.landuse || e.tags?.amenity || e.tags?.leisure || ''
     if (BAD_LAND_USES.has(lu)) return lu
+    const natural = e.tags?.natural || ''
+    if (WATER_NATURAL.has(natural)) return natural
+    const waterway = e.tags?.waterway || ''
+    if (WATER_WAYS.has(waterway)) return waterway
   }
   return null
 }

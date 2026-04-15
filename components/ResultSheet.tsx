@@ -74,7 +74,7 @@ export default function ResultSheet({ business, result, context, onReset, string
       onClick={(e) => e.stopPropagation()}
     >
       {/* ── Header ───────────────────────────────────────── */}
-      <div className="flex items-center gap-6 px-8 py-5 border-b border-slate-800 shrink-0">
+      <div className="flex items-center gap-4 px-6 py-4 border-b border-slate-800 shrink-0">
         <div className="flex-1 min-w-0">
           <p className="text-slate-500 text-xs uppercase tracking-widest mb-1">{strings.RESULT_BUSINESS_TYPE}</p>
           <h2 className="text-white font-bold text-lg tracking-tight truncate">{business}</h2>
@@ -89,19 +89,15 @@ export default function ResultSheet({ business, result, context, onReset, string
 
         <button
           onClick={onReset}
-          className="text-slate-600 hover:text-white transition-colors text-lg ml-1 shrink-0"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 hover:border-emerald-500/60 hover:bg-emerald-500/10 text-slate-400 hover:text-emerald-400 text-xs font-medium transition-all shrink-0"
         >
-          ✕
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10 6A4 4 0 1 1 6 2a4 4 0 0 1 2.83 1.17L10 4.5"/>
+            <polyline points="10 2 10 4.5 7.5 4.5"/>
+          </svg>
+          {strings.RESULT_RESET}
         </button>
       </div>
-
-      {/* Reset strip — always visible without scrolling */}
-      <button
-        onClick={onReset}
-        className="shrink-0 w-full py-2.5 text-xs text-slate-400 hover:text-emerald-400 bg-slate-900/40 hover:bg-slate-900 border-b border-slate-800/60 transition-colors flex items-center justify-center gap-1.5 uppercase tracking-widest font-medium"
-      >
-        ↩ {strings.RESULT_RESET}
-      </button>
 
       {/* ── Body ─────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">

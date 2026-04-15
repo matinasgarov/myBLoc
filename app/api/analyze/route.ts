@@ -4,8 +4,13 @@ import { calculateScore, isLuxuryBusiness } from '@/lib/score'
 import { isRateLimited, extractIp, isCrossOrigin } from '@/lib/ratelimit'
 import { findDistrict } from '@/lib/baku-districts'
 import { estimateRent } from '@/lib/rent'
+import { isInsideLake } from '@/lib/lakes'
 
-const RESTRICTED_LAND_USE = new Set(['cemetery', 'grave_yard', 'military'])
+const RESTRICTED_LAND_USE = new Set([
+  'cemetery', 'grave_yard', 'military',
+  'water', 'coastline', 'river', 'lake', 'stream', 'canal',
+  'reservoir', 'basin',
+])
 
 export async function POST(req: NextRequest) {
   if (isCrossOrigin(req)) {
@@ -29,7 +34,17 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // Fix 1: Block analysis for restricted land use zones
+  // Block pins inside lake polygons (coordinate dataset check)
+  try {
+    if (isInsideLake(body.lat, body.lng)) {
+      return NextResponse.json({ error: 'LAKE_ZONE' }, { status: 422 })
+    }
+  } catch (lakeErr) {
+    console.error('[analyze] lake check failed:', lakeErr)
+    // File read error — fail open (do not block the user, log for investigation)
+  }
+
+  // Block analysis for restricted land use zones (OSM-based)
   const landUse: string | null = body.placesContext.landUse ?? null
   if (landUse && RESTRICTED_LAND_USE.has(landUse)) {
     return NextResponse.json({ error: 'RESTRICTED_ZONE' }, { status: 422 })

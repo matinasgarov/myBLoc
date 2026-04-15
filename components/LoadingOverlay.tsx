@@ -1,23 +1,26 @@
 'use client'
-import { AZ } from '@/lib/az'
+import { getStrings } from '@/lib/i18n'
+
+type Strings = ReturnType<typeof getStrings>
 
 interface Props {
   step: 1 | 2 | 3 | 4
+  strings: Strings
 }
 
-const STEPS = [
-  AZ.LOADING_STEP_1,
-  AZ.LOADING_STEP_2,
-  AZ.LOADING_STEP_3,
-  AZ.LOADING_STEP_4,
-]
+export default function LoadingOverlay({ step, strings }: Props) {
+  const STEPS = [
+    strings.LOADING_STEP_1,
+    strings.LOADING_STEP_2,
+    strings.LOADING_STEP_3,
+    strings.LOADING_STEP_4,
+  ]
 
-export default function LoadingOverlay({ step }: Props) {
   return (
     <div className="absolute inset-0 flex items-center justify-center z-[1000] pointer-events-none">
-      <div className="bg-white rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center gap-5">
-        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        <div className="flex flex-col gap-2.5 text-sm min-w-[240px]">
+      <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700/60 rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center gap-5">
+        <div className="w-9 h-9 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        <div className="flex flex-col gap-3 text-sm min-w-[220px]">
           {STEPS.map((label, i) => {
             const stepNum = (i + 1) as 1 | 2 | 3 | 4
             const isDone = step > stepNum
@@ -25,12 +28,16 @@ export default function LoadingOverlay({ step }: Props) {
             return (
               <div
                 key={stepNum}
-                className={`flex items-center gap-2 transition-colors ${
-                  isDone ? 'text-gray-400' : isActive ? 'text-blue-600 font-medium' : 'text-gray-300'
+                className={`flex items-center gap-2.5 transition-colors ${
+                  isDone
+                    ? 'text-slate-600'
+                    : isActive
+                    ? 'text-emerald-400 font-medium'
+                    : 'text-slate-700'
                 }`}
               >
-                <span className="w-4 text-center shrink-0">
-                  {isDone ? '✓' : isActive ? '·' : '·'}
+                <span className="w-4 text-center shrink-0 text-xs">
+                  {isDone ? '✓' : isActive ? '▸' : '·'}
                 </span>
                 <span>{label}</span>
               </div>

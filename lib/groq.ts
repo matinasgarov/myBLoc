@@ -15,7 +15,7 @@ function buildPrompt(
   rent: RentResult | null,
 ): string {
   const landUseNote = ctx.landUse
-    ? `- XƏBƏRDARLIQ: Pin dəqiq olaraq "${ctx.landUse}" ərazisindədir (məsələn, qəbiristanlıq, hərbi zona və s.)`
+    ? `- XƏBƏRDARLIQ: Pin dəqiq olaraq "${ctx.landUse}" ərazisindədir (məsələn, qəbiristanlıq, hərbi zona, göl və s.)`
     : ''
 
   const metroNote = ctx.metroDistance !== null
@@ -63,11 +63,14 @@ ${landUseNote}
 
 Qaydalar:
 - Hər müsbət cəhət və risk yuxarıdakı konkret məlumatlara (rəqib sayı, ərazi tipi, yaxınlıqdakı obyektlər) əsaslanmalıdır.
-- Hər müsbət cəhət (pros): ən azı 10 sözdən ibarət tam cümlə olsun.
-- Hər risk (cons): ən azı 10 sözdən ibarət tam, izahlı cümlə olsun — riskin niyə mövcud olduğunu izah et.
+- Hər müsbət cəhət (pros): ən azı 15 sözdən ibarət tam cümlə olsun.
+- Hər risk (cons): ən azı 15 sözdən ibarət tam, izahlı cümlə olsun — riskin niyə mövcud olduğunu izah et.
 - Cavabda yalnız aşağıdakı JSON formatı olsun, başqa heç bir mətn əlavə etmə.
 - DİL: Yalnız latın əlifbası ilə Azərbaycan dili. KİRİL hərflər (rus, ukrayna, erməni) TAMAMILƏ QADAĞANDIR. Rusca söz, ifadə, ad yazmaq qadağandır. İNGİLİS SÖZÜ QADAĞANDIR — "bus" deyil "avtobus", "stop" deyil "dayanacaq", "street" deyil "küçə", "road" deyil "yol", "shop"/"store" deyil "mağaza", "center"/"centre" deyil "mərkəz", "district" deyil "rayon".
 - DİL QAYDAları: "çoxluq" sözünü ismin önündə işlətmə — əvəzinə "çoxlu" işlət (düzgün: "çoxlu rəqib", "çoxlu müştəri"; yanlış: "çoxluq rəqib"). Düzgün formalar: "şiddətli rəqabət", "yüksək müştəri axını", "aşağı trafik", "geniş müştəri kütləsi", "az rəqib", "sıx ticarət məntəqəsi".
+- PEŞƏKAR TON: Çıxışın tonu biznes hesabatına uyğun olmalıdır — peşəkar, konkret və neytral. Həddən artıq mehribançılıq, həvəsləndirmə və ya emosional ifadələr qadağandır. Məsələn: "Bu ərazidə uğur qazanacağınıza əminəm!" deyil, "Bu ərazidə uğur ehtimalı yüksəkdir."
+- QISA VƏ DƏQIQ: Hər cümlə birbaşa mövzuya aid olsun. Lazımsız təkrar, giriş ifadələri və dolayı söz birləşmələri qadağandır.
+- QRAMMATIK SADƏLIK: Mürəkkəb tabeli cümlə konstruksiyalarından çəkin. "ki", "çünki", "buna görə də ki" ilə uzun birləşmə qadağandır — bunun əvəzinə iki ayrı qısa cümlə yaz.
 - PARKINQ QAYDASİ: Parkinq mövcudluğu HƏMIŞƏ müsbət amildir. Onu yalnız müsbət cəhətlər (pros) arasında göstər — risklərdə (cons) QADAĞANDIR.
 - MÜTLƏQİ QADAĞA — ZİDDİYYƏTLİ BƏYANATLAR: Rəqib sayı ${ctx.competitors}-dir. ${ctx.competitors > 0 ? `Bu rəqəm sıfırdan böyük olduğundan, müsbət cəhətlərdə "rəqib yoxdur", "tək müəssisə olaraq fərqlənə bilər", "rəqabət azdır" və ya oxşar ifadələr TAMAMILƏ QADAĞANDIR.` : `Bu rəqəm sıfır olduğundan, risklərdə "çoxlu rəqib", "şiddətli rəqabət" və ya oxşar ifadələr TAMAMILƏ QADAĞANDIR.`}
 - Rəqabət barəsindəki bütün bəyanatlar yalnız yuxarıda göstərilən ${ctx.competitors} rəqib sayını əks etdirməlidir — fərqli rəqəm və ya əks fikir yazmaq qadağandır.

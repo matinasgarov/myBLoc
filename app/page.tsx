@@ -71,6 +71,8 @@ export default function Home() {
       if (appState !== 'map' && appState !== 'input') return
       setPin({ lat, lng })
       setError(null)
+      setWarning(null)
+      setPlacesContext(null)
       if (appState === 'map') setAppState('input')
     },
     [appState]
@@ -98,6 +100,13 @@ export default function Home() {
 
     if (analyzeRes.status === 422) {
       const data = await analyzeRes.json().catch(() => ({}))
+      if (data.error === 'LAKE_ZONE') {
+        setError(strings.ERROR_LAKE_ZONE)
+        setPin(null)
+        setMapKey(k => k + 1)
+        setAppState('map')
+        return
+      }
       if (data.error === 'RESTRICTED_ZONE') {
         setError(strings.ERROR_RESTRICTED_ZONE)
         setPin(null)
@@ -238,17 +247,37 @@ export default function Home() {
         </button>
         <span className="w-px h-5 bg-gray-700 shrink-0" />
         <img src="/logo.png" alt="myblocate" className="h-7 w-auto" />
-        <button
-          onClick={() => setHistoryOpen(true)}
-          className="ml-auto text-gray-400 hover:text-gray-200 transition-colors p-1.5 rounded-md hover:bg-gray-800"
-          aria-label={strings.HISTORY_OPEN}
-        >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-            <line x1="3" y1="5" x2="17" y2="5"/>
-            <line x1="3" y1="10" x2="17" y2="10"/>
-            <line x1="3" y1="15" x2="17" y2="15"/>
-          </svg>
-        </button>
+
+        <div className="ml-auto flex items-center gap-2">
+          {/* Language switcher */}
+          <div className="flex rounded-md overflow-hidden border border-gray-700">
+            <button
+              onClick={() => handleLangChange('az')}
+              className={`px-2.5 py-1 text-xs font-medium transition-colors ${lang === 'az' ? 'bg-emerald-600 text-white' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'}`}
+            >
+              AZ
+            </button>
+            <button
+              onClick={() => handleLangChange('en')}
+              className={`px-2.5 py-1 text-xs font-medium transition-colors ${lang === 'en' ? 'bg-emerald-600 text-white' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'}`}
+            >
+              EN
+            </button>
+          </div>
+
+          {/* History */}
+          <button
+            onClick={() => setHistoryOpen(true)}
+            className="text-gray-400 hover:text-gray-200 transition-colors p-1.5 rounded-md hover:bg-gray-800"
+            aria-label={strings.HISTORY_OPEN}
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <line x1="3" y1="5" x2="17" y2="5"/>
+              <line x1="3" y1="10" x2="17" y2="10"/>
+              <line x1="3" y1="15" x2="17" y2="15"/>
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Backdrop for history drawer */}
@@ -277,7 +306,7 @@ export default function Home() {
             </MapErrorBoundary>
 
             {(appState === 'map' || appState === 'input') && (
-              <div className="absolute top-4 left-4 z-[600] w-72">
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[600] w-80">
                 <LocationSearch
                   onLocationSelect={(lat, lng) => {
                     handlePinDrop(lat, lng)
@@ -296,13 +325,13 @@ export default function Home() {
             )}
 
             {error && (
-              <div className="absolute top-5 left-1/2 -translate-x-1/2 z-[1001] bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl shadow-md max-w-xs text-center">
+              <div className="absolute top-5 left-1/2 -translate-x-1/2 z-[1001] bg-slate-900/95 backdrop-blur-sm border border-red-500/40 text-red-400 text-sm px-4 py-3 rounded-xl shadow-xl max-w-xs text-center">
                 {error}
               </div>
             )}
 
             {warning && !error && (
-              <div className="absolute top-5 left-1/2 -translate-x-1/2 z-[1001] bg-amber-50 border border-amber-200 text-amber-700 text-sm px-4 py-3 rounded-xl shadow-md max-w-xs text-center">
+              <div className="absolute top-5 left-1/2 -translate-x-1/2 z-[1001] bg-slate-900/95 backdrop-blur-sm border border-amber-500/40 text-amber-400 text-sm px-4 py-3 rounded-xl shadow-xl max-w-xs text-center">
                 {warning}
               </div>
             )}
@@ -311,7 +340,7 @@ export default function Home() {
               <BusinessInputModal onSubmit={handleBusinessSubmit} onClose={handleModalClose} lang={lang} strings={strings} />
             )}
 
-            {appState === 'loading' && <LoadingOverlay step={loadingStep} />}
+            {appState === 'loading' && <LoadingOverlay step={loadingStep} strings={strings} />}
 
             {appState === 'cuisine' && placesContext?.nearbyChains && placesContext.nearbyChains.length > 0 && (
               <div className="absolute inset-0 flex items-end sm:items-center justify-center z-[1000] pointer-events-none">

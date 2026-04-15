@@ -10,7 +10,9 @@
       "Bash(python -c \"import struct,zlib; d=open\\('public/logo.png','rb'\\).read\\(\\); print\\('PNG size:', struct.unpack\\('>II',d[16:24]\\)\\)\")",
       "Bash(file \"c:/Users/Matin Asgarov/Desktop/Projects/hanimenebiznes/public/fonts/\"*)",
       "Bash(xxd)",
-      "Bash(ls \"c:/Users/Matin Asgarov/Desktop/Projects/hanimenebiznes/\"*.md)"
+      "Bash(ls \"c:/Users/Matin Asgarov/Desktop/Projects/hanimenebiznes/\"*.md)",
+      "Bash(python -c \"import json; d=json.load\\(open\\('c:/Users/Matin Asgarov/Desktop/Projects/hanimenebiznes/datasets/lake-coordinates.json'\\)\\); print\\(f'Features: {len\\(d[\\\\\"features\\\\\"]\\)}, Types: {set\\(f[\\\\\"geometry\\\\\"][\\\\\"type\\\\\"] for f in d[\\\\\"features\\\\\"]\\)}'\\)\")",
+      "Bash(python -u -)"
     ]
   }
 }
