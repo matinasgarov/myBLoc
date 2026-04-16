@@ -26,7 +26,7 @@ export const BAKU_CHAINS: ChainDefinition[] = [
   // ── GROCERY & SUPERMARKETS ──────────────────────────────────────────────
   {
     keywords: ['bravo'],
-    nameVariants: ['bravo supermarket', 'bravo market', 'брavo', 'брavo маркет'],
+    nameVariants: ['bravo supermarket','Bravo', 'bravo market', 'брavo', 'брavo маркет'],
     osmCategories: ['supermarket', 'convenience', 'grocery', 'mall', 'general'],
   },
   {
@@ -40,9 +40,9 @@ export const BAKU_CHAINS: ChainDefinition[] = [
     osmCategories: ['supermarket', 'convenience', 'grocery', 'mall', 'general'],
   },
   {
-    keywords: ['araz market', 'araz supermarket'],
+    keywords: ['araz market', 'araz supermarket', 'araz'],
     nameVariants: ['araz mağaza', 'аraз маркет', 'araz magazin', 'азрейл'],
-    osmCategories: ['supermarket', 'convenience', 'grocery', 'mall', 'general'],
+    osmCategories: ['supermarket', 'convenience', 'grocery', ],
   },
   {
     keywords: ['bolmart'],
@@ -260,19 +260,31 @@ export const BAKU_CHAINS: ChainDefinition[] = [
   {
     keywords: ['gloria jeans', "gloria jean's coffees"],
     nameVariants: ['gloria jean coffees', 'глория джинс', 'gloria jeans coffee'],
-    osmCategories: ['cafe', 'coffee_shop'],
+    osmCategories: ['coffee_shop'],
+    cuisine: 'coffee',
+  },
+  {
+    keywords: ['second cup', "second cup's coffees"],
+    nameVariants: ['second cup coffees', 'секонд куп', 'second cup coffee'],
+    osmCategories: ['coffee_shop'],
+    cuisine: 'coffee',
+  },
+  {
+    keywords: ['The Bagel Bar', "The Bagel Bar's coffees, The Bagel Bar Coffee House"],
+    nameVariants: ['The Bagel Bar', 'the bagel bar', 'bagel bar'],
+    osmCategories: ['coffee_shop'],
     cuisine: 'coffee',
   },
   {
     keywords: ['coffeemania'],
     nameVariants: ['coffee mania', 'кофемания'],
-    osmCategories: ['cafe', 'coffee_shop'],
+    osmCategories: ['coffee_shop'],
     cuisine: 'coffee',
   },
   {
     keywords: ['paul'],
     nameVariants: ['paul bakery', 'paul café', 'paul cafe', 'поль'],
-    osmCategories: ['cafe', 'coffee_shop', 'bakery'],
+    osmCategories: ['coffee_shop', 'bakery', 'restaurant'],
     cuisine: 'coffee',
   },
   // ── FASHION ─────────────────────────────────────────────────────────────

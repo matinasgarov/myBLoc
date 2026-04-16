@@ -43,7 +43,8 @@ export interface PlacesContext {
   metroDistance: number | null
   metroRidership: number | null
   urbanTier: UrbanTier
-  dominantCompetitor: { name: string; distance: number } | null
+  /** All dominant chain competitors within DOMINANT_COMPETITOR_RADIUS, sorted nearest-first. */
+  dominantCompetitors: { name: string; distance: number }[]
   /** Nearby chain restaurants/cafes (populated for food business types only). */
   nearbyChains?: { name: string; distance: number; cuisine?: string }[]
 }
@@ -79,4 +80,7 @@ export interface SavedAnalysis {
   verdict: string
   factors?: FactorResult[]
   context?: PlacesContext
+  rentTierAz?: string
+  rentTier?: string
+  luxuryMismatch?: boolean
 }

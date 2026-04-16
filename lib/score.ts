@@ -125,7 +125,7 @@ export function calculateScore(
   // 1. Competition (0-22): 0 rivals = 22, linear to 0 at 10+
   //    A dominant chain competitor (Bravo, Bolmart, etc.) in the same category adds
   //    a 16-point penalty on top of the regular count, reflecting real-world risk.
-  const dominantPenalty = ctx.dominantCompetitor ? 16 : 0
+  const dominantPenalty = (ctx.dominantCompetitors?.length ?? 0) > 0 ? 16 : 0
   const competitionScore = Math.max(0, Math.round(22 - ctx.competitors * 2.2 - dominantPenalty))
 
   // 2. Foot traffic (0-20): metro ridership tier (0-12) + major roads (0-8)
@@ -163,8 +163,8 @@ export function calculateScore(
       : null
   const dc = dominantCap(businessType, cuisineMatch)
   const cap = landUseCap !== null
-    ? Math.min(landUseCap, ctx.dominantCompetitor ? dc : landUseCap)
-    : ctx.dominantCompetitor ? dc : 95
+    ? Math.min(landUseCap, (ctx.dominantCompetitors?.length ?? 0) > 0 ? dc : landUseCap)
+    : (ctx.dominantCompetitors?.length ?? 0) > 0 ? dc : 95
 
   const score = Math.min(
     raw + coordNoise(lat, lng) + populationBoost(lat, lng) + luxuryBoost(businessType, lat, lng),

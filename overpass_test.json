@@ -1,0 +1,33 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-03-10T22:03:09Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 11750428579,
+  "lat": 40.3587107,
+  "lon": 49.8372751,
+  "tags": {
+    "addr:city": "Bakı",
+    "addr:housenumber": "26a",
+    "addr:street": "Dənizkənarı küçəsi",
+    "amenity": "cafe",
+    "contact:instagram": "thebagelbarazerbaijan",
+    "cuisine": "coffee_shop;bagels",
+    "internet_access": "yes",
+    "internet_access:fee": "customers",
+    "level": "0",
+    "name": "Bagel Bar",
+    "opening_hours": "Mo-Su 07:30-23:00",
+    "outdoor_seating": "yes",
+    "phone": "+994502515185"
+  }
+}
+
+  ]
+}

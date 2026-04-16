@@ -227,15 +227,23 @@ function countCompetitors(
 
   let weighted = 0
   for (const e of elements) {
-    const name = (e.tags?.name || '').toLowerCase()
+    const rawName = e.tags?.name || ''
+    const name = rawName.toLowerCase()
     const amenity = e.tags?.amenity || ''
     const shop = e.tags?.shop || ''
     const leisure = e.tags?.leisure || ''
 
+    // For known chains, use the chain's canonical osmCategories instead of the
+    // raw OSM amenity tag — prevents e.g. The Bagel Bar (coffee_shop) being
+    // counted as a restaurant competitor just because OSM tags it as restaurant.
+    const chainDef = rawName ? BAKU_CHAINS.find((c) => matchesChain(rawName, c)) : null
+
     const isMatch =
       name.includes(lower) ||
       (osmTags
-        ? osmTags.includes(amenity) || osmTags.includes(shop) || osmTags.includes(leisure)
+        ? chainDef
+          ? chainDef.osmCategories.some((cat) => osmTags.includes(cat))
+          : osmTags.includes(amenity) || osmTags.includes(shop) || osmTags.includes(leisure)
         : amenity.toLowerCase().includes(lower) ||
           shop.toLowerCase().includes(lower) ||
           leisure.toLowerCase().includes(lower))
@@ -259,24 +267,28 @@ import { BAKU_CHAINS, matchesChain } from './chains'
 const DOMINANT_COMPETITOR_RADIUS = 300 // metres
 
 /** Cuisine prompt only triggers when a chain is this close to the pin. */
-const FOOD_CHAIN_PROMPT_RADIUS = 20 // metres
+const FOOD_CHAIN_PROMPT_RADIUS = 200 // metres
 
 /**
- * Returns the nearest same-category dominant chain within DOMINANT_COMPETITOR_RADIUS,
- * or null if none found.
+ * Returns ALL same-category dominant chains within DOMINANT_COMPETITOR_RADIUS,
+ * sorted nearest-first. Each unique chain location is included (multiple branches
+ * of the same chain each appear if they fall within the radius).
  */
-function detectDominantCompetitor(
+function detectDominantCompetitors(
   elements: OSMElement[],
   businessType: string,
   pinLat: number,
   pinLng: number
-): { name: string; distance: number } | null {
+): { name: string; distance: number }[] {
   const resolvedTags = resolveOSMTags(businessType)
-  if (!resolvedTags) return null
+  if (!resolvedTags) return []
 
-  let closest: { name: string; distance: number } | null = null
+  const results: { name: string; distance: number }[] = []
+  // Track by element id to avoid duplicating the same OSM node/way
+  const seenIds = new Set<number>()
 
   for (const e of elements) {
+    if (seenIds.has(e.id)) continue
     const rawName = e.tags?.name || ''
     if (!rawName) continue
 
@@ -291,13 +303,12 @@ function detectDominantCompetitor(
     const dist = haversineMetres(pinLat, pinLng, coords.lat, coords.lng)
     if (dist > DOMINANT_COMPETITOR_RADIUS) continue
 
-    if (!closest || dist < closest.distance) {
-      const cleanName = rawName.replace(/[\u0400-\u04FF]/g, '').replace(/\s{2,}/g, ' ').trim()
-      closest = { name: cleanName || rawName, distance: Math.round(dist) }
-    }
+    seenIds.add(e.id)
+    const cleanName = rawName.replace(/[\u0400-\u04FF]/g, '').replace(/\s{2,}/g, ' ').trim()
+    results.push({ name: cleanName || rawName, distance: Math.round(dist) })
   }
 
-  return closest
+  return results.sort((a, b) => a.distance - b.distance)
 }
 
 const FOOD_OSM_TAGS = new Set(['restaurant', 'fast_food', 'cafe', 'food_court'])
@@ -391,7 +402,7 @@ export async function fetchPlacesContext(
 
   const metro = getNearestMetro(lat, lng)
   const urbanTier = getUrbanTier(lat, lng)
-  const dominantCompetitor = detectDominantCompetitor(businessElements, businessType, lat, lng)
+  const dominantCompetitors = detectDominantCompetitors(businessElements, businessType, lat, lng)
   const nearbyChains = detectNearbyFoodChains(businessElements, businessType, lat, lng)
 
   // When the user is opening a grocery/supermarket business, the AZ dataset may report
@@ -416,7 +427,7 @@ export async function fetchPlacesContext(
     metroDistance: metro?.distance ?? null,
     metroRidership: metro?.ridership ?? null,
     urbanTier,
-    dominantCompetitor,
+    dominantCompetitors,
     nearbyChains,
   }
 }

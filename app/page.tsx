@@ -10,6 +10,7 @@ import HistorySidebar from '@/components/HistorySidebar'
 import LandingPage from '@/components/LandingPage'
 import MapErrorBoundary from '@/components/MapErrorBoundary'
 import LocationSearch from '@/components/LocationSearch'
+import DesktopDashboard from '@/components/DesktopDashboard'
 import type { AnalysisResult, LatLng, PlacesContext, SavedAnalysis } from '@/lib/types'
 
 const Map = dynamic(() => import('@/components/Map'), { ssr: false })
@@ -234,7 +235,15 @@ export default function Home() {
     <main className="relative w-screen h-screen overflow-hidden flex flex-col">
 
       {/* Header bar */}
-      <div className="flex-none h-14 bg-black border-b border-gray-800 shadow-sm flex items-center px-4 z-[1100] gap-3">
+      <div
+        className="flex-none h-14 flex items-center px-4 z-[1100] gap-3"
+        style={{
+          background: 'rgba(7,9,13,0.97)',
+          backdropFilter: 'blur(12px)',
+          borderBottom: '1px solid rgba(255,255,255,0.07)',
+          boxShadow: '0 1px 0 rgba(0,201,138,0.06)',
+        }}
+      >
         <button
           onClick={handleGoHome}
           className="text-gray-400 hover:text-gray-200 transition-colors text-base flex items-center gap-1 shrink-0"
@@ -250,16 +259,27 @@ export default function Home() {
 
         <div className="ml-auto flex items-center gap-2">
           {/* Language switcher */}
-          <div className="flex rounded-md overflow-hidden border border-gray-700">
+          <div
+            className="flex rounded-lg overflow-hidden"
+            style={{ border: '1px solid rgba(255,255,255,0.08)' }}
+          >
             <button
               onClick={() => handleLangChange('az')}
-              className={`px-2.5 py-1 text-xs font-medium transition-colors ${lang === 'az' ? 'bg-emerald-600 text-white' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'}`}
+              className="px-2.5 py-1 text-xs font-semibold tracking-wide transition-colors"
+              style={{
+                background: lang === 'az' ? '#00C98A' : 'transparent',
+                color: lang === 'az' ? '#07090D' : 'rgba(148,163,184,0.6)',
+              }}
             >
               AZ
             </button>
             <button
               onClick={() => handleLangChange('en')}
-              className={`px-2.5 py-1 text-xs font-medium transition-colors ${lang === 'en' ? 'bg-emerald-600 text-white' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'}`}
+              className="px-2.5 py-1 text-xs font-semibold tracking-wide transition-colors"
+              style={{
+                background: lang === 'en' ? '#00C98A' : 'transparent',
+                color: lang === 'en' ? '#07090D' : 'rgba(148,163,184,0.6)',
+              }}
             >
               EN
             </button>
@@ -293,11 +313,11 @@ export default function Home() {
         strings={strings}
       />
 
-      {/* Content area: map + result panel stacked, full width */}
+      {/* Content area */}
       <div className="flex flex-1 min-h-0">
 
-        {/* Map + result panel */}
-        <div className="flex-1 min-h-0 flex flex-col">
+        {/* Map column — full width on mobile, 60% on desktop */}
+        <div className="min-h-0 flex flex-col" style={{ flex: '3' }}>
 
           {/* Map area */}
           <div className="relative flex-1 min-h-0">
@@ -319,7 +339,15 @@ export default function Home() {
             )}
 
             {appState === 'map' && (
-              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[500] bg-white/90 backdrop-blur-sm rounded-full px-5 py-2 text-sm text-gray-600 shadow-md pointer-events-none select-none">
+              <div
+                className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[500] rounded-full px-5 py-2 text-sm pointer-events-none select-none backdrop-blur-md"
+                style={{
+                  background: 'rgba(7,9,13,0.82)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'rgba(203,213,225,0.7)',
+                  boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+                }}
+              >
                 {strings.MAP_INSTRUCTION}
               </div>
             )}
@@ -383,11 +411,29 @@ export default function Home() {
             )}
           </div>
 
-          {/* Result panel — below map */}
+          {/* Result sheet — mobile only (desktop shows in dashboard panel) */}
           {appState === 'result' && result && (
-            <ResultSheet business={businessType} result={result} context={placesContext} onReset={handleReset} strings={strings} />
+            <div className="lg:hidden">
+              <ResultSheet business={businessType} result={result} context={placesContext} onReset={handleReset} strings={strings} />
+            </div>
           )}
 
+        </div>
+
+        {/* Desktop dashboard panel — hidden on mobile, 40% width on desktop */}
+        <div
+          className="hidden lg:flex flex-col"
+          style={{ flex: '2', borderLeft: '1px solid rgba(255,255,255,0.07)' }}
+        >
+          <DesktopDashboard
+            analyses={analyses}
+            currentResult={result}
+            currentBusiness={businessType}
+            currentContext={placesContext}
+            onReset={handleReset}
+            onOpenHistory={() => setHistoryOpen(true)}
+            strings={strings}
+          />
         </div>
 
       </div>

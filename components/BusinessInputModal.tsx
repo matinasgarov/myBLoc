@@ -39,33 +39,76 @@ export default function BusinessInputModal({ onSubmit, onClose, lang, strings }:
 
   return (
     <div className="absolute inset-0 flex items-end sm:items-center justify-center z-[1000] pointer-events-none">
-      <div className="bg-slate-900 border border-slate-700 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:w-[420px] mx-0 sm:mx-4 pointer-events-auto flex flex-col max-h-[85vh]">
-
+      {/* Panel */}
+      <div
+        className="w-full sm:w-[420px] mx-0 sm:mx-4 pointer-events-auto flex flex-col max-h-[85vh] rounded-t-2xl sm:rounded-2xl shadow-2xl"
+        style={{
+          background: '#0D1218',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,201,138,0.06)',
+        }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
-          <h2 className="text-sm font-semibold text-slate-200 leading-tight">{strings.MODAL_TITLE}</h2>
+        <div
+          className="flex items-center justify-between px-5 pt-5 pb-4 shrink-0"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+        >
+          <div className="flex items-center gap-2.5">
+            <span
+              className="w-1.5 h-1.5 rounded-full"
+              style={{ background: '#00C98A' }}
+            />
+            <h2
+              className="text-sm font-semibold leading-tight"
+              style={{ color: 'rgba(226,232,240,0.9)', letterSpacing: '0.01em' }}
+            >
+              {strings.MODAL_TITLE}
+            </h2>
+          </div>
           <button
             onClick={onClose}
-            className="text-slate-500 hover:text-slate-200 transition-colors text-lg leading-none ml-3 shrink-0"
+            className="flex items-center justify-center w-7 h-7 rounded-lg transition-colors duration-150"
+            style={{ color: 'rgba(148,163,184,0.6)', background: 'rgba(255,255,255,0.04)' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'rgba(226,232,240,0.9)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(148,163,184,0.6)')}
             aria-label={strings.MODAL_CLOSE}
           >
-            ✕
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M1 1l10 10M11 1L1 11" />
+            </svg>
           </button>
         </div>
 
         {showExpandedLayout ? (
-          /* ── Expanded / searching layout ─────────────────────────────── */
           <>
             {/* Search input */}
-            <div className="px-5 pb-3 shrink-0">
-              <input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={strings.MODAL_SEARCH}
-                autoFocus
-                className="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 bg-slate-800 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+            <div className="px-4 py-3 shrink-0">
+              <div className="relative">
+                <svg
+                  className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                  width="14" height="14" viewBox="0 0 16 16" fill="none"
+                  stroke="rgba(100,116,139,0.7)" strokeWidth="1.6" strokeLinecap="round"
+                >
+                  <circle cx="7" cy="7" r="5" />
+                  <path d="M11 11l3 3" />
+                </svg>
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={strings.MODAL_SEARCH}
+                  autoFocus
+                  className="w-full rounded-lg pl-9 pr-3 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none"
+                  style={{
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    color: 'rgba(226,232,240,0.9)',
+                    transition: 'border-color 0.15s',
+                  }}
+                  onFocus={e => (e.target.style.borderColor = 'rgba(0,201,138,0.35)')}
+                  onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
+                />
+              </div>
             </div>
 
             {/* Category grid */}
@@ -78,7 +121,22 @@ export default function BusinessInputModal({ onSubmit, onClose, lang, strings }:
                     <button
                       key={cat.key}
                       onClick={() => onSubmit(cat.key)}
-                      className="text-left px-3 py-3 rounded-xl border border-slate-700 hover:border-blue-500 hover:bg-slate-800 transition-colors text-sm text-slate-200 font-medium"
+                      className="text-left px-3 py-3 rounded-xl text-sm font-medium transition-all duration-150"
+                      style={{
+                        background: 'rgba(255,255,255,0.03)',
+                        border: '1px solid rgba(255,255,255,0.07)',
+                        color: 'rgba(226,232,240,0.8)',
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.borderColor = 'rgba(0,201,138,0.4)'
+                        e.currentTarget.style.background = 'rgba(0,201,138,0.06)'
+                        e.currentTarget.style.color = 'rgba(226,232,240,1)'
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.03)'
+                        e.currentTarget.style.color = 'rgba(226,232,240,0.8)'
+                      }}
                     >
                       {lang === 'az' ? cat.labelAz : cat.labelEn}
                     </button>
@@ -87,47 +145,99 @@ export default function BusinessInputModal({ onSubmit, onClose, lang, strings }:
               )}
             </div>
 
-            {/* Collapse button — only shown when not actively searching */}
             {!isSearching && (
               <button
                 onClick={() => setExpanded(false)}
-                className="shrink-0 w-full text-center text-sm text-blue-400 hover:text-blue-300 py-3 border-t border-slate-700 transition-colors"
+                className="shrink-0 w-full text-center text-xs py-3 transition-colors duration-150"
+                style={{
+                  borderTop: '1px solid rgba(255,255,255,0.06)',
+                  color: 'rgba(0,201,138,0.7)',
+                  letterSpacing: '0.06em',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#00C98A')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(0,201,138,0.7)')}
               >
-                {strings.MODAL_SHOW_LESS} ↑
+                {strings.MODAL_SHOW_LESS}
               </button>
             )}
           </>
         ) : (
-          /* ── Collapsed layout: 3 pinned cards + expand button ─────────── */
           <div className="pb-1">
             {/* Search input */}
-            <div className="px-5 pb-3 shrink-0">
-              <input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={strings.MODAL_SEARCH}
-                autoFocus
-                className="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 bg-slate-800 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+            <div className="px-4 py-3 shrink-0">
+              <div className="relative">
+                <svg
+                  className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                  width="14" height="14" viewBox="0 0 16 16" fill="none"
+                  stroke="rgba(100,116,139,0.7)" strokeWidth="1.6" strokeLinecap="round"
+                >
+                  <circle cx="7" cy="7" r="5" />
+                  <path d="M11 11l3 3" />
+                </svg>
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={strings.MODAL_SEARCH}
+                  autoFocus
+                  className="w-full rounded-lg pl-9 pr-3 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none"
+                  style={{
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    color: 'rgba(226,232,240,0.9)',
+                    transition: 'border-color 0.15s',
+                  }}
+                  onFocus={e => (e.target.style.borderColor = 'rgba(0,201,138,0.35)')}
+                  onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
+                />
+              </div>
             </div>
+
+            {/* Pinned cards */}
             <div className="grid grid-cols-3 gap-2 px-4 pb-2">
               {visible.map((cat) => (
                 <button
                   key={cat.key}
                   onClick={() => onSubmit(cat.key)}
-                  className="py-4 rounded-xl border border-slate-700 hover:border-blue-500 hover:bg-slate-800 transition-colors text-xs text-slate-200 font-medium text-center leading-tight"
+                  className="py-4 rounded-xl text-xs font-semibold text-center leading-tight transition-all duration-150"
+                  style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.07)',
+                    color: 'rgba(226,232,240,0.75)',
+                    letterSpacing: '0.01em',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = 'rgba(0,201,138,0.45)'
+                    e.currentTarget.style.background = 'rgba(0,201,138,0.07)'
+                    e.currentTarget.style.color = '#00C98A'
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.03)'
+                    e.currentTarget.style.color = 'rgba(226,232,240,0.75)'
+                  }}
                 >
                   {lang === 'az' ? cat.labelAz : cat.labelEn}
                 </button>
               ))}
             </div>
+
             {/* Expand button */}
             <button
               onClick={() => setExpanded(true)}
-              className="w-full text-center text-sm text-blue-400 hover:text-blue-300 py-3 border-t border-slate-700 transition-colors"
+              className="w-full text-center text-xs py-3 transition-colors duration-150 flex items-center justify-center gap-1.5"
+              style={{
+                borderTop: '1px solid rgba(255,255,255,0.06)',
+                color: 'rgba(0,201,138,0.7)',
+                letterSpacing: '0.06em',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#00C98A')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(0,201,138,0.7)')}
             >
-              {strings.MODAL_SHOW_ALL} ↓
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 2v8M2 6h8" />
+              </svg>
+              {strings.MODAL_SHOW_ALL}
             </button>
           </div>
         )}

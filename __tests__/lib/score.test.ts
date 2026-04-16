@@ -16,7 +16,7 @@ function ctx(overrides: Partial<PlacesContext>): PlacesContext {
     metroDistance: null,
     metroRidership: null,
     urbanTier: 'city',
-    dominantCompetitor: null,
+    dominantCompetitors: [],
     ...overrides,
   }
 }
@@ -140,7 +140,7 @@ describe('calculateScore', () => {
 
   it('dominant competitor caps score at 40', () => {
     const result = calculateScore(ctx({
-      dominantCompetitor: { name: 'Bravo Market', distance: 80 },
+      dominantCompetitors: [{ name: 'Bravo Market', distance: 80 }],
       competitors: 1,
       metroRidership: 50000,
       majorRoads: 3,
@@ -155,8 +155,8 @@ describe('calculateScore', () => {
   })
 
   it('dominant competitor reduces competition score by 16 pts', () => {
-    const without = calculateScore(ctx({ competitors: 0, dominantCompetitor: null }))
-    const with_ = calculateScore(ctx({ competitors: 0, dominantCompetitor: { name: 'Bravo', distance: 50 } }))
+    const without = calculateScore(ctx({ competitors: 0, dominantCompetitors: [] }))
+    const with_ = calculateScore(ctx({ competitors: 0, dominantCompetitors: [{ name: 'Bravo', distance: 50 }] }))
     const compWithout = without.factors.find(f => f.key === 'competition')!.score
     const compWith = with_.factors.find(f => f.key === 'competition')!.score
     expect(compWithout - compWith).toBe(16)

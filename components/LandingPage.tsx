@@ -1,9 +1,11 @@
 'use client'
 
-import { motion, useScroll, useTransform } from 'framer-motion'
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import type { Strings } from '@/lib/i18n'
 import type { Lang } from '@/lib/i18n'
+import { RadarChartDisplay, BarsChartDisplay, ScoreRingDisplay } from '@/components/Charts'
+import { Monofett } from 'next/font/google'
 
 interface Props {
   onStart: () => void
@@ -15,34 +17,15 @@ interface Props {
 // ─── Design tokens ───────────────────────────────────────────────────────────
 const BG   = '#07090D'
 const SURF = '#0D1218'
-const ACC  = '#00C98A'
+const ACC  = '#0051ff'
 const MONO  = 'var(--font-space-mono)'
 const SERIF = 'var(--font-serif)'
 const SANS  = 'var(--font-sans)'
 
-// ─── Counter hook ─────────────────────────────────────────────────────────────
-function useCountUp(target: number, duration = 1200, delay = 0) {
-  const [val, setVal] = useState(0)
-  useEffect(() => {
-    const t = setTimeout(() => {
-      const start = performance.now()
-      const tick = (now: number) => {
-        const p = Math.min((now - start) / duration, 1)
-        const eased = 1 - Math.pow(1 - p, 3)
-        setVal(Math.round(eased * target))
-        if (p < 1) requestAnimationFrame(tick)
-      }
-      requestAnimationFrame(tick)
-    }, delay)
-    return () => clearTimeout(t)
-  }, [target, duration, delay])
-  return val
-}
-
-// ─── Live analysis terminal (hero right panel) ────────────────────────────────
+// ─── Terminal factor data ─────────────────────────────────────────────────────
 const TERMINAL_FACTORS = [
   { label: 'Rəqabət',        score: 18, max: 22 },
-  { label: 'Metro Trafiyi',  score: 16, max: 20 },
+  { label: 'Metro Trafiki',  score: 16, max: 20 },
   { label: 'Ərazi Tipi',     score: 13, max: 13 },
   { label: 'Şəhər Tipi',     score: 10, max: 10 },
   { label: 'Əlçatanlıq',     score:  9, max: 12 },
@@ -51,144 +34,359 @@ const TERMINAL_FACTORS = [
 ]
 const TERMINAL_TOTAL = TERMINAL_FACTORS.reduce((s, f) => s + f.score, 0)
 
-function AnalysisTerminal() {
-  const total = useCountUp(TERMINAL_TOTAL, 1600, 600)
+function RadarChart() { return <RadarChartDisplay factors={TERMINAL_FACTORS} accent={ACC} /> }
+function BarsChart()  { return <BarsChartDisplay  factors={TERMINAL_FACTORS} accent={ACC} /> }
+function ScoreRing()  { return <ScoreRingDisplay  factors={TERMINAL_FACTORS} total={TERMINAL_TOTAL} maxTotal={95} accent={ACC} /> }
 
+// ─── Hero Cards (3 same-size cards: 1 left + 2 right stacked) ────────────────
+function HeroCard({
+  label,
+  delay,
+  prominent,
+  children,
+}: {
+  label: string
+  delay: number
+  prominent?: boolean
+  children: React.ReactNode
+}) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: 30 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.9, delay: 0.4, ease: [0.25, 0, 0, 1] }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, delay, ease: [0.25, 0, 0, 1] }}
       style={{
         fontFamily: MONO,
         background: SURF,
-        border: `1px solid rgba(0,201,138,0.18)`,
-        boxShadow: `0 0 60px rgba(0,201,138,0.06), inset 0 0 40px rgba(0,0,0,0.3)`,
+        border: `1px solid rgba(0,201,138,${prominent ? 0.2 : 0.1})`,
+        boxShadow: prominent
+          ? '0 0 60px rgba(0,201,138,0.07), inset 0 0 40px rgba(0,0,0,0.3)'
+          : '0 0 30px rgba(0,201,138,0.03)',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        width: '220px',
       }}
-      className="rounded-xl overflow-hidden w-full max-w-[340px] select-none"
     >
-      {/* Terminal header */}
+      {/* Header */}
       <div
-        style={{ borderBottom: `1px solid rgba(0,201,138,0.12)`, background: 'rgba(0,201,138,0.04)' }}
-        className="px-4 py-2.5 flex items-center gap-2"
+        style={{ borderBottom: '1px solid rgba(0,201,138,0.12)', background: 'rgba(0,201,138,0.04)' }}
+        className="px-4 py-2.5 flex items-center justify-between shrink-0"
       >
-        <span className="w-2 h-2 rounded-full" style={{ background: ACC }} />
-        <span className="text-[10px] tracking-[0.18em] uppercase" style={{ color: ACC }}>
-          MYBLOCATE · ANALİZ SİSTEMİ
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full" style={{ background: ACC }} />
+          <span className="text-[9px] tracking-[0.18em] uppercase" style={{ color: ACC }}>
+            MYBLOCATE · ANALİZ
+          </span>
+        </div>
+        <span className="text-[8px] tracking-[0.14em] uppercase" style={{ color: 'rgba(84, 119, 246, 0.4)' }}>
+          {label}
         </span>
       </div>
 
       {/* Location */}
-      <div style={{ borderBottom: `1px solid rgba(255,255,255,0.05)` }} className="px-4 py-2">
-        <p className="text-[11px] text-slate-300">Bakı, Nizami küçəsi 28</p>
-        <p className="text-[10px] text-slate-600">40.3777°N · 49.8533°E</p>
+      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }} className="px-4 py-1.5">
+        <p className="text-[10px] text-slate-300">Bakı, Nizami küçəsi 28</p>
+        <p className="text-[9px] text-slate-600">40.3777°N · 49.8533°E</p>
       </div>
 
-      {/* Factor rows */}
-      <div className="px-4 py-3 space-y-2.5">
-        {TERMINAL_FACTORS.map((f, i) => (
-          <div key={f.label} className="flex items-center gap-2">
-            <span className="text-[10px] text-slate-500 shrink-0 w-[88px] truncate">{f.label}</span>
-            <div className="flex-1 h-[2px] rounded-full" style={{ background: 'rgba(255,255,255,0.07)' }}>
-              <motion.div
-                className="h-full rounded-full"
-                style={{ background: ACC }}
-                initial={{ width: '0%' }}
-                animate={{ width: `${(f.score / f.max) * 100}%` }}
-                transition={{ duration: 1.0, delay: 0.8 + i * 0.08, ease: [0.25, 0, 0, 1] }}
-              />
-            </div>
-            <motion.span
-              className="text-[10px] tabular-nums shrink-0"
-              style={{ color: ACC }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.0 + i * 0.08 }}
-            >
-              {f.score}/{f.max}
-            </motion.span>
-          </div>
-        ))}
-      </div>
+      {children}
 
-      {/* Totals */}
+      {/* Footer */}
       <div
-        style={{ borderTop: `1px solid rgba(0,201,138,0.12)`, background: 'rgba(0,201,138,0.03)' }}
-        className="px-4 py-3"
+        style={{ borderTop: '1px solid rgba(0,201,138,0.1)', background: 'rgba(0,201,138,0.025)' }}
+        className="px-4 py-2.5 flex items-center justify-between"
       >
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] tracking-[0.12em] uppercase text-slate-500">Ümumi Bal</span>
-          <span className="text-2xl font-bold tabular-nums" style={{ color: ACC, fontFamily: MONO }}>
-            {total}
-            <span className="text-sm text-slate-600 font-normal">/95</span>
-          </span>
-        </div>
-        <div className="flex items-center justify-between mt-1.5">
-          <span className="text-[10px] tracking-[0.12em] uppercase text-slate-500">Qiymətləndirmə</span>
-          <motion.span
-            className="text-[10px] tracking-[0.1em] font-medium"
-            style={{ color: ACC }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 2.2 }}
-          >
-            ƏLVERIŞLI ▲
-          </motion.span>
-        </div>
+        <span className="text-[9px] tracking-[0.12em] uppercase text-slate-500">Ümumi Bal</span>
+        <span className="text-base font-bold tabular-nums" style={{ color: ACC }}>
+          {TERMINAL_TOTAL}
+          <span className="text-xs text-slate-600 font-normal">/95</span>
+        </span>
       </div>
     </motion.div>
   )
 }
 
-// ─── Evaluation row (no scores shown) ────────────────────────────────────────
-interface EvalRowProps {
-  index: number
-  title: string
-  desc: string
-  delay: number
+// Positions: [top-center (prominent), bottom-left, right]
+const CARD_POSITIONS = [
+  { top: 0,   left: 110, zIndex: 20 },
+  { top: 155, left: 0,   zIndex: 10 },
+  { top: 90,  left: 240, zIndex: 15 },
+]
+
+const CARD_DEFS = [
+  { label: 'RADAR', content: () => <RadarChart /> },
+  { label: 'BARS',  content: () => <BarsChart /> },
+  { label: 'SCORE', content: () => <ScoreRing /> },
+]
+
+function HeroCards() {
+  const [offset, setOffset] = useState(0)
+
+  useEffect(() => {
+    const id = setInterval(() => setOffset(o => (o + 1) % 3), 3400)
+    return () => clearInterval(id)
+  }, [])
+
+  return (
+    <div
+      className="relative select-none shrink-0"
+      style={{ width: '460px', height: '510px' }}
+    >
+      {CARD_DEFS.map((card, i) => {
+        const posIdx = (i + offset) % 3
+        const pos = CARD_POSITIONS[posIdx]
+        return (
+          <motion.div
+            key={card.label}
+            initial={false}
+            animate={{ top: pos.top, left: pos.left }}
+            transition={{ duration: 0.85, ease: [0.25, 0, 0, 1] }}
+            style={{ position: 'absolute', zIndex: pos.zIndex }}
+          >
+            <HeroCard label={card.label} delay={i * 0.15} prominent={posIdx === 0}>
+              <card.content />
+            </HeroCard>
+          </motion.div>
+        )
+      })}
+    </div>
+  )
 }
 
-function EvalRow({ index, title, desc, delay }: EvalRowProps) {
-  const num = String(index + 1).padStart(2, '0')
+// ─── Evaluation Carousel ───────────────────────────────────────────────────────
+interface EvalCarouselProps {
+  factors: { title: string; desc: string }[]
+}
+
+function EvalCarousel({ factors }: EvalCarouselProps) {
+  const [[active, dir], setSlide] = useState<[number, number]>([0, 0])
+
+  const paginate = (newDir: number) => {
+    const next = (active + newDir + factors.length) % factors.length
+    setSlide([next, newDir])
+  }
+
+  const slideVariants = {
+    enter: (d: number) => ({ x: d > 0 ? 64 : -64, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit:  (d: number) => ({ x: d > 0 ? -64 : 64, opacity: 0 }),
+  }
+
+  const f = factors[active]
+  const tf = TERMINAL_FACTORS[active]
+  const pct = Math.round((tf.score / tf.max) * 100)
+  const num = String(active + 1).padStart(2, '0')
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.55, delay, ease: [0.25, 0, 0, 1] }}
-      className="group relative"
-    >
-      <div style={{ background: 'rgba(255,255,255,0.05)' }} className="h-px w-full" />
-      <div className="flex gap-6 py-6 items-start">
-        <span
-          className="text-xs tabular-nums shrink-0 mt-0.5 w-6"
-          style={{ fontFamily: MONO, color: ACC }}
-        >
-          {num}
-        </span>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-[15px] font-medium text-slate-100 mb-1" style={{ fontFamily: SANS }}>
-            {title}
-          </h3>
-          <p
-            className="text-[14px] leading-relaxed"
-            style={{ color: 'rgba(226,232,240,0.45)', fontFamily: SANS, fontWeight: 300 }}
+    <div>
+      {/* Slide */}
+      <div className="relative overflow-hidden">
+        <AnimatePresence initial={false} custom={dir} mode="wait">
+          <motion.div
+            key={active}
+            custom={dir}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.32, ease: [0.25, 0, 0, 1] }}
           >
-            {desc}
-          </p>
-          <div className="mt-4 h-px w-full" style={{ background: 'rgba(255,255,255,0.07)' }}>
             <motion.div
-              className="h-full"
-              style={{ background: ACC, originX: 0 }}
-              initial={{ scaleX: 0 }}
-              whileInView={{ scaleX: 1 }}
-              viewport={{ once: true, margin: '-40px' }}
-              transition={{ duration: 1.1, delay: delay + 0.2, ease: [0.25, 0, 0, 1] }}
-            />
-          </div>
-        </div>
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, ease: [0.25, 0, 0, 1] }}
+              style={{
+                background: SURF,
+                border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: '14px',
+                padding: '28px 28px 24px',
+              }}
+            >
+              {/* Index + score inline */}
+              <div className="flex items-start justify-between mb-4">
+                <span
+                  className="text-[10px] tracking-[0.2em] uppercase"
+                  style={{ color: ACC, fontFamily: MONO }}
+                >
+                  {num} — {f.title}
+                </span>
+                <span className="text-sm font-bold tabular-nums" style={{ color: ACC, fontFamily: MONO }}>
+                  {tf.score}/{tf.max}
+                </span>
+              </div>
+
+              {/* Score bar */}
+              <div className="h-[2px] w-full rounded-full mb-5" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                <motion.div
+                  key={`bar-${active}`}
+                  className="h-full rounded-full"
+                  style={{ background: ACC }}
+                  initial={{ width: '0%' }}
+                  animate={{ width: `${pct}%` }}
+                  transition={{ duration: 0.9, ease: [0.25, 0, 0, 1] }}
+                />
+              </div>
+
+              {/* Title */}
+              <h3
+                className="text-slate-100 mb-3"
+                style={{
+                  fontFamily: SERIF,
+                  fontStyle: 'italic',
+                  fontSize: 'clamp(20px, 2.5vw, 28px)',
+                  lineHeight: 1.15,
+                  fontWeight: 400,
+                }}
+              >
+                {f.title}
+              </h3>
+
+              {/* Description */}
+              <p
+                className="leading-relaxed"
+                style={{
+                  fontFamily: SANS,
+                  fontSize: '14px',
+                  color: 'rgba(226,232,240,0.5)',
+                  fontWeight: 300,
+                  minHeight: '80px',
+                }}
+              >
+                {f.desc}
+              </p>
+
+              {/* Percentage badge */}
+              <div className="mt-5 flex items-center gap-2">
+                <div
+                  className="h-px flex-1"
+                  style={{ background: 'rgba(255,255,255,0.06)' }}
+                />
+                <span
+                  className="text-[11px] tabular-nums"
+                  style={{ color: 'rgba(255,255,255,0.2)', fontFamily: MONO }}
+                >
+                  {pct}%
+                </span>
+              </div>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>
       </div>
-    </motion.div>
+
+      {/* Navigation controls */}
+      <div className="flex items-center justify-between mt-6">
+        <button
+          onClick={() => paginate(-1)}
+          className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+          style={{
+            border: '1px solid rgba(255,255,255,0.12)',
+            color: 'rgba(255,255,255,0.4)',
+            background: 'transparent',
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 11L5 7l4-4" />
+          </svg>
+        </button>
+
+        {/* Dot indicators */}
+        <div className="flex items-center gap-1.5">
+          {factors.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setSlide([i, i > active ? 1 : -1])}
+              style={{
+                width: i === active ? '22px' : '6px',
+                height: '6px',
+                borderRadius: '3px',
+                background: i === active ? ACC : 'rgba(255,255,255,0.14)',
+                transition: 'all 0.3s ease',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            />
+          ))}
+        </div>
+
+        <button
+          onClick={() => paginate(1)}
+          className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+          style={{
+            border: '1px solid rgba(255,255,255,0.12)',
+            color: 'rgba(255,255,255,0.4)',
+            background: 'transparent',
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 3l4 4-4 4" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Network SVG decoration (Mission section) ─────────────────────────────────
+function NetworkDecoration() {
+  const nodes: [number, number][] = [
+    [120, 80], [260, 140], [420, 60], [540, 170], [680, 90],
+    [340, 230], [190, 280], [500, 300], [80, 200],
+  ]
+  const edges: [number, number][] = [
+    [0, 1], [1, 2], [2, 3], [3, 4], [1, 5], [5, 6], [5, 7], [0, 8], [3, 5],
+  ]
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <svg
+        className="absolute inset-0 w-full h-full"
+        viewBox="0 0 760 360"
+        preserveAspectRatio="xMidYMid slice"
+        style={{ opacity: 0.18 }}
+      >
+        <defs>
+          <radialGradient id="ngrd" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor={ACC} stopOpacity="0.8" />
+            <stop offset="100%" stopColor={ACC} stopOpacity="0" />
+          </radialGradient>
+        </defs>
+
+        {/* Edges */}
+        {edges.map(([a, b], i) => (
+          <motion.line
+            key={i}
+            x1={nodes[a][0]} y1={nodes[a][1]}
+            x2={nodes[b][0]} y2={nodes[b][1]}
+            stroke={ACC} strokeWidth="1"
+            strokeDasharray="5 5"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3 + i * 0.08, duration: 0.6 }}
+          />
+        ))}
+
+        {/* Nodes */}
+        {nodes.map(([x, y], i) => (
+          <motion.g key={i}
+            initial={{ opacity: 0, scale: 0 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.5 + i * 0.07, duration: 0.4 }}
+            style={{ transformOrigin: `${x}px ${y}px` }}
+          >
+            <circle cx={x} cy={y} r="12" fill={ACC} opacity="0.06" />
+            <circle cx={x} cy={y} r="4" fill={ACC} opacity={i === 1 ? 0.9 : 0.5} />
+            {i === 1 && (
+              <>
+                <circle cx={x} cy={y} r="8" fill="none" stroke={ACC} strokeWidth="1" opacity="0.3" />
+                <circle cx={x} cy={y} r="14" fill="none" stroke={ACC} strokeWidth="0.5" opacity="0.15" />
+              </>
+            )}
+          </motion.g>
+        ))}
+      </svg>
+    </div>
   )
 }
 
@@ -458,7 +656,6 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
 
             {/* Left */}
             <div className="flex-1 min-w-0">
-              {/* myblocate wordmark */}
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -469,10 +666,10 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
                 <span
                   style={{
                     fontFamily: SERIF,
-                    fontStyle: 'italic',
+                    fontStyle: 'bold',
                     fontSize: '26px',
                     fontWeight: 400,
-                    color: 'rgba(255,255,255,0.9)',
+                    color: 'rgba(255, 255, 255, 0.9)',
                     letterSpacing: '-0.01em',
                   }}
                 >
@@ -480,7 +677,6 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
                 </span>
               </motion.div>
 
-              {/* Headline */}
               <motion.h1
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -498,7 +694,6 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
                 {strings.LANDING_DESCRIPTION}
               </motion.h1>
 
-              {/* Disclaimer */}
               <motion.p
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -509,7 +704,6 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
                 {strings.LANDING_DISCLAIMER}
               </motion.p>
 
-              {/* CTA */}
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -519,28 +713,27 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
                   onClick={onStart}
                   whileHover={{ backgroundColor: ACC, color: BG }}
                   whileTap={{ scale: 0.98 }}
-                  className="inline-flex items-center gap-3 text-slate-100 cursor-pointer"
+                  className="inline-flex items-center text-slate-100 cursor-pointer"
                   style={{
                     fontFamily: SANS,
-                    fontSize: '14px',
+                    fontSize: '17px',
                     fontWeight: 500,
-                    letterSpacing: '0.04em',
-                    padding: '14px 28px',
+                    letterSpacing: '0.03em',
+                    padding: '18px 48px',
                     border: `1px solid ${ACC}`,
-                    borderRadius: '6px',
+                    borderRadius: '8px',
                     background: 'transparent',
                     transition: 'background-color 0.25s, color 0.25s',
                   }}
                 >
                   {strings.LANDING_CTA}
-                  <span>→</span>
                 </motion.button>
               </motion.div>
             </div>
 
-            {/* Right: live analysis terminal */}
+            {/* Right: 3-card layout */}
             <div className="shrink-0 flex justify-center lg:justify-end w-full lg:w-auto">
-              <AnalysisTerminal />
+              <HeroCards />
             </div>
           </div>
         </div>
@@ -638,7 +831,6 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
                   overflow: 'hidden',
                 }}
               >
-                {/* Ghost step number */}
                 <div
                   className="absolute -bottom-3 -right-2 leading-none select-none pointer-events-none"
                   style={{
@@ -652,7 +844,6 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
                   {step.num}
                 </div>
 
-                {/* Icon */}
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center mb-5"
                   style={{ background: 'rgba(0,201,138,0.1)', color: ACC }}
@@ -660,7 +851,6 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
                   {step.icon}
                 </div>
 
-                {/* Step number pill */}
                 <span
                   className="text-[9px] tracking-[0.2em] uppercase mb-3 block"
                   style={{ color: ACC, fontFamily: MONO }}
@@ -693,6 +883,9 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
         className="relative py-28 px-6 sm:px-10 overflow-hidden"
         style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
       >
+        {/* Network decoration */}
+        <NetworkDecoration />
+
         <div
           className="absolute -top-8 -left-4 select-none pointer-events-none leading-none"
           style={{
@@ -876,18 +1069,15 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
             {strings.LANDING_SCORE_SUBTITLE}
           </motion.p>
 
-          <div>
-            {evalFactors.map((f, i) => (
-              <EvalRow
-                key={f.title}
-                index={i}
-                title={f.title}
-                desc={f.desc}
-                delay={i * 0.07}
-              />
-            ))}
-            <div style={{ background: 'rgba(255,255,255,0.05)' }} className="h-px w-full" />
-          </div>
+          {/* ── Carousel replaces static list ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.6 }}
+          >
+            <EvalCarousel factors={evalFactors} />
+          </motion.div>
 
           <motion.p
             initial={{ opacity: 0 }}
@@ -935,7 +1125,6 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-14 md:gap-20">
-            {/* Left: contact info */}
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -961,7 +1150,6 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
                 {strings.LANDING_CONTACT_REACH_DESC}
               </p>
 
-              {/* Info items */}
               <div className="space-y-5">
                 <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '16px' }}>
                   <p className="text-[10px] tracking-[0.18em] uppercase mb-1.5" style={{ color: 'rgba(255,255,255,0.25)', fontFamily: MONO }}>
@@ -989,7 +1177,6 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
               </div>
             </motion.div>
 
-            {/* Right: feedback form */}
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}

@@ -117,27 +117,66 @@ describe('fetchPlacesContext', () => {
     expect(result.recognized).toBe(false)
   })
 
-  it('returns dominantCompetitor=null when no dominant chain is present', async () => {
+  it('returns empty dominantCompetitors when no dominant chain is present', async () => {
     const result = await fetchPlacesContext(40.4093, 49.8671, 'market')
-    expect(result.dominantCompetitor).toBeNull()
+    expect(result.dominantCompetitors).toHaveLength(0)
   })
 
-  it('detects dominant competitor when Bravo is in OSM data for matching category', async () => {
+  it('detects all dominant competitors when Bravo locations are in OSM data for matching category', async () => {
     ;(global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => ({
         elements: [
           { type: 'node', id: 10, lat: 40.4094, lon: 49.8672, tags: { shop: 'supermarket', name: 'Bravo Market' } },
+          { type: 'node', id: 11, lat: 40.4100, lon: 49.8680, tags: { shop: 'supermarket', name: 'Bravo Market' } },
         ],
       }),
     })
     const result = await fetchPlacesContext(40.4093, 49.8671, 'market')
-    expect(result.dominantCompetitor).not.toBeNull()
-    expect(result.dominantCompetitor?.name).toBe('Bravo Market')
-    expect(typeof result.dominantCompetitor?.distance).toBe('number')
+    expect(result.dominantCompetitors.length).toBeGreaterThanOrEqual(1)
+    expect(result.dominantCompetitors[0].name).toBe('Bravo Market')
+    expect(typeof result.dominantCompetitors[0].distance).toBe('number')
   })
 
-  it('does not flag dominant competitor when category does not match', async () => {
+  it('detects Bagel Bar as dominant competitor for kafe/coffee business', async () => {
+    // Real OSM data: Bagel Bar is amenity=cafe, osmCategories=['coffee_shop'] in BAKU_CHAINS
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        elements: [
+          {
+            type: 'node', id: 11750428579,
+            lat: 40.3588, lon: 49.8373,
+            tags: { amenity: 'cafe', name: 'Bagel Bar', cuisine: 'coffee_shop;bagels' },
+          },
+        ],
+      }),
+    })
+    // Pin ~100m away, business type 'kafe'
+    const result = await fetchPlacesContext(40.3587, 49.8373, 'kafe')
+    expect(result.dominantCompetitors.length).toBeGreaterThanOrEqual(1)
+    expect(result.dominantCompetitors[0].name).toBe('Bagel Bar')
+  })
+
+  it('does not count Bagel Bar (coffee_shop chain) as competitor for restaurant', async () => {
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        elements: [
+          {
+            type: 'node', id: 11750428579,
+            lat: 40.3588, lon: 49.8373,
+            tags: { amenity: 'cafe', name: 'Bagel Bar', cuisine: 'coffee_shop;bagels' },
+          },
+        ],
+      }),
+    })
+    const result = await fetchPlacesContext(40.3587, 49.8373, 'restoran')
+    // Bagel Bar is a coffee_shop chain, should not be a dominant competitor for restaurants
+    expect(result.dominantCompetitors).toHaveLength(0)
+  })
+
+  it('does not flag dominant competitors when category does not match', async () => {
     ;(global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -148,6 +187,6 @@ describe('fetchPlacesContext', () => {
     })
     // Opening a dentist clinic near Bravo — no conflict
     const result = await fetchPlacesContext(40.4093, 49.8671, 'dentist')
-    expect(result.dominantCompetitor).toBeNull()
+    expect(result.dominantCompetitors).toHaveLength(0)
   })
 })

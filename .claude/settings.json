@@ -12,7 +12,25 @@
       "Bash(xxd)",
       "Bash(ls \"c:/Users/Matin Asgarov/Desktop/Projects/hanimenebiznes/\"*.md)",
       "Bash(python -c \"import json; d=json.load\\(open\\('c:/Users/Matin Asgarov/Desktop/Projects/hanimenebiznes/datasets/lake-coordinates.json'\\)\\); print\\(f'Features: {len\\(d[\\\\\"features\\\\\"]\\)}, Types: {set\\(f[\\\\\"geometry\\\\\"][\\\\\"type\\\\\"] for f in d[\\\\\"features\\\\\"]\\)}'\\)\")",
-      "Bash(python -u -)"
+      "Bash(python -u -)",
+      "WebFetch(domain:overpass-api.de)",
+      "Bash(curl -s --max-time 15 -X POST \"https://overpass-api.de/api/interpreter\" -d 'data=[out:json][timeout:10];\\(node[\"name\"~\"Bagel\",i]\\(around:3000,40.4093,49.8671\\);way[\"name\"~\"Bagel\",i]\\(around:3000,40.4093,49.8671\\);\\);out body center;')",
+      "Bash(curl -s --max-time 20 -X POST \"https://overpass-api.de/api/interpreter\" --data-urlencode 'data=[out:json][timeout:15];\\(node[\"name\"~\"Bagel\",i]\\(around:5000,40.4093,49.8671\\);way[\"name\"~\"Bagel\",i]\\(around:5000,40.4093,49.8671\\);\\);out body center;')",
+      "Bash(curl -s --max-time 20 -X POST \"https://overpass.kumi.systems/api/interpreter\" --data-urlencode 'data=[out:json][timeout:15];\\(node[\"name\"~\"Bagel\",i]\\(around:5000,40.4093,49.8671\\);way[\"name\"~\"Bagel\",i]\\(around:5000,40.4093,49.8671\\);\\);out body center;')",
+      "Bash(curl -s --max-time 15 \"https://nominatim.openstreetmap.org/search?q=Bagel+Bar+Baku&format=json&limit=5&countrycodes=az\" -H \"User-Agent: myblocate-debug\")",
+      "Bash(curl -s --max-time 20 -X POST \"https://overpass-api.de/api/interpreter\" --data-urlencode 'data=[out:json][timeout:10];node\\(11750428579\\);out body;')",
+      "Bash(curl -s --max-time 25 -X POST \"https://overpass-api.de/api/interpreter\" --data-urlencode 'data=[out:json][timeout:15];\\(node[\"amenity\"]\\(around:500,40.3587,49.8373\\);way[\"amenity\"]\\(around:500,40.3587,49.8373\\);node[\"shop\"]\\(around:500,40.3587,49.8373\\);way[\"shop\"]\\(around:500,40.3587,49.8373\\);\\);out body center;')",
+      "Bash(python3 -c \"import sys,json; data=json.load\\(sys.stdin\\); [print\\(f'{e[\\\\\"id\\\\\"]} {e[\\\\\"type\\\\\"]} name={e[\\\\\"tags\\\\\"].get\\(\\\\\"name\\\\\",\\\\\"\\\\\"\\)} amenity={e[\\\\\"tags\\\\\"].get\\(\\\\\"amenity\\\\\",\\\\\"\\\\\"\\)} shop={e[\\\\\"tags\\\\\"].get\\(\\\\\"shop\\\\\",\\\\\"\\\\\"\\)}'\\) for e in data['elements'] if 'bagel' in e.get\\('tags',{}\\).get\\('name',''\\).lower\\(\\) or 'cafe' in e.get\\('tags',{}\\).get\\('amenity',''\\) or 'coffee' in e.get\\('tags',{}\\).get\\('amenity',''\\)]\")",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\)\\); d.elements.filter\\(e=>\\(e.tags?.name||''\\).toLowerCase\\(\\).includes\\('bagel'\\)\\).forEach\\(e=>console.log\\(JSON.stringify\\({id:e.id,type:e.type,name:e.tags?.name,amenity:e.tags?.amenity,shop:e.tags?.shop,lat:e.lat||e.center?.lat,lon:e.lon||e.center?.lon},null,2\\)\\)\\)\")",
+      "Bash(curl -s --max-time 25 -X POST \"https://overpass-api.de/api/interpreter\" --data-urlencode 'data=[out:json][timeout:15];\\(node[\"amenity\"]\\(around:500,40.3587,49.8373\\);way[\"amenity\"]\\(around:500,40.3587,49.8373\\);node[\"shop\"]\\(around:500,40.3587,49.8373\\);way[\"shop\"]\\(around:500,40.3587,49.8373\\);\\);out body center;' -o /tmp/overpass_bagel.json)",
+      "Bash(node -e \"const d=require\\('/tmp/overpass_bagel.json'\\); d.elements.filter\\(e=>\\(e.tags?.name||''\\).toLowerCase\\(\\).includes\\('bagel'\\)\\).forEach\\(e=>console.log\\(JSON.stringify\\({id:e.id,type:e.type,name:e.tags?.name,amenity:e.tags?.amenity,shop:e.tags?.shop,lat:e.lat||e.center?.lat,lon:e.lon||e.center?.lon},null,2\\)\\)\\)\")",
+      "Bash(curl -s --max-time 25 -X POST \"https://overpass-api.de/api/interpreter\" --data-urlencode 'data=[out:json][timeout:15];\\(node[\"amenity\"]\\(around:500,40.3587,49.8373\\);way[\"amenity\"]\\(around:500,40.3587,49.8373\\);node[\"shop\"]\\(around:500,40.3587,49.8373\\);way[\"shop\"]\\(around:500,40.3587,49.8373\\);\\);out body center;' -o overpass_test.json)",
+      "Bash(node -e \"const d=require\\('./overpass_test.json'\\); const bagels=d.elements.filter\\(e=>\\(e.tags?.name||''\\).toLowerCase\\(\\).includes\\('bagel'\\)\\); console.log\\('Total elements:', d.elements.length\\); console.log\\('Bagel matches:', bagels.length\\); bagels.forEach\\(e=>console.log\\(JSON.stringify\\({id:e.id,type:e.type,name:e.tags?.name,amenity:e.tags?.amenity,shop:e.tags?.shop}\\)\\)\\)\")",
+      "Bash(curl -s --max-time 25 -X POST \"https://overpass.kumi.systems/api/interpreter\" --data-urlencode 'data=[out:json][timeout:15];node\\(11750428579\\);out body;' -o overpass_test.json)",
+      "Bash(node -e ' *)",
+      "Bash(npx tsx -e ' *)",
+      "Bash(npx tsx *)",
+      "Bash(curl -s --max-time 15 \"https://nominatim.openstreetmap.org/search?q=Bagel+Bar&format=json&limit=10&countrycodes=az\" -H \"User-Agent: myblocate-debug\")"
     ]
   }
 }
