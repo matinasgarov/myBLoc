@@ -6,6 +6,8 @@ interface Props {
   result: AnalysisResult
   context: PlacesContext | null
   label: string
+  lat?: number
+  lng?: number
 }
 
 const FACTOR_LABELS: Record<string, string> = {
@@ -38,7 +40,7 @@ async function loadAsBase64(url: string): Promise<string> {
   return btoa(binary)
 }
 
-export default function PdfDownloadButton({ business, result, context, label }: Props) {
+export default function PdfDownloadButton({ business, result, context, label, lat, lng }: Props) {
   async function handleDownload() {
     try {
     const { jsPDF } = await import('jspdf')
@@ -67,7 +69,7 @@ export default function PdfDownloadButton({ business, result, context, label }: 
     const fontFamily = 'Roboto'
 
     const NAV = '#0f172a'
-    const ACCENT = '#10b981'
+    const ACCENT = '#1035b9'
     const TEXT = '#1e293b'
     const LIGHT = '#64748b'
     const RULE = '#e2e8f0'
@@ -131,6 +133,17 @@ export default function PdfDownloadButton({ business, result, context, label }: 
       doc.setFontSize(8)
       doc.setTextColor(LIGHT)
       doc.text(`Kira: ${result.rentTierAz}`, M, y)
+      y += 6
+    }
+
+    // Coordinates row
+    if (lat !== undefined && lng !== undefined) {
+      doc.setFont(fontFamily, 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(LIGHT)
+      const latDir = lat >= 0 ? 'N' : 'S'
+      const lngDir = lng >= 0 ? 'E' : 'W'
+      doc.text(`Koordinatlar: ${Math.abs(lat).toFixed(4)}° ${latDir}, ${Math.abs(lng).toFixed(4)}° ${lngDir}`, M, y)
       y += 6
     }
 
@@ -281,7 +294,7 @@ export default function PdfDownloadButton({ business, result, context, label }: 
     doc.setFont(fontFamily, 'normal')
     doc.setFontSize(7)
     doc.setTextColor(LIGHT)
-    doc.text('myblocate.az  ·  Bu hesabat məlumat xarakter daşıyır.', W / 2, 290, { align: 'center' })
+    doc.text('myblocate.com  ·  Bu hesabat məlumat xarakter daşıyır.', W / 2, 290, { align: 'center' })
 
     const filename = `myblocate-${safeBusiness.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || 'report'}.pdf`
     doc.save(filename)

@@ -5,7 +5,6 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import type { Strings } from '@/lib/i18n'
 import type { Lang } from '@/lib/i18n'
 import { RadarChartDisplay, BarsChartDisplay, ScoreRingDisplay } from '@/components/Charts'
-import { Monofett } from 'next/font/google'
 
 interface Props {
   onStart: () => void
@@ -15,11 +14,11 @@ interface Props {
 }
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
-const BG   = '#07090D'
+const BG   = '#030513'
 const SURF = '#0D1218'
 const ACC  = '#0051ff'
 const MONO  = 'var(--font-space-mono)'
-const SERIF = 'var(--font-serif)'
+const SERIF = 'var(--font-sans)'
 const SANS  = 'var(--font-sans)'
 
 // ─── Terminal factor data ─────────────────────────────────────────────────────
@@ -58,10 +57,10 @@ function HeroCard({
       style={{
         fontFamily: MONO,
         background: SURF,
-        border: `1px solid rgba(0,201,138,${prominent ? 0.2 : 0.1})`,
+        border: `1px solid rgba(0,81,255,${prominent ? 0.25 : 0.12})`,
         boxShadow: prominent
-          ? '0 0 60px rgba(0,201,138,0.07), inset 0 0 40px rgba(0,0,0,0.3)'
-          : '0 0 30px rgba(0,201,138,0.03)',
+          ? '0 0 60px rgba(0,81,255,0.1), inset 0 0 40px rgba(0,0,0,0.3)'
+          : '0 0 30px rgba(0,81,255,0.04)',
         borderRadius: '12px',
         overflow: 'hidden',
         width: '220px',
@@ -69,7 +68,7 @@ function HeroCard({
     >
       {/* Header */}
       <div
-        style={{ borderBottom: '1px solid rgba(0,201,138,0.12)', background: 'rgba(0,201,138,0.04)' }}
+        style={{ borderBottom: '1px solid rgba(0,81,255,0.15)', background: 'rgba(0,81,255,0.04)' }}
         className="px-4 py-2.5 flex items-center justify-between shrink-0"
       >
         <div className="flex items-center gap-2">
@@ -93,7 +92,7 @@ function HeroCard({
 
       {/* Footer */}
       <div
-        style={{ borderTop: '1px solid rgba(0,201,138,0.1)', background: 'rgba(0,201,138,0.025)' }}
+        style={{ borderTop: '1px solid rgba(0,81,255,0.12)', background: 'rgba(0,81,255,0.025)' }}
         className="px-4 py-2.5 flex items-center justify-between"
       >
         <span className="text-[9px] tracking-[0.12em] uppercase text-slate-500">Ümumi Bal</span>
@@ -232,10 +231,10 @@ function EvalCarousel({ factors }: EvalCarouselProps) {
                 className="text-slate-100 mb-3"
                 style={{
                   fontFamily: SERIF,
-                  fontStyle: 'italic',
                   fontSize: 'clamp(20px, 2.5vw, 28px)',
-                  lineHeight: 1.15,
-                  fontWeight: 400,
+                  lineHeight: 1.2,
+                  fontWeight: 700,
+                  letterSpacing: '-0.015em',
                 }}
               >
                 {f.title}
@@ -247,9 +246,10 @@ function EvalCarousel({ factors }: EvalCarouselProps) {
                 style={{
                   fontFamily: SANS,
                   fontSize: '14px',
-                  color: 'rgba(226,232,240,0.5)',
-                  fontWeight: 300,
+                  color: 'rgba(226,232,240,0.7)',
+                  fontWeight: 400,
                   minHeight: '80px',
+                  lineHeight: 1.7,
                 }}
               >
                 {f.desc}
@@ -263,7 +263,7 @@ function EvalCarousel({ factors }: EvalCarouselProps) {
                 />
                 <span
                   className="text-[11px] tabular-nums"
-                  style={{ color: 'rgba(255,255,255,0.2)', fontFamily: MONO }}
+                  style={{ color: 'rgba(255,255,255,0.35)', fontFamily: MONO }}
                 >
                   {pct}%
                 </span>
@@ -666,11 +666,10 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
                 <span
                   style={{
                     fontFamily: SERIF,
-                    fontStyle: 'bold',
-                    fontSize: '26px',
-                    fontWeight: 400,
-                    color: 'rgba(255, 255, 255, 0.9)',
-                    letterSpacing: '-0.01em',
+                    fontSize: '24px',
+                    fontWeight: 700,
+                    color: 'rgba(255, 255, 255, 0.92)',
+                    letterSpacing: '-0.02em',
                   }}
                 >
                   myblocate
@@ -684,11 +683,10 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
                 className="text-slate-50 mb-6"
                 style={{
                   fontFamily: SERIF,
-                  fontStyle: 'italic',
-                  fontSize: 'clamp(38px, 5.5vw, 72px)',
-                  lineHeight: 1.08,
-                  fontWeight: 400,
-                  letterSpacing: '-0.01em',
+                  fontSize: 'clamp(36px, 5vw, 68px)',
+                  lineHeight: 1.07,
+                  fontWeight: 800,
+                  letterSpacing: '-0.03em',
                 }}
               >
                 {strings.LANDING_DESCRIPTION}
@@ -699,7 +697,7 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.45 }}
                 className="text-[14px] leading-relaxed mb-10 max-w-sm"
-                style={{ color: 'rgba(226,232,240,0.48)', fontFamily: SANS, fontWeight: 300 }}
+                style={{ color: 'rgba(226,232,240,0.68)', fontFamily: SANS, fontWeight: 400 }}
               >
                 {strings.LANDING_DISCLAIMER}
               </motion.p>
@@ -770,13 +768,13 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
               >
                 <p
                   className="text-3xl font-light mb-1"
-                  style={{ fontFamily: SERIF, fontStyle: 'italic', color: ACC }}
+                  style={{ fontFamily: SERIF, fontWeight: 700, color: ACC, letterSpacing: '-0.02em' }}
                 >
                   {stat.value}
                 </p>
                 <p
                   className="text-[11px] tracking-[0.14em] uppercase"
-                  style={{ color: 'rgba(255,255,255,0.3)', fontFamily: MONO }}
+                  style={{ color: 'rgba(255,255,255,0.48)', fontFamily: MONO }}
                 >
                   {stat.label}
                 </p>
@@ -807,7 +805,36 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
             viewport={{ once: true, margin: '-80px' }}
             transition={{ duration: 0.5 }}
             className="flex items-center gap-3 mb-14"
+          
           >
+            <div className="flex-1">
+              <motion.h2
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-80px' }}
+                transition={{ duration: 0.7, ease: [0.25, 0, 0, 1] }}
+                className="text-slate-50 mb-5"
+                style={{
+                  fontFamily: SERIF,
+                  fontSize: 'clamp(28px, 3.6vw, 48px)',
+                  lineHeight: 1.1,
+                  fontWeight: 700,
+                  letterSpacing: '-0.025em',
+                }}
+              >
+                {strings.LANDING_HOW_TITLE}
+              </motion.h2>
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-80px' }}
+                transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 0, 0, 1] }}
+                className="text-[15px] leading-relaxed"
+                style={{ color: 'rgba(226,232,240,0.72)', fontFamily: SANS, fontWeight: 400 }}
+              >
+          
+              </motion.p>
+            </div>
             <span className="w-8 h-px" style={{ background: ACC }} />
             <span className="text-[10px] tracking-[0.22em] uppercase" style={{ color: ACC, fontFamily: MONO }}>
               {strings.LANDING_HOW_TITLE}
@@ -866,7 +893,7 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
                 </h3>
                 <p
                   className="text-sm leading-relaxed"
-                  style={{ color: 'rgba(226,232,240,0.45)', fontFamily: SANS, fontWeight: 300 }}
+                  style={{ color: 'rgba(226,232,240,0.65)', fontFamily: SANS, fontWeight: 400 }}
                 >
                   {step.desc}
                 </p>
@@ -949,10 +976,10 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
                 className="text-slate-50 mb-5"
                 style={{
                   fontFamily: SERIF,
-                  fontStyle: 'italic',
-                  fontSize: 'clamp(30px, 3.8vw, 50px)',
-                  lineHeight: 1.12,
-                  fontWeight: 400,
+                  fontSize: 'clamp(28px, 3.6vw, 48px)',
+                  lineHeight: 1.1,
+                  fontWeight: 700,
+                  letterSpacing: '-0.025em',
                 }}
               >
                 {strings.LANDING_MISSION_TITLE}
@@ -963,7 +990,7 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
                 viewport={{ once: true, margin: '-80px' }}
                 transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 0, 0, 1] }}
                 className="text-[15px] leading-relaxed"
-                style={{ color: 'rgba(226,232,240,0.55)', fontFamily: SANS, fontWeight: 300 }}
+                style={{ color: 'rgba(226,232,240,0.72)', fontFamily: SANS, fontWeight: 400 }}
               >
                 {strings.LANDING_MISSION_TEXT}
               </motion.p>
@@ -988,7 +1015,7 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
               >
                 <p
                   className="text-2xl font-light mb-2"
-                  style={{ fontFamily: SERIF, fontStyle: 'italic', color: ACC }}
+                  style={{ fontFamily: SERIF, fontWeight: 700, color: ACC, letterSpacing: '-0.02em' }}
                 >
                   {p.num}
                 </p>
@@ -1000,7 +1027,7 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
                 </h4>
                 <p
                   className="text-[13px] leading-relaxed"
-                  style={{ color: 'rgba(226,232,240,0.4)', fontFamily: SANS, fontWeight: 300 }}
+                  style={{ color: 'rgba(226,232,240,0.60)', fontFamily: SANS, fontWeight: 400 }}
                 >
                   {p.desc}
                 </p>
@@ -1050,10 +1077,10 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
             className="text-slate-50 mb-3"
             style={{
               fontFamily: SERIF,
-              fontStyle: 'italic',
               fontSize: 'clamp(28px, 4vw, 48px)',
-              fontWeight: 400,
-              lineHeight: 1.15,
+              fontWeight: 700,
+              lineHeight: 1.1,
+              letterSpacing: '-0.025em',
             }}
           >
             {strings.LANDING_SCORE_TITLE}
@@ -1064,7 +1091,7 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
             viewport={{ once: true, margin: '-80px' }}
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-[15px] mb-12"
-            style={{ color: 'rgba(226,232,240,0.45)', fontFamily: SANS, fontWeight: 300 }}
+            style={{ color: 'rgba(226,232,240,0.65)', fontFamily: SANS, fontWeight: 400 }}
           >
             {strings.LANDING_SCORE_SUBTITLE}
           </motion.p>
@@ -1085,7 +1112,7 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.5 }}
             className="text-[11px] mt-10"
-            style={{ color: 'rgba(255,255,255,0.2)', fontFamily: MONO }}
+            style={{ color: 'rgba(255,255,255,0.35)', fontFamily: MONO }}
           >
             {strings.LANDING_SCORE_FOOTNOTE}
           </motion.p>
@@ -1135,24 +1162,24 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
                 className="text-slate-50 mb-4"
                 style={{
                   fontFamily: SERIF,
-                  fontStyle: 'italic',
                   fontSize: 'clamp(28px, 3.5vw, 48px)',
-                  fontWeight: 400,
-                  lineHeight: 1.15,
+                  fontWeight: 700,
+                  lineHeight: 1.1,
+                  letterSpacing: '-0.025em',
                 }}
               >
                 {strings.LANDING_CONTACT_TITLE}
               </h2>
               <p
                 className="text-[15px] leading-relaxed mb-10"
-                style={{ color: 'rgba(226,232,240,0.45)', fontFamily: SANS, fontWeight: 300 }}
+                style={{ color: 'rgba(226,232,240,0.65)', fontFamily: SANS, fontWeight: 400 }}
               >
                 {strings.LANDING_CONTACT_REACH_DESC}
               </p>
 
               <div className="space-y-5">
                 <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '16px' }}>
-                  <p className="text-[10px] tracking-[0.18em] uppercase mb-1.5" style={{ color: 'rgba(255,255,255,0.25)', fontFamily: MONO }}>
+                  <p className="text-[10px] tracking-[0.18em] uppercase mb-1.5" style={{ color: 'rgba(255,255,255,0.42)', fontFamily: MONO }}>
                     {strings.LANDING_CONTACT_EMAIL_LABEL}
                   </p>
                   <a
@@ -1164,12 +1191,12 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
                   </a>
                 </div>
                 <div>
-                  <p className="text-[10px] tracking-[0.18em] uppercase mb-1.5" style={{ color: 'rgba(255,255,255,0.25)', fontFamily: MONO }}>
+                  <p className="text-[10px] tracking-[0.18em] uppercase mb-1.5" style={{ color: 'rgba(255,255,255,0.42)', fontFamily: MONO }}>
                     {strings.LANDING_CONTACT_RESPONSE}
                   </p>
                   <div className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: ACC }} />
-                    <p className="text-[14px]" style={{ color: 'rgba(226,232,240,0.5)', fontFamily: SANS, fontWeight: 300 }}>
+                    <p className="text-[14px]" style={{ color: 'rgba(226,232,240,0.5)', fontFamily: SANS, fontWeight: 400 }}>
                       {lang === 'az' ? '24 saat ərzində cavab veririk' : 'We respond within 24 hours'}
                     </p>
                   </div>
@@ -1185,7 +1212,7 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
             >
               <p
                 className="text-[14px] mb-6"
-                style={{ color: 'rgba(226,232,240,0.4)', fontFamily: SANS, fontWeight: 300 }}
+                style={{ color: 'rgba(226,232,240,0.60)', fontFamily: SANS, fontWeight: 400 }}
               >
                 {strings.LANDING_CONTACT_SUBTITLE}
               </p>
@@ -1203,14 +1230,14 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <img src="/logo.png" alt="myblocate" className="h-6 w-auto opacity-50" />
-            <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.2)', fontFamily: MONO }}>
-              © 2025 MYBLOCATE
+            <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.35)', fontFamily: MONO }}>
+              © 2026 MYBLOCATE
             </span>
           </div>
           <a
             href={`mailto:${strings.LANDING_CONTACT_EMAIL}`}
             className="text-[11px] transition-colors duration-200 hover:text-slate-400"
-            style={{ color: 'rgba(255,255,255,0.18)', fontFamily: MONO }}
+            style={{ color: 'rgba(255,255,255,0.32)', fontFamily: MONO }}
           >
             {strings.LANDING_CONTACT_EMAIL}
           </a>

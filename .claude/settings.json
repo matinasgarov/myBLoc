@@ -1,4 +1,7 @@
 {
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true
+  },
   "permissions": {
     "allow": [
       "Bash(node -e ':*)",
@@ -30,7 +33,12 @@
       "Bash(node -e ' *)",
       "Bash(npx tsx -e ' *)",
       "Bash(npx tsx *)",
-      "Bash(curl -s --max-time 15 \"https://nominatim.openstreetmap.org/search?q=Bagel+Bar&format=json&limit=10&countrycodes=az\" -H \"User-Agent: myblocate-debug\")"
+      "Bash(curl -s --max-time 15 \"https://nominatim.openstreetmap.org/search?q=Bagel+Bar&format=json&limit=10&countrycodes=az\" -H \"User-Agent: myblocate-debug\")",
+      "Bash(npm list *)",
+      "Bash(npm audit *)",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(k, '->', v.get\\('marketplaceId','?'\\)\\) for k,v in d.items\\(\\)]\")"
     ]
   }
 }

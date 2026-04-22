@@ -214,7 +214,7 @@ export const AZ = {
   HISTORY_TITLE: 'Keçmiş təhlillər',
   HISTORY_EMPTY: 'Hələ heç bir təhlil yoxdur.',
   ERROR_NO_DATA: 'Bu ərazidə kifayət qədər məlumat yoxdur. Daha məskunlaşmış bir yer sınayın.',
-  ERROR_ANALYSIS_FAILED: 'Təhlil uğursuz oldu. Yenidən cəhd edin.',
+  ERROR_ANALYSIS_FAILED: 'Təhlil uğursuz oldu. Birazdan yenidən cəhd edin.',
 } as const
 ```
 

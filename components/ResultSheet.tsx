@@ -1,8 +1,9 @@
 'use client'
 import { useState } from 'react'
-import { getStrings } from '@/lib/i18n'
+import { getStrings, type Lang } from '@/lib/i18n'
 import type { AnalysisResult, PlacesContext, FactorKey } from '@/lib/types'
 import PdfDownloadButton from './PdfDownloadButton'
+import { buildShareUrl } from '@/lib/share'
 
 type Strings = ReturnType<typeof getStrings>
 
@@ -10,6 +11,9 @@ interface Props {
   business: string
   result: AnalysisResult
   context: PlacesContext | null
+  lat?: number
+  lng?: number
+  lang: Lang
   onReset: () => void
   strings: Strings
 }
@@ -58,19 +62,52 @@ function ScoreRing({ score }: { score: number }) {
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[10px] uppercase tracking-[0.18em] mb-3 font-medium" style={{ color: 'rgba(100,116,139,0.8)' }}>
+    <p className="text-[11px] uppercase tracking-[0.12em] mb-3.5 font-semibold" style={{ color: 'rgba(148,163,184,0.75)' }}>
       {children}
     </p>
   )
 }
 
-interface BarProps { label: string; value: number; max: number; note?: string }
-function ScoreBar({ label, value, max, note }: BarProps) {
+interface BarProps { label: string; value: number; max: number; note?: string; explain?: string }
+function ScoreBar({ label, value, max, note, explain }: BarProps) {
+  const [open, setOpen] = useState(false)
   const pct = Math.round((value / max) * 100)
   const barColor = pct >= 70 ? '#34d399' : pct >= 40 ? '#fbbf24' : '#f87171'
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-xs w-36 shrink-0" style={{ color: 'rgba(148,163,184,0.7)' }}>{label}</span>
+    <div className="flex items-center gap-3 relative">
+      <div className="w-36 shrink-0 flex items-center gap-1.5">
+        <span className="text-xs" style={{ color: 'rgba(148,163,184,0.7)' }}>{label}</span>
+        {explain && (
+          <button
+            type="button"
+            onClick={() => setOpen(v => !v)}
+            onMouseEnter={() => setOpen(true)}
+            onMouseLeave={() => setOpen(false)}
+            aria-label="More info"
+            className="shrink-0 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold leading-none transition-colors"
+            style={{
+              background: 'rgba(255,255,255,0.06)',
+              color: 'rgba(148,163,184,0.7)',
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}
+          >
+            i
+          </button>
+        )}
+        {open && explain && (
+          <div
+            className="absolute z-20 top-full mt-1 left-0 max-w-[260px] px-3 py-2 rounded-lg text-[11px] leading-snug pointer-events-none"
+            style={{
+              background: 'rgba(15,23,42,0.97)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              color: 'rgba(203,213,225,0.85)',
+              boxShadow: '0 6px 20px rgba(0,0,0,0.5)',
+            }}
+          >
+            {explain}
+          </div>
+        )}
+      </div>
       <div className="flex-1 h-[3px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
         {pct > 0 && (
           <div
@@ -96,9 +133,32 @@ const FACTOR_LABEL_KEYS: Record<FactorKey, keyof Strings> = {
   businessDensity: 'FACTOR_BUSINESS_DENSITY',
 }
 
-export default function ResultSheet({ business, result, context, onReset, strings }: Props) {
+const FACTOR_EXPLAIN_KEYS: Record<FactorKey, keyof Strings> = {
+  competition: 'FACTOR_EXPLAIN_COMPETITION',
+  footTraffic: 'FACTOR_EXPLAIN_FOOT_TRAFFIC',
+  areaType: 'FACTOR_EXPLAIN_AREA_TYPE',
+  urbanTier: 'FACTOR_EXPLAIN_URBAN_TIER',
+  accessibility: 'FACTOR_EXPLAIN_ACCESSIBILITY',
+  nearbyServices: 'FACTOR_EXPLAIN_NEARBY_SERVICES',
+  businessDensity: 'FACTOR_EXPLAIN_BUSINESS_DENSITY',
+}
+
+export default function ResultSheet({ business, result, context, lat, lng, lang, onReset, strings }: Props) {
   const [expanded, setExpanded] = useState(false)
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'failed'>('idle')
   const sc = scoreColor(result.score)
+
+  const handleShare = async () => {
+    if (typeof window === 'undefined' || lat === undefined || lng === undefined) return
+    const url = buildShareUrl(window.location.origin, { lat, lng, q: business, lang })
+    try {
+      await navigator.clipboard.writeText(url)
+      setShareStatus('copied')
+    } catch {
+      setShareStatus('failed')
+    }
+    setTimeout(() => setShareStatus('idle'), 2000)
+  }
 
   const analysisBullets = [result.detail, result.verdict]
     .filter(Boolean)
@@ -158,6 +218,37 @@ export default function ResultSheet({ business, result, context, onReset, string
           <ScoreRing score={result.score} />
         </div>
 
+        {/* Share button */}
+        <button
+          onClick={handleShare}
+          disabled={lat === undefined || lng === undefined}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0"
+          style={{
+            border: '1px solid rgba(255,255,255,0.08)',
+            color: shareStatus === 'copied' ? '#34d399' : shareStatus === 'failed' ? '#f87171' : 'rgba(100,116,139,0.8)',
+            background: 'transparent',
+          }}
+          onMouseEnter={e => {
+            if (shareStatus !== 'idle') return
+            e.currentTarget.style.borderColor = 'rgba(59,130,246,0.4)'
+            e.currentTarget.style.background = 'rgba(59,130,246,0.06)'
+          }}
+          onMouseLeave={e => {
+            if (shareStatus !== 'idle') return
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
+            e.currentTarget.style.background = 'transparent'
+          }}
+        >
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="3" cy="6" r="1.5"/>
+            <circle cx="9" cy="2.5" r="1.5"/>
+            <circle cx="9" cy="9.5" r="1.5"/>
+            <line x1="4.3" y1="5.3" x2="7.7" y2="3.2"/>
+            <line x1="4.3" y1="6.7" x2="7.7" y2="8.8"/>
+          </svg>
+          {shareStatus === 'copied' ? strings.SHARE_COPIED : shareStatus === 'failed' ? strings.SHARE_FAILED : strings.SHARE_BUTTON}
+        </button>
+
         {/* Reset button */}
         <button
           onClick={onReset}
@@ -168,9 +259,9 @@ export default function ResultSheet({ business, result, context, onReset, string
             background: 'transparent',
           }}
           onMouseEnter={e => {
-            e.currentTarget.style.borderColor = 'rgba(0,201,138,0.4)'
-            e.currentTarget.style.background = 'rgba(0,201,138,0.06)'
-            e.currentTarget.style.color = '#00C98A'
+            e.currentTarget.style.borderColor = 'rgba(59,130,246,0.4)'
+            e.currentTarget.style.background = 'rgba(59,130,246,0.06)'
+            e.currentTarget.style.color = 'rgba(226,232,240,0.9)'
           }}
           onMouseLeave={e => {
             e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
@@ -224,8 +315,8 @@ export default function ResultSheet({ business, result, context, onReset, string
 
         {/* Summary */}
         {result.summary && (
-          <div className="px-6 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <p className="text-sm leading-relaxed" style={{ color: 'rgba(203,213,225,0.75)' }}>
+          <div className="px-6 py-6" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <p className="text-[15px] leading-[1.75]" style={{ color: 'rgba(203,213,225,0.88)' }}>
               {result.summary}
             </p>
           </div>
@@ -238,42 +329,87 @@ export default function ResultSheet({ business, result, context, onReset, string
         >
           {/* Pros */}
           <div
-            className="px-6 py-5"
+            className="px-6 py-6"
             style={{ borderRight: '1px solid rgba(255,255,255,0.05)' }}
           >
             <Label>{strings.RESULT_PROS}</Label>
-            <ul className="space-y-3">
+            <ul className="space-y-3.5">
               {result.pros.map((p, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-sm leading-snug">
+                <li key={i} className="flex items-start gap-2.5 text-[14px] leading-relaxed">
                   <span
                     className="shrink-0 font-bold mt-px text-xs"
-                    style={{ color: '#34d399' }}
+                    style={{ color: '#60a5fa' }}
                   >
                     +
                   </span>
-                  <span style={{ color: 'rgba(203,213,225,0.8)' }}>{p}</span>
+                  <span style={{ color: 'rgba(203,213,225,0.9)' }}>{p}</span>
                 </li>
               ))}
             </ul>
           </div>
           {/* Cons */}
-          <div className="px-6 py-5">
+          <div className="px-6 py-6">
             <Label>{strings.RESULT_CONS}</Label>
-            <ul className="space-y-3">
+            <ul className="space-y-3.5">
               {result.cons.map((c, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-sm leading-snug">
+                <li key={i} className="flex items-start gap-2.5 text-[14px] leading-relaxed">
                   <span
                     className="shrink-0 font-bold mt-px"
                     style={{ color: '#f87171' }}
                   >
                     —
                   </span>
-                  <span style={{ color: 'rgba(203,213,225,0.8)' }}>{c}</span>
+                  <span style={{ color: 'rgba(203,213,225,0.9)' }}>{c}</span>
                 </li>
               ))}
             </ul>
           </div>
         </div>
+
+        {/* ── OSM data grid — always visible (static location data, independent of score) ─── */}
+        {context && (
+          <div className="px-6 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <Label>{strings.RESULT_OSM_TITLE}</Label>
+            <div className="grid grid-cols-3 gap-2.5">
+              {[
+                { val: String(context.competitors),    lbl: strings.RESULT_OSM_COMPETITORS },
+                { val: String(context.totalBusinesses), lbl: strings.RESULT_OSM_BUSINESSES },
+                { val: String(context.busStops),       lbl: strings.RESULT_OSM_BUS_STOPS },
+                { val: String(context.groceryStores),  lbl: strings.RESULT_OSM_GROCERY },
+                { val: String(context.parking),        lbl: strings.RESULT_OSM_PARKING },
+                {
+                  val: context.metroDistance !== null ? `${context.metroDistance}m` : '—',
+                  lbl: strings.RESULT_OSM_METRO,
+                },
+              ].map(({ val, lbl }) => (
+                <div
+                  key={lbl}
+                  className="h-24 flex flex-col items-center justify-center px-2 rounded-xl"
+                  style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                  }}
+                >
+                  <p
+                    className="text-2xl font-bold tabular-nums"
+                    style={{ color: 'rgba(241,245,249,0.9)' }}
+                  >
+                    {val}
+                  </p>
+                  <p
+                    className="text-[10px] uppercase tracking-wide mt-1 text-center leading-tight"
+                    style={{ color: 'rgba(100,116,139,0.7)' }}
+                  >
+                    {lbl}
+                  </p>
+                </div>
+              ))}
+            </div>
+            {context.landUse && (
+              <p className="text-sm mt-3" style={{ color: '#fbbf24' }}>⚠ {context.landUse}</p>
+            )}
+          </div>
+        )}
 
         {/* ── Expandable detail ─────────────────────────── */}
         {expanded && (
@@ -285,7 +421,7 @@ export default function ResultSheet({ business, result, context, onReset, string
                 <ul className="space-y-2.5">
                   {analysisBullets.map((point, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm leading-relaxed">
-                      <span className="shrink-0 mt-px font-bold" style={{ color: 'rgba(0,201,138,0.6)' }}>•</span>
+                      <span className="shrink-0 mt-px font-bold" style={{ color: 'rgba(59,130,246,0.7)' }}>•</span>
                       <span style={{ color: 'rgba(148,163,184,0.75)' }}>{point}</span>
                     </li>
                   ))}
@@ -303,61 +439,13 @@ export default function ResultSheet({ business, result, context, onReset, string
                       label={strings[FACTOR_LABEL_KEYS[f.key]] as string}
                       value={f.score}
                       max={f.max}
+                      explain={strings[FACTOR_EXPLAIN_KEYS[f.key]] as string}
                       note={f.key === 'competition' && context
                         ? strings.RESULT_COMPETITORS_NOTE.replace('{n}', String(context.competitors))
                         : undefined}
                     />
                   ))}
                 </div>
-              </div>
-            )}
-
-            {context && (
-              <div>
-                <Label>{strings.RESULT_OSM_TITLE}</Label>
-                {result.score < 45 && (
-                  <p className="text-xs mb-3 leading-snug" style={{ color: '#f87171' }}>
-                    ⚠ {strings.RESULT_LOW_SCORE_WARNING}
-                  </p>
-                )}
-                <div className="grid grid-cols-3 gap-2.5">
-                  {[
-                    { val: String(context.competitors),    lbl: strings.RESULT_OSM_COMPETITORS },
-                    { val: String(context.totalBusinesses), lbl: strings.RESULT_OSM_BUSINESSES },
-                    { val: String(context.busStops),       lbl: strings.RESULT_OSM_BUS_STOPS },
-                    { val: String(context.groceryStores),  lbl: strings.RESULT_OSM_GROCERY },
-                    { val: String(context.parking),        lbl: strings.RESULT_OSM_PARKING },
-                    {
-                      val: context.metroDistance !== null ? `${context.metroDistance}m` : '—',
-                      lbl: strings.RESULT_OSM_METRO,
-                    },
-                  ].map(({ val, lbl }) => (
-                    <div
-                      key={lbl}
-                      className="h-24 flex flex-col items-center justify-center px-2 rounded-xl"
-                      style={{
-                        background: 'rgba(255,255,255,0.03)',
-                        border: '1px solid rgba(255,255,255,0.06)',
-                      }}
-                    >
-                      <p
-                        className="text-2xl font-bold tabular-nums"
-                        style={{ color: 'rgba(241,245,249,0.9)' }}
-                      >
-                        {val}
-                      </p>
-                      <p
-                        className="text-[10px] uppercase tracking-wide mt-1 text-center leading-tight"
-                        style={{ color: 'rgba(100,116,139,0.7)' }}
-                      >
-                        {lbl}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-                {context.landUse && (
-                  <p className="text-sm mt-3" style={{ color: '#fbbf24' }}>⚠ {context.landUse}</p>
-                )}
               </div>
             )}
           </div>
@@ -368,13 +456,13 @@ export default function ResultSheet({ business, result, context, onReset, string
           onClick={() => setExpanded(v => !v)}
           className="w-full py-3.5 text-xs uppercase tracking-[0.16em] font-semibold flex items-center justify-center gap-2 transition-colors"
           style={{
-            color: expanded ? 'rgba(0,201,138,0.7)' : 'rgba(0,201,138,0.55)',
-            background: 'rgba(0,201,138,0.04)',
-            borderTop: '1px solid rgba(0,201,138,0.1)',
-            borderBottom: '1px solid rgba(0,201,138,0.1)',
+            color: expanded ? 'rgba(59,130,246,0.9)' : 'rgba(59,130,246,0.7)',
+            background: 'rgba(59,130,246,0.04)',
+            borderTop: '1px solid rgba(59,130,246,0.12)',
+            borderBottom: '1px solid rgba(59,130,246,0.12)',
           }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#00C98A')}
-          onMouseLeave={e => (e.currentTarget.style.color = expanded ? 'rgba(0,201,138,0.7)' : 'rgba(0,201,138,0.55)')}
+          onMouseEnter={e => (e.currentTarget.style.color = '#93c5fd')}
+          onMouseLeave={e => (e.currentTarget.style.color = expanded ? 'rgba(59,130,246,0.9)' : 'rgba(59,130,246,0.7)')}
         >
           <svg
             width="12" height="12" viewBox="0 0 12 12" fill="none"
@@ -392,6 +480,8 @@ export default function ResultSheet({ business, result, context, onReset, string
           result={result}
           context={context}
           label={strings.RESULT_PDF_DOWNLOAD}
+          lat={lat}
+          lng={lng}
         />
       </div>
     </div>

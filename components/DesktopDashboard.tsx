@@ -9,7 +9,7 @@ import { RadarChartDisplay, BarsChartDisplay, ScoreRingDisplay } from '@/compone
 type PanelView = 'idle' | 'result' | 'compare' | 'insights'
 type ChartTab = 'bars' | 'radar' | 'ring'
 
-const ACC = '#00C98A'
+const ACC = '#ffffff'
 const BLUE = '#3b82f6'
 
 interface Props {
@@ -17,6 +17,8 @@ interface Props {
   currentResult: AnalysisResult | null
   currentBusiness: string
   currentContext: PlacesContext | null
+  currentLat: number | null
+  currentLng: number | null
   onReset: () => void
   onOpenHistory: () => void
   strings: Strings
@@ -56,21 +58,6 @@ function ScoreRingMini({ score }: { score: number }) {
   )
 }
 
-function ScoreBarRow({ label, value, max }: { label: string; value: number; max: number }) {
-  const pct = Math.round((value / max) * 100)
-  const color = pct >= 70 ? '#34d399' : pct >= 40 ? '#fbbf24' : '#f87171'
-  return (
-    <div className="flex items-center gap-2.5">
-      <span className="text-[12px] w-32 shrink-0 truncate" style={{ color: 'rgba(148,163,184,0.6)' }}>{label}</span>
-      <div className="flex-1 h-[4px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color, transition: 'width 0.6s ease' }} />
-      </div>
-      <span className="text-[11px] tabular-nums shrink-0 font-medium" style={{ color: 'rgba(100,116,139,0.75)', fontFamily: 'monospace' }}>
-        {value}/{max}
-      </span>
-    </div>
-  )
-}
 
 const FACTOR_LABEL_KEYS: Record<FactorKey, keyof Strings> = {
   competition: 'FACTOR_COMPETITION',
@@ -144,7 +131,7 @@ function IdleView({ analyses, onOpenHistory, onCompare, onInsights, strings }: {
       {/* Welcome block */}
       <div className="mb-6">
         <span
-          className="text-[11px] uppercase tracking-[0.22em] font-semibold"
+          className="text-[15px] uppercase tracking-[0.22em] font-bold"
           style={{ color: ACC }}
         >
           myblocate
@@ -168,11 +155,11 @@ function IdleView({ analyses, onOpenHistory, onCompare, onInsights, strings }: {
         className="rounded-xl mb-6 flex items-center justify-center"
         style={{
           height: '100px',
-          background: 'rgba(0,201,138,0.04)',
-          border: '1px solid rgba(0,201,138,0.1)',
+          background: 'rgba(37,99,235,0.04)',
+          border: '1px solid rgba(37,99,235,0.12)',
         }}
       >
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(0,201,138,0.35)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(59,130,246,0.45)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/>
           <circle cx="12" cy="10" r="3"/>
         </svg>
@@ -186,23 +173,23 @@ function IdleView({ analyses, onOpenHistory, onCompare, onInsights, strings }: {
             onClick={a.onClick}
             className="w-full text-left rounded-xl px-4 py-3.5 flex items-center gap-3 transition-all duration-150"
             style={{
-              background: a.accent ? 'rgba(0,201,138,0.07)' : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${a.accent ? 'rgba(0,201,138,0.2)' : 'rgba(255,255,255,0.07)'}`,
+              background: a.accent ? 'rgba(37,99,235,0.08)' : 'rgba(255,255,255,0.03)',
+              border: `1px solid ${a.accent ? 'rgba(59,130,246,0.22)' : 'rgba(255,255,255,0.07)'}`,
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.background = a.accent ? 'rgba(0,201,138,0.12)' : 'rgba(255,255,255,0.055)'
-              e.currentTarget.style.borderColor = a.accent ? 'rgba(0,201,138,0.32)' : 'rgba(255,255,255,0.12)'
+              e.currentTarget.style.background = a.accent ? 'rgba(37,99,235,0.18)' : 'rgba(255,255,255,0.055)'
+              e.currentTarget.style.borderColor = a.accent ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.12)'
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.background = a.accent ? 'rgba(0,201,138,0.07)' : 'rgba(255,255,255,0.03)'
-              e.currentTarget.style.borderColor = a.accent ? 'rgba(0,201,138,0.2)' : 'rgba(255,255,255,0.07)'
+              e.currentTarget.style.background = a.accent ? 'rgba(37,99,235,0.08)' : 'rgba(255,255,255,0.03)'
+              e.currentTarget.style.borderColor = a.accent ? 'rgba(59,130,246,0.22)' : 'rgba(255,255,255,0.07)'
             }}
           >
-            <span style={{ color: a.accent ? ACC : 'rgba(100,116,139,0.65)' }}>
+            <span style={{ color: a.accent ? '#60a5fa' : 'rgba(100,116,139,0.65)' }}>
               {a.icon}
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold tracking-tight" style={{ color: 'rgba(226,232,240,0.85)' }}>
+              <p className="text-[14px] font-semibold tracking-tight" style={{ color: 'rgba(226,232,240,0.85)' }}>
                 {a.label}
               </p>
               <p className="text-[12px] mt-0.5 truncate" style={{ color: 'rgba(100,116,139,0.55)' }}>
@@ -221,10 +208,12 @@ function IdleView({ analyses, onOpenHistory, onCompare, onInsights, strings }: {
 
 // ─── Result View ──────────────────────────────────────────────────────────────
 
-function ResultView({ business, result, context, onReset, strings }: {
+function ResultView({ business, result, context, lat, lng, onReset, strings }: {
   business: string
   result: AnalysisResult
   context: PlacesContext | null
+  lat: number | null
+  lng: number | null
   onReset: () => void
   strings: Strings
 }) {
@@ -295,7 +284,7 @@ function ResultView({ business, result, context, onReset, strings }: {
         {/* Summary */}
         {result.summary && (
           <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <p className="text-sm leading-relaxed" style={{ color: 'rgba(203,213,225,0.72)' }}>
+            <p className="text-sm leading-relaxed" style={{ color: 'rgba(203,213,225,0.88)' }}>
               {result.summary}
             </p>
           </div>
@@ -414,7 +403,7 @@ function ResultView({ business, result, context, onReset, strings }: {
             </svg>
             {strings.RESULT_RESET}
           </button>
-          <PdfDownloadButton business={business} result={result} context={context} label={strings.RESULT_PDF_DOWNLOAD} />
+          <PdfDownloadButton business={business} result={result} context={context} label={strings.RESULT_PDF_DOWNLOAD} lat={lat ?? undefined} lng={lng ?? undefined} />
         </div>
       </div>
     </div>
@@ -443,7 +432,7 @@ function CompareView({ analyses, strings }: {
   if (analyses.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center pb-16 px-5">
-        <p className="text-[11px] text-center" style={{ color: 'rgba(100,116,139,0.55)' }}>{strings.HISTORY_EMPTY}</p>
+        <p className="text-[14px] text-center" style={{ color: 'rgba(100,116,139,0.55)' }}>{strings.HISTORY_EMPTY}</p>
       </div>
     )
   }
@@ -453,7 +442,7 @@ function CompareView({ analyses, strings }: {
       {/* Comparison table — pinned at top when 2+ selected */}
       {compared.length >= 2 && (
         <div className="mb-5">
-          <p className="text-[9px] uppercase tracking-[0.2em] mb-3 font-medium" style={{ color: ACC, opacity: 0.8 }}>
+          <p className="text-[11px] uppercase tracking-[0.2em] mb-3 font-medium" style={{ color: ACC, opacity: 0.8 }}>
             {strings.DASHBOARD_COMPARE_TITLE}
           </p>
           <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
@@ -484,7 +473,7 @@ function CompareView({ analyses, strings }: {
               return (
                 <div className="grid" style={{ gridTemplateColumns: `108px repeat(${compared.length}, 1fr)`, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                   <div className="px-3 py-2.5 flex items-center">
-                    <span className="text-[10px]" style={{ color: 'rgba(148,163,184,0.65)' }}>Ümumi Bal</span>
+                    <span className="text-[11px]" style={{ color: 'rgba(148,163,184,0.65)' }}>Ümumi Bal</span>
                   </div>
                   {compared.map(a => (
                     <div key={a.id} className="px-2 py-2.5 flex items-center justify-center border-l" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
@@ -503,7 +492,7 @@ function CompareView({ analyses, strings }: {
             {/* Rent tier row */}
             <div className="grid" style={{ gridTemplateColumns: `108px repeat(${compared.length}, 1fr)`, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <div className="px-3 py-2.5 flex items-center">
-                <span className="text-[10px]" style={{ color: 'rgba(148,163,184,0.65)' }}>Kirayə</span>
+                <span className="text-[11px]" style={{ color: 'rgba(148,163,184,0.65)' }}>Kirayə</span>
               </div>
               {compared.map(a => (
                 <div key={a.id} className="px-2 py-2.5 flex items-center justify-center border-l" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
@@ -533,7 +522,7 @@ function CompareView({ analyses, strings }: {
                   }}
                 >
                   <div className="px-3 py-2.5 flex items-center">
-                    <span className="text-[9px] leading-snug" style={{ color: 'rgba(148,163,184,0.6)' }}>{label}</span>
+                    <span className="text-[11px] leading-snug" style={{ color: 'rgba(148,163,184,0.6)' }}>{label}</span>
                   </div>
                   {scores.map((s, idx) => {
                     const isWinner = s !== null && s.pct === maxPct && maxPct > 0
@@ -560,7 +549,7 @@ function CompareView({ analyses, strings }: {
       )}
 
       {/* Selection list */}
-      <p className="text-[9px] uppercase tracking-[0.2em] mb-3 font-medium" style={{ color: 'rgba(100,116,139,0.6)' }}>
+      <p className="text-[10px] uppercase tracking-[0.2em] mb-3 font-medium" style={{ color: 'rgba(100,116,139,0.6)' }}>
         {strings.DASHBOARD_COMPARE_HINT}
       </p>
       <ul className="space-y-2">
@@ -572,15 +561,15 @@ function CompareView({ analyses, strings }: {
                 onClick={() => toggle(a.id)}
                 className="w-full text-left rounded-xl px-3.5 py-3 flex items-center gap-3 transition-all duration-150"
                 style={{
-                  background: isOn ? 'rgba(0,201,138,0.08)' : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${isOn ? 'rgba(0,201,138,0.25)' : 'rgba(255,255,255,0.07)'}`,
+                  background: isOn ? 'rgba(37,99,235,0.1)' : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${isOn ? 'rgba(59,130,246,0.28)' : 'rgba(255,255,255,0.07)'}`,
                 }}
               >
                 <div
                   className="shrink-0 w-4 h-4 rounded flex items-center justify-center"
                   style={{
-                    background: isOn ? ACC : 'transparent',
-                    border: `1.5px solid ${isOn ? ACC : 'rgba(100,116,139,0.4)'}`,
+                    background: isOn ? '#3b82f6' : 'transparent',
+                    border: `1.5px solid ${isOn ? '#3b82f6' : 'rgba(100,116,139,0.4)'}`,
                     transition: 'all 0.15s',
                   }}
                 >
@@ -628,9 +617,9 @@ function InsightsView({ strings }: { strings: Strings }) {
       <div className="grid grid-cols-2 gap-2 mb-5">
         <div
           className="rounded-xl py-3.5 text-center"
-          style={{ background: 'rgba(0,201,138,0.07)', border: '1px solid rgba(0,201,138,0.18)' }}
+          style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}
         >
-          <p className="text-xl font-bold tabular-nums" style={{ color: ACC, fontFamily: 'monospace' }}>
+          <p className="text-xl font-bold tabular-nums" style={{ color: '#60a5fa', fontFamily: 'monospace' }}>
             {Math.round(totalRidership / 1000)}K
           </p>
           <p className="text-[9px] uppercase tracking-wide mt-1" style={{ color: 'rgba(100,116,139,0.65)' }}>
@@ -667,14 +656,14 @@ function InsightsView({ strings }: { strings: Strings }) {
               </span>
               <span
                 className="text-[12px] w-24 shrink-0 truncate"
-                style={{ color: 'rgba(203,213,225,0.75)' }}
+                style={{ color: 'rgba(203,213,225,0.88)' }}
               >
                 {s.nameAz}
               </span>
               <div className="flex-1 h-[3px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
                 <div
                   className="h-full rounded-full"
-                  style={{ width: `${pct}%`, background: ACC, opacity: 0.5 + (pct / 100) * 0.5 }}
+                  style={{ width: `${pct}%`, background: '#3b82f6', opacity: 0.5 + (pct / 100) * 0.5 }}
                 />
               </div>
               <span
@@ -720,6 +709,8 @@ export default function DesktopDashboard({
   currentResult,
   currentBusiness,
   currentContext,
+  currentLat,
+  currentLng,
   onReset,
   onOpenHistory,
   strings,
@@ -728,6 +719,7 @@ export default function DesktopDashboard({
 
   // Auto-switch to result view when a new result arrives
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (currentResult) setView('result')
   }, [currentResult])
 
@@ -795,6 +787,8 @@ export default function DesktopDashboard({
           business={currentBusiness}
           result={currentResult}
           context={currentContext}
+          lat={currentLat}
+          lng={currentLng}
           onReset={handleReset}
           strings={strings}
         />

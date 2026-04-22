@@ -151,9 +151,25 @@ Queries the public **Overpass API** (OpenStreetMap) for a 500 m radius around th
 - **Competitors** — distance-weighted: combines AZ dataset (0.5 weight, no coords) + OSM matches (<200 m = 1.0, 200–500 m = 0.5)
 - **`recognized` flag** — `true` if the business type maps to known OSM tags or AZ dataset types; `false` triggers a warning banner
 
+### Overpass Endpoint Fallback & Resilience
+
+- **5 public endpoints** tried in order: `overpass-api.de` → `overpass.kumi.systems` → `overpass.private.coffee` → `overpass.openstreetmap.ru` → `overpass.nchc.org.tw`
+- **HTTP 429** (rate limit): waits 1.5 s before trying the next endpoint
+- **15-second abort timeout** per endpoint attempt
+- **`User-Agent: myblocate/1.0`** header is sent on all requests (required by Overpass fair-use policy; omitting it causes stricter rate limits)
+- **Server-side in-memory cache** (5-minute TTL, keyed by full query string): repeated requests to the same coordinates return cached data instantly without hitting Overpass. Prevents dev-loop rate limiting and reduces latency for popular locations in production.
+
 ### Additional lookups (static data)
 - `getNearestMetro(lat, lng)` from `lib/metro-stations.ts` — returns nearest metro exit within 2 km and its avg daily ridership, or `null`
 - `getUrbanTier(lat, lng)` from `lib/settlements.ts` — returns the urban tier of the nearest settlement
+
+### Chain Detection
+
+`detectChainsFromOSM()` scans all OSM elements within 500 m for known Azerbaijani retail chains defined in `lib/chains.ts` (`BAKU_CHAINS`). Matching uses `matchesChain()` which normalises names to lowercase and strips punctuation before checking keywords/name variants.
+
+- **`dominantCompetitors`** — chains found within **100 m** of the pin (centroid-to-centroid). Flagged in the result sheet as a red warning. Radius is 100 m rather than a tighter value because OSM way centroids for large stores can be 30–80 m from the entrance.
+- **`nearbyChains`** — chains within **200 m**, only populated for food businesses (used to trigger the cuisine-selection modal). Always empty for non-food business types.
+- `chainMatches` (internal) — all matched chains with distances, used to build both fields above.
 
 ### Competitor Matching
 

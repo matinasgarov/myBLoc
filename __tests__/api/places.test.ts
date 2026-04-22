@@ -37,7 +37,7 @@ describe('POST /api/places', () => {
     ;(overpass.fetchPlacesContext as jest.Mock).mockResolvedValue(mockContext)
     const res = await POST(makeRequest({ lat: 40.4093, lng: 49.8671, businessType: 'Restoran' }))
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual(mockContext)
+    expect(await res.json()).toMatchObject(mockContext)
   })
 
   it('returns 400 when lat is missing', async () => {

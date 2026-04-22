@@ -5,5 +5,6 @@ module.exports = createJestConfig({
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
+    '^@upstash/redis$': '<rootDir>/__mocks__/@upstash/redis.ts',
   },
 })

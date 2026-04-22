@@ -241,9 +241,9 @@ export const BAKU_CHAINS: ChainDefinition[] = [
   {
     keywords: ["domino's", 'dominos'],
     nameVariants: ['dominos pizza', "domino's pizza", 'доминос'],
-    osmCategories: ['fast_food', 'restaurant'],
+    osmCategories: ['fast_food'],
     cuisine: 'pizza',
-  },
+  },  
   {
     keywords: ['subway'],
     nameVariants: ['subway restaurant', 'сабвей'],

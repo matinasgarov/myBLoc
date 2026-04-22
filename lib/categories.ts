@@ -20,15 +20,15 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
   },
   {
     key: 'kafe',
-    labelAz: 'Kafe / Kofe',
-    labelEn: 'Café / Coffee',
+    labelAz: 'Café / Coffee Shop',
+    labelEn: 'Café / Coffee Shop',
     synonyms: ['kafe', 'kofe', 'qəhvə', 'coffee', 'kahve'],
   },
   {
     key: 'fast food',
     labelAz: 'Fast Food',
     labelEn: 'Fast Food',
-    synonyms: ['fast food', 'fastfood', 'burger', 'snack'],
+    synonyms: ['fast food', 'fastfood', 'burger', 'snack', 'dönər', 'shawarma', 'fast', 'food'],
   },
   {
     key: 'pizza',
@@ -37,7 +37,7 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
     synonyms: ['pizza', 'lahmacun'],
   },
   {
-    key: 'qəhvəxana',
+    key: 'Çayxana',
     labelAz: 'Çayxana',
     labelEn: 'Teahouse',
     synonyms: ['çayxana', 'çay', 'qəhvəxana', 'tea', 'teahouse'],
@@ -65,13 +65,13 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
   },
   {
     key: 'elektronika',
-    labelAz: 'Elektronika / Komputer',
+    labelAz: 'Elektronika / Tech',
     labelEn: 'Electronics / Tech',
     synonyms: ['komputer', 'telefon', 'laptop', 'mobil', 'texnika', 'gadget', 'tech', 'electronics'],
   },
   {
     key: 'kitab',
-    labelAz: 'Kitab / Kağız',
+    labelAz: 'Kitabçı / Ləvazimat',
     labelEn: 'Books / Stationery',
     synonyms: ['kitab', 'dəftər', 'kağız', 'book', 'stationery', 'kitabxana'],
   },
@@ -161,10 +161,10 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
     synonyms: ['oyun', 'gaming', 'klub', 'bilyard', 'billiard', 'game'],
   },
   {
-    key: 'bar',
-    labelAz: 'Bar / Pub',
-    labelEn: 'Bar / Pub',
-    synonyms: ['bar', 'pub', 'içki', 'alkoqol', 'nightclub'],
+    key: 'pivexana',
+    labelAz: 'Pub / Bar',
+    labelEn: 'Pub / Bar ',
+    synonyms: ['bar', 'pub', 'içki', 'alkoqol', 'nightclub', 'pivəxana', 'pivə', 'beer', 'brewery', 'craft beer', 'tap house', 'brauhaus'],
   },
   {
     key: 'uşaq',
@@ -234,14 +234,14 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
   // ── Services & Hospitality (extended) ────────────────────────────────────
   {
     key: 'avtomobil satış',
-    labelAz: 'Avtomobil Satışı',
-    labelEn: 'Car Dealership',
+    labelAz: 'Avtomobil Satışı / Avto Salon',
+    labelEn: 'Car Dealership / Auto Salon',
     synonyms: ['avtomobil satış', 'maşın satışı', 'car dealer', 'ikinci əl', 'used car', 'salon avto'],
   },
   {
     key: 'hüquq',
-    labelAz: 'Hüquq / Notariat',
-    labelEn: 'Legal / Notary',
+    labelAz: 'Hüquq / Notariat/ Vəkil',
+    labelEn: 'Legal / Notary / Lawyer',
     synonyms: ['hüquq', 'vəkil', 'notariat', 'notary', 'lawyer', 'legal', 'məhkəmə'],
   },
   {
@@ -404,4 +404,201 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
     labelEn: 'Other',
     synonyms: ['digər', 'other', 'müxtəlif', 'various', 'başqa'],
   },
+  // ── Automotive (extended) ─────────────────────────────────────────────────
+{
+  key: 'avto detal',
+  labelAz: 'Avto Ehtiyat Hissələri',
+  labelEn: 'Auto Parts Store',
+  synonyms: ['avto detal', 'ehtiyat hissə', 'zapçast', 'auto parts', 'car parts', 'şina', 'akumulator', 'mühərrik'],
+},
+{
+  key: 'avtomobil yuma',
+  labelAz: 'Avtomobil Yuma / Car Wash',
+  labelEn: 'Car Wash',
+  synonyms: ['car wash', 'avtomobil yuma', 'maşın yuma', 'avto yuma', 'detailing', 'polishing'],
+},
+{
+  key: 'avto şin',
+  labelAz: 'Şin / Disk Mağazası',
+  labelEn: 'Tyre & Wheel Shop',
+  synonyms: ['şin', 'disk', 'tyre', 'tire', 'wheel', 'balans', 'şinmonтaj', 'avto şin'],
+},
+{
+  key: 'texniki baxış',
+  labelAz: 'Texniki Baxış / Diaqnostika',
+  labelEn: 'Vehicle Inspection / Diagnostics',
+  synonyms: ['texniki baxış', 'diaqnostika', 'MOT', 'car inspection', 'maşın yoxlama', 'kompüter diaqnostika'],
+},
+
+// ── Gaming & Entertainment (extended) ────────────────────────────────────
+{
+  key: 'playstation',
+  labelAz: 'PlayStation Klubu',
+  labelEn: 'PlayStation Club',
+  synonyms: ['playstation', 'ps4', 'ps5', 'xbox', 'gaming club', 'oyun klubu', 'konsol', 'console', 'video game'],
+},
+{
+  key: 'internet kafe',
+  labelAz: 'İnternet Kafe / Cyber Cafe',
+  labelEn: 'Internet Café / Cyber Café',
+  synonyms: ['internet kafe', 'cyber cafe', 'internet club', 'komputer kafe', 'gaming pc', 'net kafe'],
+},
+{
+  key: 'bowling',
+  labelAz: 'Bowling / Əyləncə Mərkəzi',
+  labelEn: 'Bowling / Entertainment Center',
+  synonyms: ['bowling', 'əyləncə mərkəzi', 'amusement', 'arcade', 'fun center', 'uşaq əyləncə'],
+},
+{
+  key: 'həmam',
+  labelAz: 'Hamam / Sauna',
+  labelEn: 'Hammam / Sauna',
+  synonyms: ['həmam', 'hamam', 'sauna', 'banya', 'steam bath', 'turkish bath', 'hamamı'],
+},
+
+// ── Food & Beverage (extended) ───────────────────────────────────────────
+{
+  key: 'dondurma',
+  labelAz: 'Dondurma / Milkshake',
+  labelEn: 'Ice Cream / Milkshake',
+  synonyms: ['dondurma', 'ice cream', 'milkshake', 'gelato', 'frozen yogurt', 'smoothie'],
+},
+{
+  key: 'sushi',
+  labelAz: 'Sushi / Asiya Mətbəxi',
+  labelEn: 'Sushi / Asian Cuisine',
+  synonyms: ['sushi', 'asian food', 'asiya', 'ramen', 'wok', 'chinese', 'japanese', 'çin xörəyi'],
+},
+{
+  key: 'qəssab',
+  labelAz: 'Qəssab / Ət Mağazası',
+  labelEn: 'Butcher / Meat Shop',
+  synonyms: ['qəssab', 'ət', 'butcher', 'meat', 'kababxana', 'quzu', 'mal əti', 'toyuq'],
+},
+{
+  key: 'pivəxana',
+  labelAz: 'Pivəxana / Craft Beer',
+  labelEn: 'Brewery / Craft Beer',
+  synonyms: ['pivəxana', 'pivə', 'beer', 'brewery', 'craft beer', 'tap house', 'brauhaus'],
+},
+
+// ── Health & Beauty (extended) ────────────────────────────────────────────
+{
+  key: 'dırnaq',
+  labelAz: 'Dırnaq Salonu / Nail Bar',
+  labelEn: 'Nail Salon / Nail Bar',
+  synonyms: ['dırnaq', 'nail', 'manicure', 'manikür', 'pedicure', 'pedikür', 'nail bar', 'nail art'],
+},
+{
+  key: 'tatoo',
+  labelAz: 'Tattoo / Piercing Studiyası',
+  labelEn: 'Tattoo / Piercing Studio',
+  synonyms: ['tatoo', 'tattoo', 'piercing', 'dövmə', 'tattoo studio', 'body art'],
+},
+{
+  key: 'psixoloq',
+  labelAz: 'Psixoloji Xidmət',
+  labelEn: 'Psychological Services',
+  synonyms: ['psixoloq', 'psixologiya', 'therapist', 'therapy', 'mental health', 'counseling', 'psixiatr'],
+},
+{
+  key: 'laboratoriya',
+  labelAz: 'Tibbi Laboratoriya / Analiz',
+  labelEn: 'Medical Lab / Analysis',
+  synonyms: ['laboratoriya', 'analiz', 'qan analizi', 'lab', 'blood test', 'medical lab', 'tibbi analiz'],
+},
+
+// ── Home & Repair ─────────────────────────────────────────────────────────
+{
+  key: 'elektrik ustası',
+  labelAz: 'Elektrik / Santexnik Usta',
+  labelEn: 'Electrician / Plumber',
+  synonyms: ['elektrik', 'santexnik', 'usta', 'plumber', 'electrician', 'qaz ustası', 'su ustası', 'təmir usta'],
+},
+{
+  key: 'mebel sifarişi',
+  labelAz: 'Sifarişlə Mebel İstehsalı',
+  labelEn: 'Custom Furniture Manufacturing',
+  synonyms: ['sifarişlə mebel', 'mebel fabrik', 'custom furniture', 'taxtaçı', 'dülger', 'carpenter', 'furniture maker'],
+},
+{
+  key: 'ev alətləri',
+  labelAz: 'Ev Texnikası / Alətlər',
+  labelEn: 'Home Appliances / Tools',
+  synonyms: ['ev texnikası', 'alət', 'ləvazimat', 'home appliances', 'tools', 'hardware', 'soyuducu', 'paltaryuyan'],
+},
+
+// ── Retail (niche) ────────────────────────────────────────────────────────
+{
+  key: 'oyuncaq',
+  labelAz: 'Oyuncaq Mağazası',
+  labelEn: 'Toy Store',
+  synonyms: ['oyuncaq', 'toy', 'toy store', 'uşaq oyuncaq', 'lego', 'doll', 'kukla'],
+},
+{
+  key: 'heyvan mağazası',
+  labelAz: 'Heyvan Mağazası / Pet Shop',
+  labelEn: 'Pet Shop',
+  synonyms: ['heyvan mağazası', 'pet shop', 'petshop', 'it qidası', 'pişik ləvazimatı', 'quş', 'akvarium'],
+},
+{
+  key: 'ikinci əl',
+  labelAz: 'İkinci Əl / Komisyon',
+  labelEn: 'Second Hand / Thrift',
+  synonyms: ['ikinci əl', 'komisyon', 'second hand', 'thrift', 'used goods', 'vintage', 'antika'],
+},
+{
+  key: 'hədiyyə',
+  labelAz: 'Hədiyyə / Suvenir Mağazası',
+  labelEn: 'Gift / Souvenir Shop',
+  synonyms: ['hədiyyə', 'suvenir', 'gift', 'souvenir', 'birthday gift', 'ad günü', 'toy hədiyyə'],
+},
+
+// ── Events & Occasions ────────────────────────────────────────────────────
+{
+  key: 'toy sarayı',
+  labelAz: 'Şadlıq Sarayı / Şənlik Evi',
+  labelEn: 'Wedding Hall / Event Hall',
+  synonyms: ['toy sarayı', 'şənlik evi', 'wedding hall', 'banquet hall', 'event hall', 'toy', 'ziyafət'],
+},
+{
+  key: 'kənd evi',
+  labelAz: 'Bağ Evi Kirayəsi',
+  labelEn: 'Cottage Rental',
+  synonyms: ['kənd evi', 'bağ evi', 'dacha', 'cottage', 'villa kirayə', 'istirahət evi', 'country house'],
+},
+{
+  key: 'kafe toy',
+  labelAz: 'Uşaq Tədbirləri / Animasiya',
+  labelEn: 'Kids Events / Animation',
+  synonyms: ['animasiya', 'uşaq tədbirlər', 'kids party', 'ad günü uşaq', 'animator', 'clown', 'event kids'],
+},
+
+// ── Finance (extended) ────────────────────────────────────────────────────
+{
+  key: 'valyuta',
+  labelAz: 'Valyuta Mübadiləsi',
+  labelEn: 'Currency Exchange',
+  synonyms: ['valyuta', 'dollar', 'currency exchange', 'mübadilə', 'forex', 'exchange office', 'məzənnə'],
+},
+{
+  key: 'kredit',
+  labelAz: 'Mikromaliyyə / Kredit',
+  labelEn: 'Microfinance / Credit',
+  synonyms: ['kredit', 'borc', 'mikromaliyyə', 'loan', 'microfinance', 'nəğd kredit', 'ipoteka'],
+},
+
+// ── Education (extended) ─────────────────────────────────────────────────
+{
+  key: 'dil mərkəzi',
+  labelAz: 'Dil Mərkəzi / Xarici Dil',
+  labelEn: 'Language Center',
+  synonyms: ['dil mərkəzi', 'ingilis dili', 'english', 'ielts', 'toefl', 'language school', 'xarici dil', 'rus dili'],
+},
+{
+  key: 'sürücülük məktəbi',
+  labelAz: 'Sürücülük Məktəbi',
+  labelEn: 'Driving School',
+  synonyms: ['sürücülük məktəbi', 'driving school', 'sürücü kursu', 'avtomobil kursu', 'vəsiqə', 'driving license'],
+},
 ]
