@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Groq from 'groq-sdk'
 import type { PlacesContext } from '@/lib/types'
+import { isRateLimited, isRateLimitedDaily, extractIp, extractRateKey, isCrossOrigin, tooLarge } from '@/lib/ratelimit'
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 const MODEL = 'llama-3.3-70b-versatile'
+
+const MAX_BODY_BYTES = 20_000
+const NO_STORE = { 'Cache-Control': 'no-store, private' }
+
+function json(data: unknown, status = 200) {
+  return NextResponse.json(data, { status, headers: NO_STORE })
+}
 
 interface AgentResponse {
   role: string
@@ -173,8 +181,17 @@ async function callGroq(prompt: string): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
+  if (isCrossOrigin(req)) return json({ error: 'Forbidden' }, 403)
+  if (tooLarge(req, MAX_BODY_BYTES)) return json({ error: 'Payload too large' }, 413)
+  const ip = extractIp(req)
+  const rateKey = extractRateKey(req)
+  if (await isRateLimited(rateKey, 4, 60_000, 'expert-min'))
+    return json({ error: 'Too many requests' }, 429)
+  if (await isRateLimitedDaily(ip, 20, 'expert-day'))
+    return json({ error: 'Daily limit reached' }, 429)
+
   const body = await req.json().catch(() => null) as RequestBody | null
-  if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  if (!body) return json({ error: 'Invalid JSON' }, 400)
 
   const { lat, lng, businessType, score, placesContext } = body
   if (
@@ -184,15 +201,27 @@ export async function POST(req: NextRequest) {
     typeof score !== 'number' ||
     !placesContext
   ) {
-    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    return json({ error: 'Missing required fields' }, 400)
+  }
+
+  const lang: 'az' | 'en' = body.lang === 'en' ? 'en' : 'az'
+
+  const safeBody: RequestBody = {
+    ...body,
+    lang,
+    businessType: body.businessType.replace(/[\n\r`]/g, ' ').trim(),
+    placesContext: {
+      ...body.placesContext,
+      landUse: body.placesContext.landUse?.replace(/[\n\r`]/g, ' ').trim() ?? null,
+    },
   }
 
   try {
     const agentDefs: { role: string; emoji: string; prompt: string }[] = [
-      { role: body.lang === 'en' ? 'Market Analyst' : 'Bazar Analitiki',      emoji: '📊', prompt: buildMarketAnalystPrompt(body) },
-      { role: body.lang === 'en' ? 'Risk Advisor' : 'Risk Məsləhətçisi',      emoji: '⚠️', prompt: buildRiskAdvisorPrompt(body) },
-      { role: body.lang === 'en' ? 'Location Strategist' : 'Məkan Strateqi',  emoji: '🗺️', prompt: buildLocationStrategistPrompt(body) },
-      { role: body.lang === 'en' ? 'Customer Flow Expert' : 'Müştəri Axını Eksperti', emoji: '🚶', prompt: buildCustomerFlowPrompt(body) },
+      { role: lang === 'en' ? 'Market Analyst' : 'Bazar Analitiki',      emoji: '📊', prompt: buildMarketAnalystPrompt(safeBody) },
+      { role: lang === 'en' ? 'Risk Advisor' : 'Risk Məsləhətçisi',      emoji: '⚠️', prompt: buildRiskAdvisorPrompt(safeBody) },
+      { role: lang === 'en' ? 'Location Strategist' : 'Məkan Strateqi',  emoji: '🗺️', prompt: buildLocationStrategistPrompt(safeBody) },
+      { role: lang === 'en' ? 'Customer Flow Expert' : 'Müştəri Axını Eksperti', emoji: '🚶', prompt: buildCustomerFlowPrompt(safeBody) },
     ]
 
     const opinions = await Promise.all(agentDefs.map(a => callGroq(a.prompt)))
@@ -203,10 +232,10 @@ export async function POST(req: NextRequest) {
       opinion: opinions[i],
     }))
 
-    const verdict = await callGroq(buildSynthesizerPrompt(agents, businessType, score, body.lang ?? 'az'))
+    const verdict = await callGroq(buildSynthesizerPrompt(agents, safeBody.businessType, score, lang))
 
-    return NextResponse.json({ agents, verdict })
+    return json({ agents, verdict })
   } catch {
-    return NextResponse.json({ agents: [], verdict: '' })
+    return json({ agents: [], verdict: '' }, 500)
   }
 }
