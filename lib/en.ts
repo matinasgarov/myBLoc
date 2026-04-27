@@ -180,4 +180,9 @@ export const EN = {
   DASHBOARD_BACK: 'Back',
   DASHBOARD_ANALYSES_COUNT: 'past analyses',
   DASHBOARD_METRO_RIDERSHIP: 'Daily Metro Ridership',
+  EXPERT_PANEL_BUTTON: 'Expert Panel',
+  EXPERT_PANEL_TITLE: 'Expert Opinion Panel',
+  EXPERT_PANEL_VERDICT: 'Moderator Verdict',
+  EXPERT_PANEL_LOADING: 'Experts analyzing...',
+  EXPERT_PANEL_ERROR: 'Could not load panel',
 } as const

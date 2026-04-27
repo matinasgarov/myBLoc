@@ -180,4 +180,9 @@ export const AZ = {
   DASHBOARD_BACK: 'Geri',
   DASHBOARD_ANALYSES_COUNT: 'keçmiş təhlil',
   DASHBOARD_METRO_RIDERSHIP: 'Metro Sərniş Axını (Gündəlik)',
+  EXPERT_PANEL_BUTTON: 'Ekspert Paneli',
+  EXPERT_PANEL_TITLE: 'Ekspert Rəy Paneli',
+  EXPERT_PANEL_VERDICT: 'Moderator Nəticəsi',
+  EXPERT_PANEL_LOADING: 'Ekspertlər analiz edir...',
+  EXPERT_PANEL_ERROR: 'Məlumat yüklənmədi',
 } as const
