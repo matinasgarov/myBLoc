@@ -172,11 +172,13 @@ export default function ResultSheet({ business, result, context, lat, lng, lang,
 
   return (
     <div
-      className="flex flex-col overflow-hidden transition-all duration-300"
+      className="anim-scale-in flex flex-col overflow-hidden transition-all duration-300"
       style={{
         height: expanded ? '72vh' : '58vh',
-        background: '#080C11',
-        borderTop: '1px solid rgba(255,255,255,0.07)',
+        background: 'rgba(6,9,14,0.88)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        borderTop: '1px solid rgba(255,255,255,0.1)',
       }}
       onClick={(e) => e.stopPropagation()}
     >
@@ -202,8 +204,19 @@ export default function ResultSheet({ business, result, context, lat, lng, lang,
         </div>
 
         {/* Score ring */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="text-right">
+        <div className="flex items-center gap-3 shrink-0 relative">
+          {/* Ambient glow behind ring */}
+          <div
+            style={{
+              position: 'absolute', right: -4, top: '50%', transform: 'translate(0,-50%)',
+              width: 80, height: 80, borderRadius: '50%',
+              background: sc.ring, filter: 'blur(22px)',
+              animationName: 'glow-breathe', animationDuration: '3s',
+              animationTimingFunction: 'ease-in-out', animationIterationCount: 'infinite',
+              pointerEvents: 'none',
+            }}
+          />
+          <div className="text-right relative z-10">
             <p
               className="text-[10px] uppercase tracking-[0.14em] mb-0.5"
               style={{ color: 'rgba(100,116,139,0.7)' }}
@@ -211,13 +224,15 @@ export default function ResultSheet({ business, result, context, lat, lng, lang,
               {strings.RESULT_PROBABILITY}
             </p>
             <span
-              className="text-2xl font-bold tabular-nums"
+              className="text-3xl font-bold tabular-nums"
               style={{ color: sc.text, fontFamily: 'monospace' }}
             >
               {result.score}%
             </span>
           </div>
-          <ScoreRing score={result.score} />
+          <div className="relative z-10">
+            <ScoreRing score={result.score} />
+          </div>
         </div>
 
         {/* Share button */}
@@ -358,15 +373,21 @@ export default function ResultSheet({ business, result, context, lat, lng, lang,
             style={{ borderRight: '1px solid rgba(255,255,255,0.05)' }}
           >
             <Label>{strings.RESULT_PROS}</Label>
-            <ul className="space-y-3.5">
+            <ul className="space-y-2">
               {result.pros.map((p, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-[14px] leading-relaxed">
-                  <span
-                    className="shrink-0 font-bold mt-px text-xs"
-                    style={{ color: '#60a5fa' }}
-                  >
-                    +
-                  </span>
+                <li
+                  key={i}
+                  className="flex items-start gap-2.5 text-[13px] leading-relaxed rounded-lg px-3 py-2.5"
+                  style={{
+                    background: 'rgba(52,211,153,0.05)',
+                    border: '1px solid rgba(52,211,153,0.12)',
+                    borderLeft: '2px solid rgba(52,211,153,0.5)',
+                    animationName: 'fade-up', animationDuration: '0.4s',
+                    animationTimingFunction: 'cubic-bezier(0.16,1,0.3,1)',
+                    animationFillMode: 'both', animationDelay: `${i * 60}ms`,
+                  }}
+                >
+                  <span className="shrink-0 font-bold mt-px text-xs" style={{ color: '#34d399' }}>+</span>
                   <span style={{ color: 'rgba(203,213,225,0.9)' }}>{p}</span>
                 </li>
               ))}
@@ -375,15 +396,21 @@ export default function ResultSheet({ business, result, context, lat, lng, lang,
           {/* Cons */}
           <div className="px-6 py-6">
             <Label>{strings.RESULT_CONS}</Label>
-            <ul className="space-y-3.5">
+            <ul className="space-y-2">
               {result.cons.map((c, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-[14px] leading-relaxed">
-                  <span
-                    className="shrink-0 font-bold mt-px"
-                    style={{ color: '#f87171' }}
-                  >
-                    —
-                  </span>
+                <li
+                  key={i}
+                  className="flex items-start gap-2.5 text-[13px] leading-relaxed rounded-lg px-3 py-2.5"
+                  style={{
+                    background: 'rgba(248,113,113,0.05)',
+                    border: '1px solid rgba(248,113,113,0.12)',
+                    borderLeft: '2px solid rgba(248,113,113,0.5)',
+                    animationName: 'fade-up', animationDuration: '0.4s',
+                    animationTimingFunction: 'cubic-bezier(0.16,1,0.3,1)',
+                    animationFillMode: 'both', animationDelay: `${i * 60}ms`,
+                  }}
+                >
+                  <span className="shrink-0 font-bold mt-px" style={{ color: '#f87171' }}>—</span>
                   <span style={{ color: 'rgba(203,213,225,0.9)' }}>{c}</span>
                 </li>
               ))}
@@ -406,18 +433,21 @@ export default function ResultSheet({ business, result, context, lat, lng, lang,
                   val: context.metroDistance !== null ? `${context.metroDistance}m` : '—',
                   lbl: strings.RESULT_OSM_METRO,
                 },
-              ].map(({ val, lbl }) => (
+              ].map(({ val, lbl }, i) => (
                 <div
                   key={lbl}
                   className="h-24 flex flex-col items-center justify-center px-2 rounded-xl"
                   style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.06)',
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    animationName: 'fade-up', animationDuration: '0.4s',
+                    animationTimingFunction: 'cubic-bezier(0.16,1,0.3,1)',
+                    animationFillMode: 'both', animationDelay: `${i * 55}ms`,
                   }}
                 >
                   <p
                     className="text-2xl font-bold tabular-nums"
-                    style={{ color: 'rgba(241,245,249,0.9)' }}
+                    style={{ color: 'rgba(241,245,249,0.95)' }}
                   >
                     {val}
                   </p>

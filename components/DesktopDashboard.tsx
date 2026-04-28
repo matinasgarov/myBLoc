@@ -154,14 +154,21 @@ function IdleView({ analyses, onOpenHistory, onCompare, onInsights, strings }: {
 
       {/* Map pin illustration */}
       <div
-        className="rounded-xl mb-6 flex items-center justify-center"
+        className="rounded-xl mb-6 flex items-center justify-center relative overflow-hidden"
         style={{
           height: '100px',
           background: 'rgba(37,99,235,0.04)',
           border: '1px solid rgba(37,99,235,0.12)',
         }}
       >
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(59,130,246,0.45)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+        {/* Pulsing glow behind pin */}
+        <div style={{
+          position: 'absolute', width: 60, height: 60, borderRadius: '50%',
+          background: 'rgba(59,130,246,0.25)', filter: 'blur(16px)',
+          animationName: 'glow-breathe', animationDuration: '2.5s',
+          animationTimingFunction: 'ease-in-out', animationIterationCount: 'infinite',
+        }} />
+        <svg className="relative z-10" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(59,130,246,0.6)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/>
           <circle cx="12" cy="10" r="3"/>
         </svg>
@@ -233,19 +240,28 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
   const chartMax = chartFactors.reduce((s, f) => s + f.max, 0)
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="anim-scale-in flex flex-col h-full overflow-hidden">
       {/* Score header */}
       <div
-        className="shrink-0 px-5 py-4"
+        className="shrink-0 px-5 py-4 relative overflow-hidden"
         style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
       >
+        {/* Ambient score glow */}
+        <div style={{
+          position: 'absolute', right: 12, top: '50%', transform: 'translate(0,-50%)',
+          width: 90, height: 90, borderRadius: '50%',
+          background: color, filter: 'blur(28px)',
+          animationName: 'glow-breathe', animationDuration: '3s',
+          animationTimingFunction: 'ease-in-out', animationIterationCount: 'infinite',
+          pointerEvents: 'none', opacity: 0.15,
+        }} />
         <p
-          className="text-[11px] uppercase tracking-[0.2em] mb-1"
+          className="text-[11px] uppercase tracking-[0.2em] mb-1 relative z-10"
           style={{ color: 'rgba(100,116,139,0.65)' }}
         >
           {strings.RESULT_BUSINESS_TYPE}
         </p>
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 relative z-10">
           <div className="min-w-0">
             <h2
               className="font-bold text-base tracking-tight truncate"
@@ -300,11 +316,22 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
             <p className="text-[11px] uppercase tracking-[0.2em] mb-2.5 font-medium" style={{ color: 'rgba(100,116,139,0.65)' }}>
               {strings.RESULT_PROS}
             </p>
-            <ul className="space-y-2">
+            <ul className="space-y-1.5">
               {result.pros.map((p, i) => (
-                <li key={i} className="flex items-start gap-2 text-[13px] leading-snug">
+                <li
+                  key={i}
+                  className="flex items-start gap-2 text-[13px] leading-snug rounded-lg px-3 py-2"
+                  style={{
+                    background: 'rgba(52,211,153,0.05)',
+                    border: '1px solid rgba(52,211,153,0.1)',
+                    borderLeft: '2px solid rgba(52,211,153,0.45)',
+                    animationName: 'fade-up', animationDuration: '0.4s',
+                    animationTimingFunction: 'cubic-bezier(0.16,1,0.3,1)',
+                    animationFillMode: 'both', animationDelay: `${i * 55}ms`,
+                  }}
+                >
                   <span className="shrink-0 font-bold mt-px" style={{ color: '#34d399' }}>+</span>
-                  <span style={{ color: 'rgba(203,213,225,0.8)' }}>{p}</span>
+                  <span style={{ color: 'rgba(203,213,225,0.85)' }}>{p}</span>
                 </li>
               ))}
             </ul>
@@ -317,11 +344,22 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
             <p className="text-[11px] uppercase tracking-[0.2em] mb-2.5 font-medium" style={{ color: 'rgba(100,116,139,0.65)' }}>
               {strings.RESULT_CONS}
             </p>
-            <ul className="space-y-2">
+            <ul className="space-y-1.5">
               {result.cons.map((c, i) => (
-                <li key={i} className="flex items-start gap-2 text-[13px] leading-snug">
+                <li
+                  key={i}
+                  className="flex items-start gap-2 text-[13px] leading-snug rounded-lg px-3 py-2"
+                  style={{
+                    background: 'rgba(248,113,113,0.05)',
+                    border: '1px solid rgba(248,113,113,0.1)',
+                    borderLeft: '2px solid rgba(248,113,113,0.45)',
+                    animationName: 'fade-up', animationDuration: '0.4s',
+                    animationTimingFunction: 'cubic-bezier(0.16,1,0.3,1)',
+                    animationFillMode: 'both', animationDelay: `${i * 55}ms`,
+                  }}
+                >
                   <span className="shrink-0 font-bold mt-px" style={{ color: '#f87171' }}>—</span>
-                  <span style={{ color: 'rgba(203,213,225,0.8)' }}>{c}</span>
+                  <span style={{ color: 'rgba(203,213,225,0.85)' }}>{c}</span>
                 </li>
               ))}
             </ul>
@@ -375,13 +413,18 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
                 { val: String(context.groceryStores),   lbl: strings.RESULT_OSM_GROCERY },
                 { val: String(context.parking),         lbl: strings.RESULT_OSM_PARKING },
                 { val: context.metroDistance !== null ? `${context.metroDistance}m` : '—', lbl: strings.RESULT_OSM_METRO },
-              ].map(({ val, lbl }) => (
+              ].map(({ val, lbl }, i) => (
                 <div
                   key={lbl}
                   className="rounded-xl py-3.5 flex flex-col items-center justify-center"
-                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                  style={{
+                    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                    animationName: 'fade-up', animationDuration: '0.4s',
+                    animationTimingFunction: 'cubic-bezier(0.16,1,0.3,1)',
+                    animationFillMode: 'both', animationDelay: `${i * 50}ms`,
+                  }}
                 >
-                  <p className="text-xl font-bold tabular-nums" style={{ color: 'rgba(241,245,249,0.9)' }}>{val}</p>
+                  <p className="text-xl font-bold tabular-nums" style={{ color: 'rgba(241,245,249,0.95)' }}>{val}</p>
                   <p className="text-[10px] uppercase tracking-wide mt-0.5 text-center leading-tight px-1" style={{ color: 'rgba(100,116,139,0.65)' }}>{lbl}</p>
                 </div>
               ))}
