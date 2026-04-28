@@ -51,7 +51,7 @@ export default function Home() {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [flyToTarget, setFlyToTarget] = useState<LatLng | null>(null)
   const [expertPanelOpen, setExpertPanelOpen] = useState(false)
-  const expertPanelCacheRef = useRef<{ agents: { role: string; emoji: string; opinion: string }[]; verdict: string } | null>(null)
+  const expertPanelCacheRef = useRef<{ agents: { role: string; emoji: string; opinion: string; response: string }[]; verdict: string } | null>(null)
 
   const strings = getStrings(lang)
 

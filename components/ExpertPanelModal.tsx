@@ -7,6 +7,7 @@ interface AgentResponse {
   role: string
   emoji: string
   opinion: string
+  response: string
 }
 
 interface PanelResult {
@@ -40,6 +41,7 @@ export default function ExpertPanelModal({
   const [data, setData] = useState<PanelResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
+  const [phase, setPhase] = useState(0)
 
   useEffect(() => {
     if (!isOpen) return
@@ -75,6 +77,13 @@ export default function ExpertPanelModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   // Intentional: fetch once per analysis session; re-fetch is prevented by cacheRef.
   }, [isOpen])
+
+  useEffect(() => {
+    if (!loading) { setPhase(0); return }
+    const t1 = setTimeout(() => setPhase(1), 3500)
+    const t2 = setTimeout(() => setPhase(2), 6500)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
+  }, [loading])
 
   useEffect(() => {
     if (!isOpen) return
@@ -138,6 +147,16 @@ export default function ExpertPanelModal({
           {/* Loading state */}
           {loading && (
             <>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '8px 12px', borderRadius: 8,
+                background: 'rgba(99,102,241,0.08)',
+                border: '1px solid rgba(99,102,241,0.2)',
+              }}>
+                <span style={{ fontSize: 11, color: 'rgba(165,180,252,0.85)', fontWeight: 600 }}>
+                  {phase === 0 ? strings.EXPERT_PANEL_ROUND1 : phase === 1 ? strings.EXPERT_PANEL_ROUND2 : strings.EXPERT_PANEL_SYNTHESIS}
+                </span>
+              </div>
               {['📊', '⚠️', '🗺️', '🚶'].map((emoji, i) => (
                 <div key={emoji} style={{
                   background: 'rgba(255,255,255,0.03)',
@@ -154,7 +173,6 @@ export default function ExpertPanelModal({
                       <div key={j} style={{ height: 10, width: `${w}%`, background: 'rgba(255,255,255,0.04)', borderRadius: 4 }} />
                     ))}
                   </div>
-                  <p style={{ marginTop: 10, fontSize: 11, color: 'rgba(100,116,139,0.6)' }}>{strings.EXPERT_PANEL_LOADING}</p>
                 </div>
               ))}
             </>
@@ -189,6 +207,23 @@ export default function ExpertPanelModal({
               <p style={{ color: 'rgba(148,163,184,0.85)', fontSize: 13, lineHeight: 1.6, margin: 0 }}>
                 {agent.opinion}
               </p>
+              {agent.response && (
+                <>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    margin: '12px 0 10px',
+                  }}>
+                    <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
+                    <span style={{ fontSize: 10, color: 'rgba(100,116,139,0.7)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>
+                      {strings.EXPERT_PANEL_AFTER_DISCUSSION}
+                    </span>
+                    <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
+                  </div>
+                  <p style={{ color: 'rgba(148,163,184,0.85)', fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+                    {agent.response}
+                  </p>
+                </>
+              )}
             </div>
           ))}
 

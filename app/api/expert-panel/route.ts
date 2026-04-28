@@ -17,6 +17,7 @@ interface AgentResponse {
   role: string
   emoji: string
   opinion: string
+  response: string
 }
 
 interface RequestBody {
@@ -141,33 +142,59 @@ Yaxın obyektlər: ${ctx.amenities.length > 0 ? ctx.amenities.join(', ') : 'yoxd
 Bu biznes üçün müştəri axını və əlçatanlığı təhlil edən tam 3-4 cümlə yaz. Yalnız ictimai nəqliyyat, parkinq, piyada trafik generatorlarına (ərzaq mağazaları, obyektlər) fokuslan. Birbaşa və məlumata əsaslanan ol. Yalnız təhlil mətni yaz, JSON yox, etiket yox.`
 }
 
+function buildRoundTwoPrompt(
+  agent: { role: string; opinion: string },
+  otherAgents: { role: string; opinion: string }[],
+  lang: 'az' | 'en',
+): string {
+  const othersText = otherAgents.map(o => `${o.role}: ${o.opinion}`).join('\n\n')
+  if (lang === 'en') {
+    return `You are ${agent.role}. You previously stated:
+"${agent.opinion}"
+
+Now you've heard from your fellow experts:
+${othersText}
+
+Write exactly 2-3 sentences responding to what the others said. Agree or push back on a specific point another expert made. Stay in your own domain. Output only your response, no JSON, no labels.`
+  }
+  return `Sən ${agent.role}. Öncə dedin:
+"${agent.opinion}"
+
+İndi digər ekspertləri dinlədin:
+${othersText}
+
+Digərlərinin dediklərinə cavab olaraq tam 2-3 cümlə yaz. Başqa bir ekspertin konkret fikri ilə razılaş və ya ona etiraz et. Öz sahəndə qal. Yalnız cavab mətni yaz, JSON yox, etiket yox.`
+}
+
 function buildSynthesizerPrompt(
   agents: AgentResponse[],
   businessType: string,
   score: number,
   lang: 'az' | 'en',
 ): string {
-  const opinions = agents.map(a => `${a.role}: ${a.opinion}`).join('\n\n')
+  const discussion = agents.map(a =>
+    `${a.role}:\nInitial: ${a.opinion}\nAfter discussion: ${a.response}`
+  ).join('\n\n')
   if (lang === 'en') {
-    return `You are a Moderator synthesizing expert opinions about a business location in Azerbaijan.
+    return `You are a Moderator synthesizing a panel discussion about a business location in Azerbaijan.
 
 Business: ${businessType}
 Score: ${score}/95
 
-Expert opinions:
-${opinions}
+Panel discussion:
+${discussion}
 
-Write exactly 2 sentences as your final verdict. Synthesize all expert views into a balanced conclusion. Be direct. Output only your verdict text, no JSON, no labels.`
+Write exactly 2 sentences as your final verdict. Synthesize the full discussion into a balanced conclusion. Be direct. Output only your verdict text, no JSON, no labels.`
   }
-  return `Sən Azərbaycanda biznes məkanı haqqında ekspert rəylərini ümumiləşdirən Moderatorsən.
+  return `Sən Azərbaycanda biznes məkanı haqqında panel müzakirəsini ümumiləşdirən Moderatorsən.
 
 Biznes: ${businessType}
 Bal: ${score}/95
 
-Ekspert rəyləri:
-${opinions}
+Panel müzakirəsi:
+${discussion}
 
-Yekun qərar kimi tam 2 cümlə yaz. Bütün ekspert baxışlarını balanslaşdırılmış nəticəyə birləşdir. Birbaşa ol. Yalnız qərar mətni yaz, JSON yox, etiket yox.`
+Yekun qərar kimi tam 2 cümlə yaz. Bütün müzakirəni balanslaşdırılmış nəticəyə birləşdir. Birbaşa ol. Yalnız qərar mətni yaz, JSON yox, etiket yox.`
 }
 
 async function callGroq(prompt: string): Promise<string> {
@@ -224,12 +251,21 @@ export async function POST(req: NextRequest) {
       { role: lang === 'en' ? 'Customer Flow Expert' : 'Müştəri Axını Eksperti', emoji: '🚶', prompt: buildCustomerFlowPrompt(safeBody) },
     ]
 
-    const opinions = await Promise.all(agentDefs.map(a => callGroq(a.prompt)))
+    // Round 1: parallel independent analysis
+    const round1Opinions = await Promise.all(agentDefs.map(a => callGroq(a.prompt)))
+    const round1Agents = agentDefs.map((a, i) => ({ role: a.role, emoji: a.emoji, opinion: round1Opinions[i] }))
 
-    const agents: AgentResponse[] = agentDefs.map((a, i) => ({
-      role: a.role,
-      emoji: a.emoji,
-      opinion: opinions[i],
+    // Round 2: each agent reads the other 3 and responds
+    const round2Responses = await Promise.all(
+      round1Agents.map((agent, i) => {
+        const others = round1Agents.filter((_, j) => j !== i)
+        return callGroq(buildRoundTwoPrompt(agent, others, lang))
+      })
+    )
+
+    const agents: AgentResponse[] = round1Agents.map((a, i) => ({
+      ...a,
+      response: round2Responses[i],
     }))
 
     const verdict = await callGroq(buildSynthesizerPrompt(agents, safeBody.businessType, score, lang))

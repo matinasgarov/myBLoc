@@ -185,4 +185,8 @@ export const EN = {
   EXPERT_PANEL_VERDICT: 'Moderator Verdict',
   EXPERT_PANEL_LOADING: 'Experts analyzing...',
   EXPERT_PANEL_ERROR: 'Could not load panel',
+  EXPERT_PANEL_ROUND1: 'Conducting initial analysis...',
+  EXPERT_PANEL_ROUND2: 'Experts discussing...',
+  EXPERT_PANEL_SYNTHESIS: 'Synthesizing verdict...',
+  EXPERT_PANEL_AFTER_DISCUSSION: 'After discussion',
 } as const
