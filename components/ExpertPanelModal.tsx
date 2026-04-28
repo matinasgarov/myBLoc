@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type MutableRefObject } from 'react'
 import { getStrings, type Lang } from '@/lib/i18n'
 import type { PlacesContext } from '@/lib/types'
 
@@ -26,7 +26,7 @@ interface Props {
   rentTierAz?: string
   districtPopulationK?: number
   lang: Lang
-  cacheRef: React.MutableRefObject<PanelResult | null>
+  cacheRef: MutableRefObject<PanelResult | null>
 }
 
 const AGENT_BORDER_COLORS = ['#f59e0b', '#ef4444', '#3b82f6', '#10b981']
@@ -72,6 +72,8 @@ export default function ExpertPanelModal({
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Intentional: fetch once per analysis session; re-fetch is prevented by cacheRef.
   }, [isOpen])
 
   useEffect(() => {
@@ -96,6 +98,8 @@ export default function ExpertPanelModal({
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal={true}
         style={{
           width: '100%', maxWidth: 640,
           maxHeight: '90vh', overflowY: 'auto',
@@ -135,7 +139,7 @@ export default function ExpertPanelModal({
           {loading && (
             <>
               {['📊', '⚠️', '🗺️', '🚶'].map((emoji, i) => (
-                <div key={i} style={{
+                <div key={emoji} style={{
                   background: 'rgba(255,255,255,0.03)',
                   border: `1px solid rgba(255,255,255,0.07)`,
                   borderLeft: `3px solid ${AGENT_BORDER_COLORS[i]}`,
@@ -170,7 +174,7 @@ export default function ExpertPanelModal({
 
           {/* Agent cards */}
           {data && data.agents.map((agent, i) => (
-            <div key={i} style={{
+            <div key={agent.role} style={{
               background: 'rgba(255,255,255,0.03)',
               border: `1px solid rgba(255,255,255,0.07)`,
               borderLeft: `3px solid ${AGENT_BORDER_COLORS[i] ?? '#6366f1'}`,
