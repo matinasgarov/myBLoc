@@ -399,7 +399,7 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
             type="button"
             onClick={onOpenExpertPanel}
             disabled={!expertPanelAvailable}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0"
             style={{
               border: '1px solid rgba(99,102,241,0.35)',
               color: 'rgba(165,180,252,0.85)',
