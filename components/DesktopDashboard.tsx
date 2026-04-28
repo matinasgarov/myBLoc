@@ -22,6 +22,8 @@ interface Props {
   onReset: () => void
   onOpenHistory: () => void
   strings: Strings
+  onOpenExpertPanel: () => void
+  expertPanelAvailable: boolean
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -208,7 +210,7 @@ function IdleView({ analyses, onOpenHistory, onCompare, onInsights, strings }: {
 
 // ─── Result View ──────────────────────────────────────────────────────────────
 
-function ResultView({ business, result, context, lat, lng, onReset, strings }: {
+function ResultView({ business, result, context, lat, lng, onReset, strings, onOpenExpertPanel, expertPanelAvailable }: {
   business: string
   result: AnalysisResult
   context: PlacesContext | null
@@ -216,6 +218,8 @@ function ResultView({ business, result, context, lat, lng, onReset, strings }: {
   lng: number | null
   onReset: () => void
   strings: Strings
+  onOpenExpertPanel: () => void
+  expertPanelAvailable: boolean
 }) {
   const [chartTab, setChartTab] = useState<ChartTab>('bars')
   const color = scoreColor(result.score)
@@ -390,6 +394,28 @@ function ResultView({ business, result, context, lat, lng, onReset, strings }: {
 
         {/* Actions */}
         <div className="px-5 py-4 flex gap-2.5">
+          {/* Expert Panel button */}
+          <button
+            type="button"
+            onClick={onOpenExpertPanel}
+            disabled={!expertPanelAvailable}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+            style={{
+              border: '1px solid rgba(99,102,241,0.35)',
+              color: 'rgba(165,180,252,0.85)',
+              background: 'rgba(99,102,241,0.06)',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(99,102,241,0.14)'
+              e.currentTarget.style.borderColor = 'rgba(99,102,241,0.55)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(99,102,241,0.06)'
+              e.currentTarget.style.borderColor = 'rgba(99,102,241,0.35)'
+            }}
+          >
+            ✦ {strings.EXPERT_PANEL_BUTTON}
+          </button>
           <button
             onClick={onReset}
             className="flex-1 py-2 px-5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
@@ -714,6 +740,8 @@ export default function DesktopDashboard({
   onReset,
   onOpenHistory,
   strings,
+  onOpenExpertPanel,
+  expertPanelAvailable,
 }: Props) {
   const [view, setView] = useState<PanelView>('idle')
 
@@ -791,6 +819,8 @@ export default function DesktopDashboard({
           lng={currentLng}
           onReset={handleReset}
           strings={strings}
+          onOpenExpertPanel={onOpenExpertPanel}
+          expertPanelAvailable={expertPanelAvailable}
         />
       )}
 

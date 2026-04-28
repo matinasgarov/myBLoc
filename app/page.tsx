@@ -1,5 +1,5 @@
 'use client'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { saveAnalysis, getAnalyses } from '@/lib/storage'
 import { getStrings, type Lang } from '@/lib/i18n'
@@ -11,6 +11,7 @@ import LandingPage from '@/components/LandingPage'
 import MapErrorBoundary from '@/components/MapErrorBoundary'
 import LocationSearch from '@/components/LocationSearch'
 import DesktopDashboard from '@/components/DesktopDashboard'
+import ExpertPanelModal from '@/components/ExpertPanelModal'
 import type { AnalysisResult, LatLng, PlacesContext, SavedAnalysis } from '@/lib/types'
 import { parseShareParams } from '@/lib/share'
 
@@ -49,6 +50,8 @@ export default function Home() {
   const [mapKey, setMapKey] = useState(0)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [flyToTarget, setFlyToTarget] = useState<LatLng | null>(null)
+  const [expertPanelOpen, setExpertPanelOpen] = useState(false)
+  const expertPanelCacheRef = useRef<{ agents: { role: string; emoji: string; opinion: string }[]; verdict: string } | null>(null)
 
   const strings = getStrings(lang)
 
@@ -242,6 +245,7 @@ export default function Home() {
     setError(null)
     setWarning(null)
     setMapKey(k => k + 1)
+    expertPanelCacheRef.current = null
   }
 
   const isDimmed = appState === 'loading'
@@ -351,7 +355,7 @@ export default function Home() {
           {/* Map area */}
           <div className="relative flex-1 min-h-0">
             <MapErrorBoundary message={strings.MAP_ERROR}>
-              <Map key={mapKey} onPinDrop={handlePinDrop} pin={pin} dimmed={isDimmed} flyToTarget={flyToTarget} />
+              <Map key={mapKey} onPinDrop={handlePinDrop} pin={pin} dimmed={isDimmed} flyToTarget={flyToTarget} showLayerPanel={appState === 'result'} businessType={businessType} />
             </MapErrorBoundary>
 
             {(appState === 'map' || appState === 'input') && (
@@ -483,7 +487,18 @@ export default function Home() {
           {/* Result sheet — mobile only (desktop shows in dashboard panel) */}
           {appState === 'result' && result && (
             <div className="lg:hidden">
-              <ResultSheet business={businessType} result={result} context={placesContext} lat={pin?.lat} lng={pin?.lng} lang={lang} onReset={handleReset} strings={strings} />
+              <ResultSheet
+                business={businessType}
+                result={result}
+                context={placesContext}
+                lat={pin?.lat}
+                lng={pin?.lng}
+                lang={lang}
+                onReset={handleReset}
+                strings={strings}
+                onOpenExpertPanel={() => setExpertPanelOpen(true)}
+                expertPanelAvailable={!!result}
+              />
             </div>
           )}
 
@@ -504,10 +519,29 @@ export default function Home() {
             onReset={handleReset}
             onOpenHistory={() => setHistoryOpen(true)}
             strings={strings}
+            onOpenExpertPanel={() => setExpertPanelOpen(true)}
+            expertPanelAvailable={!!result}
           />
         </div>
 
       </div>
+
+      {result && pin && placesContext && (
+        <ExpertPanelModal
+          isOpen={expertPanelOpen}
+          onClose={() => setExpertPanelOpen(false)}
+          lat={pin.lat}
+          lng={pin.lng}
+          businessType={businessType}
+          score={result.score}
+          placesContext={placesContext}
+          luxuryMismatch={result.luxuryMismatch}
+          rentTierAz={result.rentTierAz}
+          districtPopulationK={result.districtPopulationK}
+          lang={lang}
+          cacheRef={expertPanelCacheRef}
+        />
+      )}
     </main>
   )
 }

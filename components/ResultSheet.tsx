@@ -16,6 +16,8 @@ interface Props {
   lang: Lang
   onReset: () => void
   strings: Strings
+  onOpenExpertPanel: () => void
+  expertPanelAvailable: boolean
 }
 
 function scoreColor(score: number) {
@@ -143,7 +145,7 @@ const FACTOR_EXPLAIN_KEYS: Record<FactorKey, keyof Strings> = {
   businessDensity: 'FACTOR_EXPLAIN_BUSINESS_DENSITY',
 }
 
-export default function ResultSheet({ business, result, context, lat, lng, lang, onReset, strings }: Props) {
+export default function ResultSheet({ business, result, context, lat, lng, lang, onReset, strings, onOpenExpertPanel, expertPanelAvailable }: Props) {
   const [expanded, setExpanded] = useState(false)
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'failed'>('idle')
   const sc = scoreColor(result.score)
@@ -247,6 +249,29 @@ export default function ResultSheet({ business, result, context, lat, lng, lang,
             <line x1="4.3" y1="6.7" x2="7.7" y2="8.8"/>
           </svg>
           {shareStatus === 'copied' ? strings.SHARE_COPIED : shareStatus === 'failed' ? strings.SHARE_FAILED : strings.SHARE_BUTTON}
+        </button>
+
+        {/* Expert Panel button */}
+        <button
+          type="button"
+          onClick={onOpenExpertPanel}
+          disabled={!expertPanelAvailable}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0"
+          style={{
+            border: '1px solid rgba(99,102,241,0.35)',
+            color: 'rgba(165,180,252,0.85)',
+            background: 'rgba(99,102,241,0.06)',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'rgba(99,102,241,0.14)'
+            e.currentTarget.style.borderColor = 'rgba(99,102,241,0.55)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'rgba(99,102,241,0.06)'
+            e.currentTarget.style.borderColor = 'rgba(99,102,241,0.35)'
+          }}
+        >
+          ✦ {strings.EXPERT_PANEL_BUTTON}
         </button>
 
         {/* Reset button */}
