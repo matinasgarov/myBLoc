@@ -5,6 +5,8 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import type { Strings } from '@/lib/i18n'
 import type { Lang } from '@/lib/i18n'
 import { RadarChartDisplay, BarsChartDisplay, ScoreRingDisplay } from '@/components/Charts'
+import NeuralBackground from '@/components/ui/flow-field-background'
+import { HowItWorksGallery } from '@/components/blocks/gallery4'
 
 interface Props {
   onStart: () => void
@@ -508,14 +510,9 @@ function FeedbackForm({ strings }: { strings: Strings }) {
 export default function LandingPage({ onStart, strings, lang, onLangChange }: Props) {
   const missionRef = useRef<HTMLElement>(null)
   const { scrollY } = useScroll()
-  const { scrollYProgress } = useScroll({
-    target: missionRef,
-    offset: ['start end', 'end start'],
-  })
-
   const navBg = useTransform(scrollY, [0, 80], ['rgba(7,9,13,0)', 'rgba(7,9,13,0.96)'])
   const navBorder = useTransform(scrollY, [0, 80], ['rgba(0,201,138,0)', 'rgba(0,201,138,0.12)'])
-  const imageY = useTransform(scrollYProgress, [0, 0.5], [40, -40])
+  const navBlur = useTransform(scrollY, [0, 80], ['blur(0px)', 'blur(12px)'])
 
   const navLinks = [
     { id: 'hero',    label: strings.NAV_HOME },
@@ -539,33 +536,19 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
       num: '01',
       title: strings.LANDING_HOW_STEP1_TITLE,
       desc:  strings.LANDING_HOW_STEP1_DESC,
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-          <circle cx="12" cy="10" r="3"/>
-        </svg>
-      ),
+      image: '/chooseplace.png',
     },
     {
       num: '02',
       title: strings.LANDING_HOW_STEP2_TITLE,
       desc:  strings.LANDING_HOW_STEP2_DESC,
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="3"/>
-          <path d="M8 12h8M8 8h5"/>
-        </svg>
-      ),
+      image: '/biznesnovu.png',
     },
     {
       num: '03',
       title: strings.LANDING_HOW_STEP3_TITLE,
       desc:  strings.LANDING_HOW_STEP3_DESC,
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-      ),
+      image: '/analizedin.png',
     },
   ], [strings])
 
@@ -580,8 +563,8 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
 
       {/* ── Navigation ─────────────────────────────────────────────────────── */}
       <motion.nav
-        style={{ backgroundColor: navBg, borderBottomColor: navBorder }}
-        className="fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-md"
+        style={{ backgroundColor: navBg, borderBottomColor: navBorder, backdropFilter: navBlur }}
+        className="fixed top-0 left-0 right-0 z-50 border-b"
       >
         <div className="px-6 sm:px-10 h-16 flex items-center justify-between">
           <img src="/logo.png" alt="myblocate" className="h-9 w-auto" />
@@ -621,6 +604,26 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
 
       {/* ── Hero ────────────────────────────────────────────────────────────── */}
       <section id="hero" className="relative min-h-screen flex items-center overflow-hidden">
+        {/* Flow-field particle background */}
+        <div className="absolute inset-0 pointer-events-none">
+          <NeuralBackground
+            color="#0051ff"
+            trailOpacity={0.08}
+            particleCount={500}
+            speed={0.7}
+          />
+        </div>
+        {/* Hero image — above canvas so trail fill doesn't cover it */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: 'url(/hero.png)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.65,
+            mixBlendMode: 'screen',
+          }}
+        />
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -785,7 +788,7 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
       </section>
 
       {/* ── How it works ────────────────────────────────────────────────────── */}
-      <section className="relative py-28 px-6 sm:px-10 overflow-hidden" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+      <section className="relative py-28 overflow-hidden" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
         <div
           className="absolute -top-8 -left-4 select-none pointer-events-none leading-none"
           style={{
@@ -798,108 +801,35 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
           00
         </div>
 
-        <div className="max-w-5xl mx-auto relative z-10">
+        {/* Section title */}
+        <div className="max-w-5xl mx-auto px-6 sm:px-10 relative z-10 mb-12">
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-80px' }}
-            transition={{ duration: 0.5 }}
-            className="flex items-center gap-3 mb-14"
-          
+            transition={{ duration: 0.7, ease: [0.25, 0, 0, 1] }}
           >
-            <div className="flex-1">
-              <motion.h2
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-80px' }}
-                transition={{ duration: 0.7, ease: [0.25, 0, 0, 1] }}
-                className="text-slate-50 mb-5"
-                style={{
-                  fontFamily: SERIF,
-                  fontSize: 'clamp(28px, 3.6vw, 48px)',
-                  lineHeight: 1.1,
-                  fontWeight: 700,
-                  letterSpacing: '-0.025em',
-                }}
-              >
-                {strings.LANDING_HOW_TITLE}
-              </motion.h2>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-80px' }}
-                transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 0, 0, 1] }}
-                className="text-[15px] leading-relaxed"
-                style={{ color: 'rgba(226,232,240,0.72)', fontFamily: SANS, fontWeight: 400 }}
-              >
-          
-              </motion.p>
-            </div>
-            <span className="w-8 h-px" style={{ background: ACC }} />
-            <span className="text-[10px] tracking-[0.22em] uppercase" style={{ color: ACC, fontFamily: MONO }}>
+            <h2
+              className="text-slate-50 mb-3"
+              style={{
+                fontFamily: SERIF,
+                fontSize: 'clamp(28px, 3.6vw, 48px)',
+                lineHeight: 1.1,
+                fontWeight: 700,
+                letterSpacing: '-0.025em',
+              }}
+            >
               {strings.LANDING_HOW_TITLE}
-            </span>
+            </h2>
           </motion.div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {howSteps.map((step, i) => (
-              <motion.div
-                key={step.num}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-60px' }}
-                transition={{ duration: 0.6, delay: i * 0.12, ease: [0.25, 0, 0, 1] }}
-                style={{
-                  background: SURF,
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  borderRadius: '12px',
-                  padding: '28px',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}
-              >
-                <div
-                  className="absolute -bottom-3 -right-2 leading-none select-none pointer-events-none"
-                  style={{
-                    fontSize: '80px',
-                    fontFamily: MONO,
-                    fontWeight: 700,
-                    color: 'rgba(0,201,138,0.05)',
-                    lineHeight: 1,
-                  }}
-                >
-                  {step.num}
-                </div>
-
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-5"
-                  style={{ background: 'rgba(0,201,138,0.1)', color: ACC }}
-                >
-                  {step.icon}
-                </div>
-
-                <span
-                  className="text-[9px] tracking-[0.2em] uppercase mb-3 block"
-                  style={{ color: ACC, fontFamily: MONO }}
-                >
-                  {step.num}
-                </span>
-
-                <h3
-                  className="text-[17px] font-medium text-slate-100 mb-2"
-                  style={{ fontFamily: SANS }}
-                >
-                  {step.title}
-                </h3>
-                <p
-                  className="text-sm leading-relaxed"
-                  style={{ color: 'rgba(226,232,240,0.65)', fontFamily: SANS, fontWeight: 400 }}
-                >
-                  {step.desc}
-                </p>
-              </motion.div>
-            ))}
-          </div>
+        {/* Full-width Gallery4 carousel */}
+        <div className="relative z-10">
+          <HowItWorksGallery
+            title={strings.LANDING_HOW_TITLE}
+            items={howSteps.map(s => ({ id: s.num, num: s.num, title: s.title, desc: s.desc, image: s.image }))}
+          />
         </div>
       </section>
 
@@ -910,6 +840,24 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
         className="relative py-28 px-6 sm:px-10 overflow-hidden"
         style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
       >
+        {/* Background image */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: 'url(/mission.png)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.13,
+          }}
+        />
+        {/* Dark gradient overlay so edges fade into the section background */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse 70% 60% at 50% 50%, transparent 20%, rgba(5,10,20,0.85) 100%)',
+          }}
+        />
+
         {/* Network decoration */}
         <NetworkDecoration />
 
@@ -939,62 +887,34 @@ export default function LandingPage({ onStart, strings, lang, onLangChange }: Pr
             </span>
           </motion.div>
 
-          {/* Phone + text */}
-          <div className="flex flex-col md:flex-row items-center gap-16 md:gap-20 mb-20">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
+          {/* Mission text — centered now that image is the background */}
+          <div className="max-w-2xl mb-20">
+            <motion.h2
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-80px' }}
-              transition={{ duration: 0.8, ease: [0.25, 0, 0, 1] }}
-              style={{ y: imageY }}
-              className="shrink-0"
+              transition={{ duration: 0.7, ease: [0.25, 0, 0, 1] }}
+              className="text-slate-50 mb-5"
+              style={{
+                fontFamily: SERIF,
+                fontSize: 'clamp(28px, 3.6vw, 48px)',
+                lineHeight: 1.1,
+                fontWeight: 700,
+                letterSpacing: '-0.025em',
+              }}
             >
-              <div className="relative">
-                <div
-                  className="absolute inset-0 rounded-3xl pointer-events-none"
-                  style={{
-                    background: `radial-gradient(ellipse 80% 60% at 50% 60%, rgba(0,201,138,0.12) 0%, transparent 70%)`,
-                    filter: 'blur(30px)',
-                    transform: 'scale(1.2)',
-                  }}
-                />
-                <img
-                  src="/phone-mockup.png"
-                  alt="myblocate app preview"
-                  style={{ width: '260px', height: 'auto', position: 'relative', zIndex: 1 }}
-                  className="drop-shadow-2xl"
-                />
-              </div>
-            </motion.div>
-
-            <div className="flex-1">
-              <motion.h2
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-80px' }}
-                transition={{ duration: 0.7, ease: [0.25, 0, 0, 1] }}
-                className="text-slate-50 mb-5"
-                style={{
-                  fontFamily: SERIF,
-                  fontSize: 'clamp(28px, 3.6vw, 48px)',
-                  lineHeight: 1.1,
-                  fontWeight: 700,
-                  letterSpacing: '-0.025em',
-                }}
-              >
-                {strings.LANDING_MISSION_TITLE}
-              </motion.h2>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-80px' }}
-                transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 0, 0, 1] }}
-                className="text-[15px] leading-relaxed"
-                style={{ color: 'rgba(226,232,240,0.72)', fontFamily: SANS, fontWeight: 400 }}
-              >
-                {strings.LANDING_MISSION_TEXT}
-              </motion.p>
-            </div>
+              {strings.LANDING_MISSION_TITLE}
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-80px' }}
+              transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 0, 0, 1] }}
+              className="text-[15px] leading-relaxed"
+              style={{ color: 'rgba(226,232,240,0.72)', fontFamily: SANS, fontWeight: 400 }}
+            >
+              {strings.LANDING_MISSION_TEXT}
+            </motion.p>
           </div>
 
           {/* Pillars */}

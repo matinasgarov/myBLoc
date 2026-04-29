@@ -66,3 +66,105 @@ body {
 
 .anim-fade-up  { animation: fade-up  0.45s cubic-bezier(0.16,1,0.3,1) both; }
 .anim-scale-in { animation: scale-in 0.4s  cubic-bezier(0.16,1,0.3,1) both; }
+
+@keyframes moveDot {
+  0%,
+  100% {
+    top: 10%;
+    right: 10%;
+  }
+  25% {
+    top: 10%;
+    right: calc(100% - 35px);
+  }
+  50% {
+    top: calc(100% - 30px);
+    right: calc(100% - 35px);
+  }
+  75% {
+    top: calc(100% - 30px);
+    right: 10%;
+  }
+}
+
+/* ── Glowing stat card ──────────────────────────────────────────── */
+.glowing-card-outer {
+  position: relative;
+  border-radius: 14px;
+  padding: 1.5px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.35) 0%, rgba(99,102,241,0.05) 60%);
+}
+
+.glowing-card-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(129,140,248,0.95);
+  box-shadow: 0 0 7px 2px rgba(99,102,241,0.55);
+  position: absolute;
+  top: 10%;
+  right: 10%;
+  animation: moveDot 5s linear infinite;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.glowing-card-inner {
+  position: relative;
+  background: rgba(7,9,13,0.96) !important;
+  border-radius: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 8px;
+  overflow: hidden;
+  min-height: 88px;
+  color: rgba(241,245,249,0.97);
+}
+
+.glowing-card-ray {
+  position: absolute;
+  top: -60%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 180%;
+  height: 100%;
+  background: radial-gradient(ellipse at top, rgba(99,102,241,0.1) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+.glowing-card-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: rgba(241,245,249,0.97);
+  font-family: monospace;
+  margin: 0;
+  position: relative;
+  z-index: 1;
+  line-height: 1.2;
+}
+
+.glowing-card-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(100,116,139,0.65);
+  text-align: center;
+  margin: 5px 0 0;
+  line-height: 1.3;
+  position: relative;
+  z-index: 1;
+  padding: 0 4px;
+}
+
+.glowing-card-line {
+  position: absolute;
+  background: linear-gradient(90deg, transparent, rgba(99,102,241,0.5), transparent);
+  pointer-events: none;
+}
+
+.glowing-card-topl    { top: 0;    left: 15%;  right: 15%; height: 1px; }
+.glowing-card-bottoml { bottom: 0; left: 15%;  right: 15%; height: 1px; }
+.glowing-card-leftl   { left: 0;   top: 15%;   bottom: 15%; width: 1px; background: linear-gradient(180deg, transparent, rgba(99,102,241,0.4), transparent); }
+.glowing-card-rightl  { right: 0;  top: 15%;   bottom: 15%; width: 1px; background: linear-gradient(180deg, transparent, rgba(99,102,241,0.4), transparent); }

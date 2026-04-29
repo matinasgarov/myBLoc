@@ -1,0 +1,129 @@
+<h2>Dashboard: Background & Transparency</h2>
+<p class="subtitle">Current layout is 60% map / 40% dashboard. We're moving to 55/45. How transparent should the dashboard be? Pick the depth that feels right.</p>
+
+<div class="cards" style="gap:18px; margin-top:20px;">
+
+  <!-- Option A: Solid dark (current) -->
+  <div class="card" data-choice="solid" onclick="toggleSelect(this)" style="max-width:280px;">
+    <div class="card-image" style="padding:0; overflow:hidden; border-radius:8px 8px 0 0;">
+      <div style="display:flex; height:220px; font-family: -apple-system, sans-serif; font-size:11px;">
+        <!-- Map side -->
+        <div style="flex:55; background:linear-gradient(135deg,#1a2535 0%,#0f172a 100%); display:flex; align-items:center; justify-content:center; position:relative;">
+          <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 20px,rgba(255,255,255,0.015) 20px,rgba(255,255,255,0.015) 21px),repeating-linear-gradient(90deg,transparent,transparent 20px,rgba(255,255,255,0.015) 20px,rgba(255,255,255,0.015) 21px);"></div>
+          <div style="position:relative;text-align:center;">
+            <div style="width:12px;height:12px;background:#3b82f6;border-radius:50%;margin:0 auto;box-shadow:0 0 12px rgba(59,130,246,0.6);"></div>
+            <div style="color:rgba(255,255,255,0.25);margin-top:6px;font-size:9px;letter-spacing:0.1em;">MAP 55%</div>
+          </div>
+        </div>
+        <!-- Dashboard side -->
+        <div style="flex:45; background:#07090D; border-left:1px solid rgba(255,255,255,0.07); padding:10px 10px; display:flex;flex-direction:column;gap:6px;">
+          <div style="background:linear-gradient(135deg,rgba(99,102,241,0.35),rgba(99,102,241,0.05)); border-radius:8px; padding:1.5px;">
+            <div style="background:#07090D; border-radius:7px; padding:8px; text-align:center;">
+              <div style="color:rgba(241,245,249,0.95);font-size:13px;font-weight:700;font-family:monospace;">72%</div>
+              <div style="color:rgba(148,163,184,0.6);font-size:7px;text-transform:uppercase;letter-spacing:0.08em;margin-top:2px;">Uğur ehtimalı</div>
+            </div>
+          </div>
+          <div style="background:linear-gradient(135deg,rgba(99,102,241,0.35),rgba(99,102,241,0.05)); border-radius:8px; padding:1.5px;">
+            <div style="background:#07090D; border-radius:7px; padding:8px; text-align:center;">
+              <div style="color:rgba(241,245,249,0.95);font-size:13px;font-weight:700;font-family:monospace;">14</div>
+              <div style="color:rgba(148,163,184,0.6);font-size:7px;text-transform:uppercase;letter-spacing:0.08em;margin-top:2px;">Rəqib</div>
+            </div>
+          </div>
+          <div style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:7px;padding:8px;">
+            <div style="color:rgba(100,116,139,0.5);font-size:7px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:5px;">Müsbət cəhətlər</div>
+            <div style="background:rgba(52,211,153,0.08);border-left:2px solid rgba(52,211,153,0.4);border-radius:3px;padding:3px 5px;color:rgba(203,213,225,0.7);font-size:7px;margin-bottom:3px;">Metro yaxındır</div>
+            <div style="background:rgba(52,211,153,0.08);border-left:2px solid rgba(52,211,153,0.4);border-radius:3px;padding:3px 5px;color:rgba(203,213,225,0.7);font-size:7px;">Az rəqabət</div>
+          </div>
+          <div style="color:rgba(100,116,139,0.4);text-align:center;font-size:8px;">DASHBOARD 45%</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Solid Dark (Current)</h3>
+      <p>Opaque <code>#07090D</code> background. Maximum readability, no transparency.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Subtle glass -->
+  <div class="card" data-choice="glass-subtle" onclick="toggleSelect(this)" style="max-width:280px;">
+    <div class="card-image" style="padding:0; overflow:hidden; border-radius:8px 8px 0 0;">
+      <div style="display:flex; height:220px; font-family: -apple-system, sans-serif; font-size:11px;">
+        <div style="flex:55; background:linear-gradient(135deg,#1a2535 0%,#0f172a 100%); display:flex; align-items:center; justify-content:center; position:relative;">
+          <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 20px,rgba(255,255,255,0.015) 20px,rgba(255,255,255,0.015) 21px),repeating-linear-gradient(90deg,transparent,transparent 20px,rgba(255,255,255,0.015) 20px,rgba(255,255,255,0.015) 21px);"></div>
+          <div style="position:relative;text-align:center;">
+            <div style="width:12px;height:12px;background:#3b82f6;border-radius:50%;margin:0 auto;box-shadow:0 0 12px rgba(59,130,246,0.6);"></div>
+            <div style="color:rgba(255,255,255,0.25);margin-top:6px;font-size:9px;letter-spacing:0.1em;">MAP 55%</div>
+          </div>
+        </div>
+        <!-- Dashboard — subtle glass -->
+        <div style="flex:45; background:rgba(7,9,13,0.88); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border-left:1px solid rgba(255,255,255,0.1); padding:10px 10px; display:flex;flex-direction:column;gap:6px;">
+          <div style="background:linear-gradient(135deg,rgba(99,102,241,0.35),rgba(99,102,241,0.05)); border-radius:8px; padding:1.5px;">
+            <div style="background:rgba(7,9,13,0.82); border-radius:7px; padding:8px; text-align:center;">
+              <div style="color:rgba(241,245,249,0.95);font-size:13px;font-weight:700;font-family:monospace;">72%</div>
+              <div style="color:rgba(148,163,184,0.6);font-size:7px;text-transform:uppercase;letter-spacing:0.08em;margin-top:2px;">Uğur ehtimalı</div>
+            </div>
+          </div>
+          <div style="background:linear-gradient(135deg,rgba(99,102,241,0.35),rgba(99,102,241,0.05)); border-radius:8px; padding:1.5px;">
+            <div style="background:rgba(7,9,13,0.82); border-radius:7px; padding:8px; text-align:center;">
+              <div style="color:rgba(241,245,249,0.95);font-size:13px;font-weight:700;font-family:monospace;">14</div>
+              <div style="color:rgba(148,163,184,0.6);font-size:7px;text-transform:uppercase;letter-spacing:0.08em;margin-top:2px;">Rəqib</div>
+            </div>
+          </div>
+          <div style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:7px;padding:8px;">
+            <div style="color:rgba(100,116,139,0.5);font-size:7px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:5px;">Müsbət cəhətlər</div>
+            <div style="background:rgba(52,211,153,0.08);border-left:2px solid rgba(52,211,153,0.4);border-radius:3px;padding:3px 5px;color:rgba(203,213,225,0.7);font-size:7px;margin-bottom:3px;">Metro yaxındır</div>
+            <div style="background:rgba(52,211,153,0.08);border-left:2px solid rgba(52,211,153,0.4);border-radius:3px;padding:3px 5px;color:rgba(203,213,225,0.7);font-size:7px;">Az rəqabət</div>
+          </div>
+          <div style="color:rgba(100,116,139,0.4);text-align:center;font-size:8px;">DASHBOARD 45%</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Subtle Glass</h3>
+      <p><code>rgba(7,9,13,0.88)</code> + blur(16px). Slightly translucent — a hint of depth without losing contrast.</p>
+    </div>
+  </div>
+
+  <!-- Option C: Strong glass -->
+  <div class="card" data-choice="glass-strong" onclick="toggleSelect(this)" style="max-width:280px;">
+    <div class="card-image" style="padding:0; overflow:hidden; border-radius:8px 8px 0 0;">
+      <div style="display:flex; height:220px; font-family: -apple-system, sans-serif; font-size:11px;">
+        <div style="flex:55; background:linear-gradient(135deg,#1a2535 0%,#0f172a 100%); display:flex; align-items:center; justify-content:center; position:relative;">
+          <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 20px,rgba(255,255,255,0.015) 20px,rgba(255,255,255,0.015) 21px),repeating-linear-gradient(90deg,transparent,transparent 20px,rgba(255,255,255,0.015) 20px,rgba(255,255,255,0.015) 21px);"></div>
+          <div style="position:relative;text-align:center;">
+            <div style="width:12px;height:12px;background:#3b82f6;border-radius:50%;margin:0 auto;box-shadow:0 0 12px rgba(59,130,246,0.6);"></div>
+            <div style="color:rgba(255,255,255,0.25);margin-top:6px;font-size:9px;letter-spacing:0.1em;">MAP 55%</div>
+          </div>
+        </div>
+        <!-- Dashboard — strong glass -->
+        <div style="flex:45; background:rgba(7,9,13,0.70); backdrop-filter:blur(24px) saturate(1.4); -webkit-backdrop-filter:blur(24px) saturate(1.4); border-left:1px solid rgba(255,255,255,0.13); padding:10px 10px; display:flex;flex-direction:column;gap:6px;">
+          <div style="background:linear-gradient(135deg,rgba(99,102,241,0.4),rgba(99,102,241,0.08)); border-radius:8px; padding:1.5px;">
+            <div style="background:rgba(7,9,13,0.65); border-radius:7px; padding:8px; text-align:center;">
+              <div style="color:rgba(241,245,249,0.95);font-size:13px;font-weight:700;font-family:monospace;">72%</div>
+              <div style="color:rgba(148,163,184,0.6);font-size:7px;text-transform:uppercase;letter-spacing:0.08em;margin-top:2px;">Uğur ehtimalı</div>
+            </div>
+          </div>
+          <div style="background:linear-gradient(135deg,rgba(99,102,241,0.4),rgba(99,102,241,0.08)); border-radius:8px; padding:1.5px;">
+            <div style="background:rgba(7,9,13,0.65); border-radius:7px; padding:8px; text-align:center;">
+              <div style="color:rgba(241,245,249,0.95);font-size:13px;font-weight:700;font-family:monospace;">14</div>
+              <div style="color:rgba(148,163,184,0.6);font-size:7px;text-transform:uppercase;letter-spacing:0.08em;margin-top:2px;">Rəqib</div>
+            </div>
+          </div>
+          <div style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:7px;padding:8px;">
+            <div style="color:rgba(100,116,139,0.55);font-size:7px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:5px;">Müsbət cəhətlər</div>
+            <div style="background:rgba(52,211,153,0.1);border-left:2px solid rgba(52,211,153,0.5);border-radius:3px;padding:3px 5px;color:rgba(203,213,225,0.75);font-size:7px;margin-bottom:3px;">Metro yaxındır</div>
+            <div style="background:rgba(52,211,153,0.1);border-left:2px solid rgba(52,211,153,0.5);border-radius:3px;padding:3px 5px;color:rgba(203,213,225,0.75);font-size:7px;">Az rəqabət</div>
+          </div>
+          <div style="color:rgba(100,116,139,0.4);text-align:center;font-size:8px;">DASHBOARD 45%</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Strong Glass</h3>
+      <p><code>rgba(7,9,13,0.70)</code> + blur(24px) saturate. The map "bleeds through" for a premium frosted-pane feel.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px;">Note: The blur effect is visible when the dashboard overlays the map. In this mockup the "map" behind shows as a dark gradient.</p>

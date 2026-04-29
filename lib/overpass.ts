@@ -59,7 +59,7 @@ function buildQuery(lat: number, lng: number): string {
 
 const DEBUG = process.env.OVERPASS_DEBUG === '1'
 
-async function fetchFromOverpass(query: string): Promise<{ elements: OSMElement[] }> {
+export async function fetchFromOverpass(query: string): Promise<{ elements: OSMElement[] }> {
   const cached = queryCache.get(query)
   if (cached && cached.expiresAt > Date.now()) {
     return cached.data
@@ -225,7 +225,7 @@ const COMPETITOR_ALIASES: Array<[string[], string[]]> = [
   [['foto', 'fotoqraf', 'fotostudia', 'photographer'], ['photographer', 'studio']],
 ]
 
-function resolveOSMTags(businessType: string): string[] | null {
+export function resolveOSMTags(businessType: string): string[] | null {
   const lower = businessType.toLowerCase()
   for (const [keywords, osmValues] of COMPETITOR_ALIASES) {
     if (keywords.some((k) => lower.includes(k))) return osmValues

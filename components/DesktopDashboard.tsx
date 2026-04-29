@@ -5,6 +5,7 @@ import type { Strings } from '@/lib/i18n'
 import PdfDownloadButton from './PdfDownloadButton'
 import { METRO_STATIONS } from '@/lib/metro-stations'
 import { RadarChartDisplay, BarsChartDisplay, ScoreRingDisplay } from '@/components/Charts'
+import { GlowingStatCard, GlowingButton } from '@/components/ui/glowing-card'
 
 type PanelView = 'idle' | 'result' | 'compare' | 'insights'
 type ChartTab = 'bars' | 'radar' | 'ring'
@@ -177,38 +178,22 @@ function IdleView({ analyses, onOpenHistory, onCompare, onInsights, strings }: {
       {/* Action buttons */}
       <div className="space-y-2">
         {actions.map((a) => (
-          <button
-            key={a.label}
-            onClick={a.onClick}
-            className="w-full text-left rounded-xl px-4 py-3.5 flex items-center gap-3 transition-all duration-150"
-            style={{
-              background: a.accent ? 'rgba(37,99,235,0.08)' : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${a.accent ? 'rgba(59,130,246,0.22)' : 'rgba(255,255,255,0.07)'}`,
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = a.accent ? 'rgba(37,99,235,0.18)' : 'rgba(255,255,255,0.055)'
-              e.currentTarget.style.borderColor = a.accent ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.12)'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = a.accent ? 'rgba(37,99,235,0.08)' : 'rgba(255,255,255,0.03)'
-              e.currentTarget.style.borderColor = a.accent ? 'rgba(59,130,246,0.22)' : 'rgba(255,255,255,0.07)'
-            }}
-          >
-            <span style={{ color: a.accent ? '#60a5fa' : 'rgba(100,116,139,0.65)' }}>
+          <GlowingButton key={a.label} onClick={a.onClick} fullWidth>
+            <span style={{ color: a.accent ? '#60a5fa' : 'rgba(100,116,139,0.65)', flexShrink: 0 }}>
               {a.icon}
             </span>
-            <div className="flex-1 min-w-0">
-              <p className="text-[14px] font-semibold tracking-tight" style={{ color: 'rgba(226,232,240,0.85)' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(226,232,240,0.9)', margin: 0, letterSpacing: '-0.01em' }}>
                 {a.label}
               </p>
-              <p className="text-[12px] mt-0.5 truncate" style={{ color: 'rgba(100,116,139,0.55)' }}>
+              <p style={{ fontSize: 12, marginTop: 2, color: 'rgba(100,116,139,0.55)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {a.sub}
               </p>
             </div>
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="rgba(100,116,139,0.35)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="rgba(100,116,139,0.35)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
               <path d="M6 3l5 5-5 5"/>
             </svg>
-          </button>
+          </GlowingButton>
         ))}
       </div>
     </div>
@@ -414,19 +399,12 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
                 { val: String(context.parking),         lbl: strings.RESULT_OSM_PARKING },
                 { val: context.metroDistance !== null ? `${context.metroDistance}m` : '—', lbl: strings.RESULT_OSM_METRO },
               ].map(({ val, lbl }, i) => (
-                <div
+                <GlowingStatCard
                   key={lbl}
-                  className="rounded-xl py-3.5 flex flex-col items-center justify-center"
-                  style={{
-                    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                    animationName: 'fade-up', animationDuration: '0.4s',
-                    animationTimingFunction: 'cubic-bezier(0.16,1,0.3,1)',
-                    animationFillMode: 'both', animationDelay: `${i * 50}ms`,
-                  }}
-                >
-                  <p className="text-xl font-bold tabular-nums" style={{ color: 'rgba(241,245,249,0.95)' }}>{val}</p>
-                  <p className="text-[10px] uppercase tracking-wide mt-0.5 text-center leading-tight px-1" style={{ color: 'rgba(100,116,139,0.65)' }}>{lbl}</p>
-                </div>
+                  value={val}
+                  label={lbl}
+                  animationDelay={`${i * 50}ms`}
+                />
               ))}
             </div>
             {context.landUse && (
@@ -437,41 +415,20 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
 
         {/* Actions */}
         <div className="px-5 py-4 flex gap-2.5">
-          {/* Expert Panel button */}
-          <button
-            type="button"
-            onClick={onOpenExpertPanel}
-            disabled={!expertPanelAvailable}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0"
-            style={{
-              border: '1px solid rgba(99,102,241,0.35)',
-              color: 'rgba(165,180,252,0.85)',
-              background: 'rgba(99,102,241,0.06)',
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = 'rgba(99,102,241,0.14)'
-              e.currentTarget.style.borderColor = 'rgba(99,102,241,0.55)'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = 'rgba(99,102,241,0.06)'
-              e.currentTarget.style.borderColor = 'rgba(99,102,241,0.35)'
-            }}
-          >
-            ✦ {strings.EXPERT_PANEL_BUTTON}
-          </button>
-          <button
-            onClick={onReset}
-            className="flex-1 py-2 px-5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
-            style={{ border: 'none', color: '#fff', background: BLUE }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#2563eb' }}
-            onMouseLeave={e => { e.currentTarget.style.background = BLUE }}
-          >
-            <svg width="18" height="18" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M10 6A4 4 0 1 1 6 2a4 4 0 0 1 2.83 1.17L10 4.5"/>
-              <polyline points="10 2 10 4.5 7.5 4.5"/>
-            </svg>
-            {strings.RESULT_RESET}
-          </button>
+          <GlowingButton onClick={onOpenExpertPanel} disabled={!expertPanelAvailable}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(165,180,252,0.9)', whiteSpace: 'nowrap' }}>
+              ✦ {strings.EXPERT_PANEL_BUTTON}
+            </span>
+          </GlowingButton>
+          <GlowingButton onClick={onReset} style={{ flex: 1 }}>
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', fontSize: 13, fontWeight: 700, color: '#93c5fd' }}>
+              <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10 6A4 4 0 1 1 6 2a4 4 0 0 1 2.83 1.17L10 4.5"/>
+                <polyline points="10 2 10 4.5 7.5 4.5"/>
+              </svg>
+              {strings.RESULT_RESET}
+            </span>
+          </GlowingButton>
           <PdfDownloadButton business={business} result={result} context={context} label={strings.RESULT_PDF_DOWNLOAD} lat={lat ?? undefined} lng={lng ?? undefined} />
         </div>
       </div>

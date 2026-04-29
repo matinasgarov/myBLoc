@@ -4,6 +4,7 @@ import { getStrings, type Lang } from '@/lib/i18n'
 import type { AnalysisResult, PlacesContext, FactorKey } from '@/lib/types'
 import PdfDownloadButton from './PdfDownloadButton'
 import { buildShareUrl } from '@/lib/share'
+import { GlowingStatCard } from '@/components/ui/glowing-card'
 
 type Strings = ReturnType<typeof getStrings>
 
@@ -434,30 +435,12 @@ export default function ResultSheet({ business, result, context, lat, lng, lang,
                   lbl: strings.RESULT_OSM_METRO,
                 },
               ].map(({ val, lbl }, i) => (
-                <div
+                <GlowingStatCard
                   key={lbl}
-                  className="h-24 flex flex-col items-center justify-center px-2 rounded-xl"
-                  style={{
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    animationName: 'fade-up', animationDuration: '0.4s',
-                    animationTimingFunction: 'cubic-bezier(0.16,1,0.3,1)',
-                    animationFillMode: 'both', animationDelay: `${i * 55}ms`,
-                  }}
-                >
-                  <p
-                    className="text-2xl font-bold tabular-nums"
-                    style={{ color: 'rgba(241,245,249,0.95)' }}
-                  >
-                    {val}
-                  </p>
-                  <p
-                    className="text-[10px] uppercase tracking-wide mt-1 text-center leading-tight"
-                    style={{ color: 'rgba(100,116,139,0.7)' }}
-                  >
-                    {lbl}
-                  </p>
-                </div>
+                  value={val}
+                  label={lbl}
+                  animationDelay={`${i * 55}ms`}
+                />
               ))}
             </div>
             {context.landUse && (
