@@ -31,32 +31,33 @@ interface RequestBody {
   rentTierAz?: string
   districtPopulationK?: number
   lang: 'az' | 'en'
+  selectedAgents?: string[]
 }
 
 function buildMarketAnalystPrompt(body: RequestBody): string {
   const { businessType, score, placesContext: ctx, lang } = body
   if (lang === 'en') {
-    return `You are a Market Analyst specializing in Azerbaijani commercial real estate. Write in English only.
+    return `You are a Senior Market Analyst at a leading Azerbaijani business consultancy. Your client is considering opening a ${businessType}. Write in English only.
 
-Business: ${businessType}
-Score: ${score}/95
-Competitors within 500m: ${ctx.competitors}
-Total businesses in area: ${ctx.totalBusinesses}
-Business type recognized in OSM: ${ctx.recognized ? 'yes' : 'no'}
-Dominant nearby competitors: ${ctx.dominantCompetitors.length > 0 ? ctx.dominantCompetitors.map(d => `${d.name} (${d.distance}m)`).join(', ') : 'none'}
+Data:
+- Overall score: ${score}/95
+- Direct competitors within 500m: ${ctx.competitors}
+- Total businesses in area: ${ctx.totalBusinesses}
+- Business type in OSM database: ${ctx.recognized ? 'yes' : 'no'}
+- Dominant nearby competitors: ${ctx.dominantCompetitors.length > 0 ? ctx.dominantCompetitors.map(d => `${d.name} (${d.distance}m)`).join(', ') : 'none'}
 
-Write exactly 3-4 sentences analyzing the competitive landscape for this business at this location. Focus only on competition, market saturation, and business density. Be direct and data-driven. Output only your analysis text, no JSON, no labels.`
+Deliver 3–4 sentences of professional consultant-level analysis. Address market saturation, competitive positioning, and your expert recommendation on market entry viability. Speak directly to the business owner. Output only your analysis — no JSON, no labels.`
   }
-  return `Sən Azərbaycanda ticarət daşınmaz əmlakı üzrə ixtisaslaşmış Bazar Analitikisən. Yalnız Azərbaycan dilində (latın əlifbası) yaz.
+  return `Sən aparıcı Azərbaycan biznes məsləhət şirkətinin Baş Bazar Analitikisən. Müştərin ${businessType} açmağı düşünür. Yalnız Azərbaycan dilində (latın əlifbası) yaz.
 
-Biznes: ${businessType}
-Bal: ${score}/95
-500m radiusda rəqib: ${ctx.competitors}
-Ərazidəki ümumi müəssisə: ${ctx.totalBusinesses}
-Biznes növü tanındı: ${ctx.recognized ? 'bəli' : 'xeyr'}
-Yaxın dominant rəqiblər: ${ctx.dominantCompetitors.length > 0 ? ctx.dominantCompetitors.map(d => `${d.name} (${d.distance}m)`).join(', ') : 'yoxdur'}
+Məlumatlar:
+- Ümumi bal: ${score}/95
+- 500m-də birbaşa rəqiblər: ${ctx.competitors}
+- Ərazidəki ümumi müəssisə: ${ctx.totalBusinesses}
+- Biznes növü tanındı: ${ctx.recognized ? 'bəli' : 'xeyr'}
+- Yaxın dominant rəqiblər: ${ctx.dominantCompetitors.length > 0 ? ctx.dominantCompetitors.map(d => `${d.name} (${d.distance}m)`).join(', ') : 'yoxdur'}
 
-Bu biznes üçün rəqabət mənzərəsini təhlil edən tam 3-4 cümlə yaz. Yalnız rəqabət, bazar doyumu və müəssisə sıxlığına fokuslan. Birbaşa və məlumata əsaslanan ol. Yalnız təhlil mətni yaz, JSON yox, etiket yox.`
+Peşəkar məsləhətçi səviyyəsindəki 3–4 cümlə yaz. Bazar doyumu, rəqabət mövqeyi və bazara giriş perspektivinə dair ekspert tövsiyəni əks etdir. Birbaşa biznes sahibinə müraciət et. Yalnız təhlil mətni yaz, JSON yox, etiket yox.`
 }
 
 function buildRiskAdvisorPrompt(body: RequestBody): string {
@@ -64,83 +65,141 @@ function buildRiskAdvisorPrompt(body: RequestBody): string {
   const areaTypeEn = ctx.areaType === 'commercial' ? 'commercial' : ctx.areaType === 'mixed' ? 'mixed' : 'residential'
   const areaTypeAz = ctx.areaType === 'commercial' ? 'ticarət' : ctx.areaType === 'mixed' ? 'qarışıq' : 'yaşayış'
   if (lang === 'en') {
-    return `You are a Risk Advisor specializing in Azerbaijani business location analysis. Write in English only.
+    return `You are a Senior Risk Advisor at a leading Azerbaijani business consultancy. Your client is considering opening a ${businessType}. Write in English only.
 
-Business: ${businessType}
-Score: ${score}/95
-Land use restriction: ${ctx.landUse ?? 'none'}
-Area type: ${areaTypeEn}
-Rent tier: ${rentTierAz ?? 'unknown'}
-Luxury/wealth mismatch: ${luxuryMismatch ? 'yes — luxury business in low-wealth district' : 'no'}
+Data:
+- Overall score: ${score}/95
+- Land use restriction: ${ctx.landUse ?? 'none'}
+- Area type: ${areaTypeEn}
+- Rent tier: ${rentTierAz ?? 'unknown'}
+- Luxury/wealth mismatch: ${luxuryMismatch ? 'yes — luxury business in low-wealth district' : 'no'}
 
-Write exactly 3-4 sentences analyzing the key risks for this business at this location. Focus only on land use, area type suitability, rent burden, and wealth/business mismatch. Be direct and data-driven. Output only your analysis text, no JSON, no labels.`
+Deliver 3–4 sentences of professional risk assessment. Identify primary risks, their severity, and provide a clear actionable recommendation. Speak directly to the business owner. Output only your analysis — no JSON, no labels.`
   }
-  return `Sən Azərbaycanda biznes məkan analizinə ixtisaslaşmış Risk Məsləhətçisisən. Yalnız Azərbaycan dilində (latın əlifbası) yaz.
+  return `Sən aparıcı Azərbaycan biznes məsləhət şirkətinin Baş Risk Məsləhətçisisən. Müştərin ${businessType} açmağı düşünür. Yalnız Azərbaycan dilində (latın əlifbası) yaz.
 
-Biznes: ${businessType}
-Bal: ${score}/95
-Torpaq istifadə məhdudiyyəti: ${ctx.landUse ?? 'yoxdur'}
-Ərazi tipi: ${areaTypeAz}
-Kirayə səviyyəsi: ${rentTierAz ?? 'məlum deyil'}
-Lüks/gəlir uyğunsuzluğu: ${luxuryMismatch ? 'bəli — aşağı gəlirli rayonda lüks biznes' : 'xeyr'}
+Məlumatlar:
+- Ümumi bal: ${score}/95
+- Torpaq istifadə məhdudiyyəti: ${ctx.landUse ?? 'yoxdur'}
+- Ərazi tipi: ${areaTypeAz}
+- Kirayə səviyyəsi: ${rentTierAz ?? 'məlum deyil'}
+- Lüks/gəlir uyğunsuzluğu: ${luxuryMismatch ? 'bəli — aşağı gəlirli rayonda lüks biznes' : 'xeyr'}
 
-Bu biznes üçün əsas riskləri təhlil edən tam 3-4 cümlə yaz. Yalnız torpaq istifadəsi, ərazi uyğunluğu, kirayə yükü və biznes-ərazi uyğunsuzluğuna fokuslan. Birbaşa və məlumata əsaslanan ol. Yalnız təhlil mətni yaz, JSON yox, etiket yox.`
+Peşəkar risk qiymətləndirməsinin 3–4 cümləsini yaz. Əsas riskləri, onların şiddətini müəyyən et və aydın əməli tövsiyə ver. Birbaşa biznes sahibinə müraciət et. Yalnız təhlil mətni yaz, JSON yox, etiket yox.`
 }
 
 function buildLocationStrategistPrompt(body: RequestBody): string {
   const { businessType, score, placesContext: ctx, districtPopulationK, lang } = body
-  const urbanEn = ctx.urbanTier === 'metro-city' ? 'metro city' : ctx.urbanTier === 'city' ? 'city' : ctx.urbanTier === 'town' ? 'town' : 'rural'
-  const urbanAz = ctx.urbanTier === 'metro-city' ? 'metro şəhəri' : ctx.urbanTier === 'city' ? 'şəhər' : ctx.urbanTier === 'town' ? 'qəsəbə' : 'kənd'
+  const urbanEn = ctx.urbanTier === 'metro-city' ? 'metro city (Baku/Sumgait)' : ctx.urbanTier === 'city' ? 'city' : ctx.urbanTier === 'town' ? 'town' : 'rural area'
+  const urbanAz = ctx.urbanTier === 'metro-city' ? 'metro şəhəri (Bakı/Sumqayıt)' : ctx.urbanTier === 'city' ? 'şəhər' : ctx.urbanTier === 'town' ? 'qəsəbə' : 'kənd'
   if (lang === 'en') {
-    return `You are a Location Strategist specializing in Azerbaijani commercial real estate. Write in English only.
+    return `You are a Senior Location Strategist at a leading Azerbaijani business consultancy. Your client is considering opening a ${businessType}. Write in English only.
 
-Business: ${businessType}
-Score: ${score}/95
-Metro distance: ${ctx.metroDistance !== null ? `${ctx.metroDistance}m` : 'none'}
-Metro daily ridership: ${ctx.metroRidership !== null ? ctx.metroRidership.toLocaleString() : 'no data'}
-Major roads nearby: ${ctx.majorRoads}
-Urban tier: ${urbanEn}
-District population: ${districtPopulationK !== undefined ? `${Math.round(districtPopulationK * 1000).toLocaleString()} people` : 'unknown'}
+Data:
+- Overall score: ${score}/95
+- Metro distance: ${ctx.metroDistance !== null ? `${ctx.metroDistance}m` : 'no metro nearby'}
+- Metro daily ridership: ${ctx.metroRidership !== null ? ctx.metroRidership.toLocaleString() : 'no data'}
+- Major roads nearby: ${ctx.majorRoads}
+- Urban tier: ${urbanEn}
+- District population: ${districtPopulationK !== undefined ? `${Math.round(districtPopulationK * 1000).toLocaleString()} people` : 'unknown'}
 
-Write exactly 3-4 sentences analyzing the location strengths for this business. Focus only on metro access, road connectivity, urban tier, and population catchment. Be direct and data-driven. Output only your analysis text, no JSON, no labels.`
+Deliver 3–4 sentences of strategic location analysis. Assess access advantages, customer catchment potential, and long-term commercial viability. Speak directly to the business owner. Output only your analysis — no JSON, no labels.`
   }
-  return `Sən Azərbaycanda ticarət daşınmaz əmlakına ixtisaslaşmış Məkan Strateqisən. Yalnız Azərbaycan dilində (latın əlifbası) yaz.
+  return `Sən aparıcı Azərbaycan biznes məsləhət şirkətinin Baş Məkan Strateqisən. Müştərin ${businessType} açmağı düşünür. Yalnız Azərbaycan dilində (latın əlifbası) yaz.
 
-Biznes: ${businessType}
-Bal: ${score}/95
-Metro məsafəsi: ${ctx.metroDistance !== null ? `${ctx.metroDistance}m` : 'yoxdur'}
-Metro gündəlik sərnişin: ${ctx.metroRidership !== null ? ctx.metroRidership.toLocaleString() : 'məlumat yoxdur'}
-Yaxın böyük yollar: ${ctx.majorRoads}
-Şəhər tipi: ${urbanAz}
-Rayon əhalisi: ${districtPopulationK !== undefined ? `${Math.round(districtPopulationK * 1000).toLocaleString()} nəfər` : 'məlum deyil'}
+Məlumatlar:
+- Ümumi bal: ${score}/95
+- Metro məsafəsi: ${ctx.metroDistance !== null ? `${ctx.metroDistance}m` : 'yaxında metro yoxdur'}
+- Metro gündəlik sərnişin: ${ctx.metroRidership !== null ? ctx.metroRidership.toLocaleString() : 'məlumat yoxdur'}
+- Yaxın böyük yollar: ${ctx.majorRoads}
+- Şəhər tipi: ${urbanAz}
+- Rayon əhalisi: ${districtPopulationK !== undefined ? `${Math.round(districtPopulationK * 1000).toLocaleString()} nəfər` : 'məlum deyil'}
 
-Bu biznes üçün məkanın güclü tərəflərini təhlil edən tam 3-4 cümlə yaz. Yalnız metro əlçatanlığı, yol bağlantısı, şəhər tipi və əhali miqdarına fokuslan. Birbaşa və məlumata əsaslanan ol. Yalnız təhlil mətni yaz, JSON yox, etiket yox.`
+Strateji məkan təhlilinin 3–4 cümləsini yaz. Əlçatanlıq üstünlüklərini, müştəri potensialını və uzunmüddətli kommersiya perspektivini qiymətləndir. Birbaşa biznes sahibinə müraciət et. Yalnız təhlil mətni yaz, JSON yox, etiket yox.`
 }
 
 function buildCustomerFlowPrompt(body: RequestBody): string {
   const { businessType, score, placesContext: ctx, lang } = body
   if (lang === 'en') {
-    return `You are a Customer Flow Expert specializing in Azerbaijani business location analysis. Write in English only.
+    return `You are a Senior Customer Flow Expert at a leading Azerbaijani business consultancy. Your client is considering opening a ${businessType}. Write in English only.
 
-Business: ${businessType}
-Score: ${score}/95
-Bus stops within 500m: ${ctx.busStops}
-Parking available: ${ctx.parking > 0 ? 'yes' : 'no'}
-Grocery stores within 500m: ${ctx.groceryStores}
-Nearby amenities: ${ctx.amenities.length > 0 ? ctx.amenities.join(', ') : 'none'}
+Data:
+- Overall score: ${score}/95
+- Bus stops within 500m: ${ctx.busStops}
+- Parking available: ${ctx.parking > 0 ? `yes (${ctx.parking} spots)` : 'no'}
+- Grocery stores within 500m: ${ctx.groceryStores}
+- Nearby amenities: ${ctx.amenities.length > 0 ? ctx.amenities.join(', ') : 'none'}
 
-Write exactly 3-4 sentences analyzing customer flow and accessibility for this business at this location. Focus only on public transport, parking, pedestrian traffic generators (grocery stores, amenities). Be direct and data-driven. Output only your analysis text, no JSON, no labels.`
+Deliver 3–4 sentences assessing daily foot traffic generation, customer convenience, and transport accessibility. Provide actionable advice on leveraging or mitigating these factors. Speak directly to the business owner. Output only your analysis — no JSON, no labels.`
   }
-  return `Sən Azərbaycanda biznes məkan analizinə ixtisaslaşmış Müştəri Axını Ekspertisən. Yalnız Azərbaycan dilində (latın əlifbası) yaz.
+  return `Sən aparıcı Azərbaycan biznes məsləhət şirkətinin Baş Müştəri Axını Ekspertisən. Müştərin ${businessType} açmağı düşünür. Yalnız Azərbaycan dilində (latın əlifbası) yaz.
 
-Biznes: ${businessType}
-Bal: ${score}/95
-500m-də avtobus dayanacağı: ${ctx.busStops}
-Parkinq: ${ctx.parking > 0 ? 'var' : 'yoxdur'}
-500m-də ərzaq mağazası: ${ctx.groceryStores}
-Yaxın obyektlər: ${ctx.amenities.length > 0 ? ctx.amenities.join(', ') : 'yoxdur'}
+Məlumatlar:
+- Ümumi bal: ${score}/95
+- 500m-də avtobus dayanacağı: ${ctx.busStops}
+- Parkinq: ${ctx.parking > 0 ? `var (${ctx.parking} yer)` : 'yoxdur'}
+- 500m-də ərzaq mağazası: ${ctx.groceryStores}
+- Yaxın obyektlər: ${ctx.amenities.length > 0 ? ctx.amenities.join(', ') : 'yoxdur'}
 
-Bu biznes üçün müştəri axını və əlçatanlığı təhlil edən tam 3-4 cümlə yaz. Yalnız ictimai nəqliyyat, parkinq, piyada trafik generatorlarına (ərzaq mağazaları, obyektlər) fokuslan. Birbaşa və məlumata əsaslanan ol. Yalnız təhlil mətni yaz, JSON yox, etiket yox.`
+Gündəlik piyada trafik generasiyasını, müştəri rahatlığını və nəqliyyat əlçatanlığını qiymətləndirən 3–4 cümlə yaz. Bu amillərdən istifadə etmək və ya onları azaltmaq üçün əməli məsləhət ver. Birbaşa biznes sahibinə müraciət et. Yalnız təhlil mətni yaz, JSON yox, etiket yox.`
+}
+
+function buildUrbanForecasterPrompt(body: RequestBody): string {
+  const { businessType, score, placesContext: ctx, lang } = body
+  const urbanEn = ctx.urbanTier === 'metro-city' ? 'metro city (Baku/Sumgait)' : ctx.urbanTier === 'city' ? 'city' : ctx.urbanTier === 'town' ? 'town' : 'rural area'
+  const urbanAz = ctx.urbanTier === 'metro-city' ? 'metro şəhəri (Bakı/Sumqayıt)' : ctx.urbanTier === 'city' ? 'şəhər' : ctx.urbanTier === 'town' ? 'qəsəbə' : 'kənd'
+  const areaEn = ctx.areaType === 'commercial' ? 'commercial' : ctx.areaType === 'mixed' ? 'mixed-use' : 'residential'
+  const areaAz = ctx.areaType === 'commercial' ? 'ticarət' : ctx.areaType === 'mixed' ? 'qarışıq' : 'yaşayış'
+  if (lang === 'en') {
+    return `You are a Senior Urban Development Forecaster at a leading Azerbaijani business consultancy. Your client is considering opening a ${businessType}. Write in English only.
+
+Data:
+- Overall score: ${score}/95
+- Urban tier: ${urbanEn}
+- Current area type: ${areaEn}
+- Land use restriction: ${ctx.landUse ?? 'none'}
+- Business density: ${ctx.totalBusinesses} businesses in the area
+
+Deliver 3–4 sentences projecting urban development trends for this location. Assess zoning trajectory, likely infrastructure investment patterns, and how urban growth may enhance or threaten the business's long-term position. Provide forward-looking strategic advice. Speak directly to the business owner. Output only your analysis — no JSON, no labels.`
+  }
+  return `Sən aparıcı Azərbaycan biznes məsləhət şirkətinin Baş Şəhər İnkişafı Proqnozçususan. Müştərin ${businessType} açmağı düşünür. Yalnız Azərbaycan dilində (latın əlifbası) yaz.
+
+Məlumatlar:
+- Ümumi bal: ${score}/95
+- Şəhər tipi: ${urbanAz}
+- Cari ərazi tipi: ${areaAz}
+- Torpaq istifadə məhdudiyyəti: ${ctx.landUse ?? 'yoxdur'}
+- Müəssisə sıxlığı: ərazidə ${ctx.totalBusinesses} müəssisə
+
+Bu məkan üçün şəhər inkişafı tendensiyalarını proqnozlaşdıran 3–4 cümlə yaz. Zonalanma yolunu, infrastruktur investisiya modellərini və şəhər böyüməsinin biznesin uzunmüddətli mövqeyinə təsirini qiymətləndir. Gələcəyə yönəlmiş strateji məsləhət ver. Birbaşa biznes sahibinə müraciət et. Yalnız təhlil mətni yaz, JSON yox, etiket yox.`
+}
+
+function buildInfrastructureAuditorPrompt(body: RequestBody): string {
+  const { businessType, score, placesContext: ctx, lang } = body
+  if (lang === 'en') {
+    return `You are a Senior Infrastructure & Utility Auditor at a leading Azerbaijani business consultancy. Your client is considering opening a ${businessType}. Write in English only.
+
+Data:
+- Overall score: ${score}/95
+- Bus stops within 500m: ${ctx.busStops}
+- Parking spots nearby: ${ctx.parking}
+- Metro distance: ${ctx.metroDistance !== null ? `${ctx.metroDistance}m` : 'no metro nearby'}
+- Major roads nearby: ${ctx.majorRoads}
+- Nearby amenities: ${ctx.amenities.length > 0 ? ctx.amenities.join(', ') : 'none'}
+
+Deliver 3–4 sentences auditing infrastructure quality and utility coverage. Assess transport network completeness, parking adequacy, and supporting service infrastructure. Identify any infrastructure gaps that could impact daily operations or customer experience. Speak directly to the business owner. Output only your analysis — no JSON, no labels.`
+  }
+  return `Sən aparıcı Azərbaycan biznes məsləhət şirkətinin Baş İnfrastruktur Auditorusan. Müştərin ${businessType} açmağı düşünür. Yalnız Azərbaycan dilində (latın əlifbası) yaz.
+
+Məlumatlar:
+- Ümumi bal: ${score}/95
+- 500m-də avtobus dayanacağı: ${ctx.busStops}
+- Yaxın parkinq yerləri: ${ctx.parking}
+- Metro məsafəsi: ${ctx.metroDistance !== null ? `${ctx.metroDistance}m` : 'yaxında metro yoxdur'}
+- Yaxın böyük yollar: ${ctx.majorRoads}
+- Yaxın obyektlər: ${ctx.amenities.length > 0 ? ctx.amenities.join(', ') : 'yoxdur'}
+
+İnfrastruktur keyfiyyəti və kommunal əhatənin auditini əks etdirən 3–4 cümlə yaz. Nəqliyyat şəbəkəsinin tamlığını, parkinqin adekvatlığını və dəstəkləyici xidmət infrastrukturunu qiymətləndir. Gündəlik əməliyyatlara və ya müştəri təcrübəsinə təsir edə biləcək boşluqları müəyyən et. Birbaşa biznes sahibinə müraciət et. Yalnız təhlil mətni yaz, JSON yox, etiket yox.`
 }
 
 function buildRoundTwoPrompt(
@@ -263,12 +322,19 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const agentDefs: { role: string; emoji: string; prompt: string }[] = [
-      { role: lang === 'en' ? 'Market Analyst' : 'Bazar Analitiki',      emoji: '📊', prompt: buildMarketAnalystPrompt(safeBody) },
-      { role: lang === 'en' ? 'Risk Advisor' : 'Risk Məsləhətçisi',      emoji: '⚠️', prompt: buildRiskAdvisorPrompt(safeBody) },
-      { role: lang === 'en' ? 'Location Strategist' : 'Məkan Strateqi',  emoji: '🗺️', prompt: buildLocationStrategistPrompt(safeBody) },
-      { role: lang === 'en' ? 'Customer Flow Expert' : 'Müştəri Axını Eksperti', emoji: '🚶', prompt: buildCustomerFlowPrompt(safeBody) },
+    const allAgentDefs: { key: string; role: string; emoji: string; prompt: string }[] = [
+      { key: 'market-analyst',         role: lang === 'en' ? 'Market Analyst' : 'Bazar Analitiki',                            emoji: '📊', prompt: buildMarketAnalystPrompt(safeBody) },
+      { key: 'risk-advisor',           role: lang === 'en' ? 'Risk Advisor' : 'Risk Məsləhətçisi',                            emoji: '⚠️', prompt: buildRiskAdvisorPrompt(safeBody) },
+      { key: 'location-strategist',    role: lang === 'en' ? 'Location Strategist' : 'Məkan Strateqi',                       emoji: '🗺️', prompt: buildLocationStrategistPrompt(safeBody) },
+      { key: 'customer-flow',          role: lang === 'en' ? 'Customer Flow Expert' : 'Müştəri Axını Eksperti',              emoji: '🚶', prompt: buildCustomerFlowPrompt(safeBody) },
+      { key: 'urban-forecaster',       role: lang === 'en' ? 'Urban Development Forecaster' : 'Şəhər İnkişafı Proqnozçusu', emoji: '🏙️', prompt: buildUrbanForecasterPrompt(safeBody) },
+      { key: 'infrastructure-auditor', role: lang === 'en' ? 'Infrastructure & Utility Auditor' : 'İnfrastruktur Auditor',   emoji: '🔧', prompt: buildInfrastructureAuditorPrompt(safeBody) },
     ]
+
+    const selectedKeys = Array.isArray(body.selectedAgents) && body.selectedAgents.length > 0
+      ? body.selectedAgents
+      : allAgentDefs.map(a => a.key)
+    const agentDefs = allAgentDefs.filter(a => selectedKeys.includes(a.key))
 
     // Round 1: parallel independent analysis
     const round1Opinions = await Promise.all(agentDefs.map(a => callGroq(a.prompt)))

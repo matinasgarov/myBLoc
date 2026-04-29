@@ -36,6 +36,88 @@ export function barColor(pct: number): string {
   return '#f87171'                  // red
 }
 
+// ─── Dual Chart (Circle Score + Bars) ────────────────────────────────────────
+export function DualChartDisplay({ factors, total, maxTotal }: {
+  factors: ChartFactor[]
+  total: number
+  maxTotal: number
+}) {
+  const count = useCountUp(total, 1400, 150)
+  const R = 40
+  const circ = 2 * Math.PI * R
+  const pct = maxTotal > 0 ? total / maxTotal : 0
+  const ringColor = barColor(pct * 100)
+
+  return (
+    <div style={{ display: 'flex', gap: 16, padding: '14px 20px', alignItems: 'center' }}>
+      {/* Left: Score ring */}
+      <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ position: 'relative', width: 96, height: 96 }}>
+          <svg width="96" height="96" viewBox="0 0 96 96">
+            <circle cx={48} cy={48} r={R} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={8} />
+            <motion.circle
+              cx={48} cy={48} r={R}
+              fill="none" stroke={ringColor} strokeWidth={8} strokeLinecap="round"
+              strokeDasharray={circ}
+              style={{ rotate: -90, transformOrigin: '48px 48px' }}
+              initial={{ strokeDashoffset: circ }}
+              animate={{ strokeDashoffset: circ - pct * circ }}
+              transition={{ duration: 1.4, delay: 0.15, ease: [0.25, 0, 0, 1] }}
+            />
+          </svg>
+          <div style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <span style={{ fontSize: 24, fontWeight: 800, color: ringColor, fontFamily: 'monospace', lineHeight: 1 }}>
+              {count}
+            </span>
+            <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.22)', fontFamily: 'monospace', marginTop: 2 }}>
+              /{maxTotal}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Right: Factor bars */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {factors.map((f, i) => {
+          const fpct = (f.score / f.max) * 100
+          const fcolor = barColor(fpct)
+          const label = f.label.length > 12 ? f.label.slice(0, 11) + '…' : f.label
+          return (
+            <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{
+                fontSize: 9.5, width: 72, flexShrink: 0,
+                color: 'rgba(148,163,184,0.65)', fontFamily: 'monospace',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                {label}
+              </span>
+              <div style={{ flex: 1, height: 3, borderRadius: 9999, overflow: 'hidden', background: 'rgba(255,255,255,0.07)' }}>
+                <motion.div
+                  style={{ height: '100%', borderRadius: 9999, background: fcolor }}
+                  initial={{ width: '0%' }}
+                  animate={{ width: `${fpct}%` }}
+                  transition={{ duration: 0.9, delay: 0.08 + i * 0.07, ease: [0.25, 0, 0, 1] }}
+                />
+              </div>
+              <motion.span
+                style={{ fontSize: 9, color: fcolor, fontFamily: 'monospace', minWidth: 30, textAlign: 'right' }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.25 + i * 0.07 }}
+              >
+                {f.score}/{f.max}
+              </motion.span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ─── Radar Chart ──────────────────────────────────────────────────────────────
 export function RadarChartDisplay({ factors, accent }: { factors: ChartFactor[]; accent: string }) {
   const N = factors.length

@@ -4,7 +4,7 @@ import type { AnalysisResult, PlacesContext, SavedAnalysis, FactorKey } from '@/
 import type { Strings, Lang } from '@/lib/i18n'
 import PdfDownloadButton from './PdfDownloadButton'
 import { METRO_STATIONS } from '@/lib/metro-stations'
-import { RadarChartDisplay, BarsChartDisplay, ScoreRingDisplay } from '@/components/Charts'
+import { DualChartDisplay, BarsChartDisplay, ScoreRingDisplay } from '@/components/Charts'
 import { GlowingStatCard, GlowingButton } from '@/components/ui/glowing-card'
 import ExpertPanel from '@/components/ExpertPanel'
 
@@ -14,7 +14,16 @@ interface ExpertCache {
 }
 
 type PanelView = 'idle' | 'result' | 'compare' | 'insights'
-type ChartTab = 'bars' | 'radar' | 'ring'
+type ChartTab = 'dual' | 'bars' | 'ring'
+
+const AGENT_TOOLBAR_DEFS = [
+  { key: 'market-analyst',         emoji: '📊', labelEn: 'Market Analyst',         labelAz: 'Bazar Analitiki',              descEn: 'Evaluates competitive landscape and market saturation.',         descAz: 'Rəqabət mühiti və bazar doyumunu qiymətləndirir.',               color: '#f59e0b' },
+  { key: 'risk-advisor',           emoji: '⚠️', labelEn: 'Risk Advisor',            labelAz: 'Risk Məsləhətçisi',            descEn: 'Identifies land use, rent, and area suitability risks.',          descAz: 'Torpaq istifadəsi, kirayə və ərazi uyğunluğu risklərini müəyyən edir.', color: '#ef4444' },
+  { key: 'location-strategist',    emoji: '🗺️', labelEn: 'Location Strategist',    labelAz: 'Məkan Strateqi',               descEn: 'Analyzes metro access, roads, and population catchment.',          descAz: 'Metro əlçatanlığı, yollar və əhali həcmini təhlil edir.',         color: '#3b82f6' },
+  { key: 'customer-flow',          emoji: '🚶', labelEn: 'Customer Flow',           labelAz: 'Müştəri Axını',                descEn: 'Assesses transport, parking, and foot traffic generators.',        descAz: 'Nəqliyyat, parkinq və piyada trafik generatorlarını qiymətləndirir.', color: '#10b981' },
+  { key: 'urban-forecaster',       emoji: '🏙️', labelEn: 'Urban Forecaster',       labelAz: 'Şəhər İnkişafı',               descEn: 'Projects urban growth trends and zoning trajectory.',             descAz: 'Şəhər inkişafı tendensiyaları və zonalanma yolunu proqnozlaşdırır.', color: '#8b5cf6' },
+  { key: 'infrastructure-auditor', emoji: '🔧', labelEn: 'Infrastructure Auditor', labelAz: 'İnfrastruktur Auditor',        descEn: 'Audits utility coverage and infrastructure quality.',              descAz: 'Kommunal əhatə və infrastruktur keyfiyyətini yoxlayır.',          color: '#06b6d4' },
+] as const
 
 const ACC = '#ffffff'
 const BLUE = '#3b82f6'
@@ -274,6 +283,91 @@ function IdleView({ analyses, onOpenHistory, onCompare, onInsights, strings }: {
 
 // ─── Result View ──────────────────────────────────────────────────────────────
 
+function AgentToolbar({ strings, lang, selectedAgents, onToggle }: {
+  strings: Strings
+  lang: Lang
+  selectedAgents: Set<string>
+  onToggle: (key: string) => void
+}) {
+  const [hovered, setHovered] = useState<string | null>(null)
+
+  return (
+    <div style={{ padding: '12px 20px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 12 }}>
+      <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.18em', color: 'rgba(100,116,139,0.6)', marginBottom: 8, fontWeight: 600 }}>
+        {strings.EXPERT_PANEL_TITLE}
+      </p>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {AGENT_TOOLBAR_DEFS.map((agent) => {
+          const isActive = selectedAgents.has(agent.key)
+          const label = lang === 'az' ? agent.labelAz : agent.labelEn
+          const desc  = lang === 'az' ? agent.descAz  : agent.descEn
+          return (
+            <div
+              key={agent.key}
+              style={{ position: 'relative' }}
+              onMouseEnter={() => setHovered(agent.key)}
+              onMouseLeave={() => setHovered(null)}
+            >
+              <button
+                onClick={() => onToggle(agent.key)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '5px 10px', borderRadius: 20, cursor: 'pointer',
+                  fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap',
+                  transition: 'all 0.18s',
+                  background: isActive
+                    ? `linear-gradient(135deg, ${agent.color}28 0%, ${agent.color}18 100%)`
+                    : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${isActive ? agent.color + '60' : 'rgba(255,255,255,0.08)'}`,
+                  color: isActive ? agent.color : 'rgba(100,116,139,0.7)',
+                  boxShadow: isActive ? `0 0 8px ${agent.color}22` : 'none',
+                }}
+              >
+                <span style={{ fontSize: 12 }}>{agent.emoji}</span>
+                <span style={{ maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {label.split(' ')[0]}
+                </span>
+              </button>
+
+              {hovered === agent.key && (
+                <div style={{
+                  position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%',
+                  transform: 'translateX(-50%)', zIndex: 1200,
+                  background: 'rgba(10,14,20,0.96)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                  border: `1px solid ${agent.color}40`,
+                  borderRadius: 10, padding: '10px 12px',
+                  minWidth: 160, maxWidth: 200,
+                  boxShadow: `0 8px 24px rgba(0,0,0,0.5), 0 0 0 1px ${agent.color}20`,
+                  pointerEvents: 'none',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+                    <span style={{ fontSize: 14 }}>{agent.emoji}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: agent.color }}>
+                      {label}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 10, color: 'rgba(148,163,184,0.8)', lineHeight: 1.5, margin: 0 }}>
+                    {desc}
+                  </p>
+                  {/* Arrow */}
+                  <div style={{
+                    position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
+                    width: 0, height: 0,
+                    borderLeft: '5px solid transparent', borderRight: '5px solid transparent',
+                    borderTop: `5px solid ${agent.color}40`,
+                  }} />
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function ResultView({ business, result, context, lat, lng, onReset, strings, onOpenExpertPanel, expertPanelAvailable, expertPanelOpen, onCloseExpertPanel, expertCacheRef, lang }: {
   business: string
   result: AnalysisResult
@@ -289,7 +383,22 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
   expertCacheRef: MutableRefObject<ExpertCache | null>
   lang: Lang
 }) {
-  const [chartTab, setChartTab] = useState<ChartTab>('bars')
+  const [chartTab, setChartTab] = useState<ChartTab>('dual')
+  const [selectedAgents, setSelectedAgents] = useState<Set<string>>(
+    new Set(AGENT_TOOLBAR_DEFS.map(a => a.key))
+  )
+
+  const toggleAgent = (key: string) => {
+    setSelectedAgents(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        if (next.size > 1) next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }
   const color = scoreColor(result.score)
 
   const chartFactors = (result.factors ?? []).map(f => ({
@@ -340,7 +449,7 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-2xl font-bold tabular-nums" style={{ color, fontFamily: 'monospace' }}>
+            <span className="text-3xl font-bold tabular-nums" style={{ color, fontFamily: 'monospace' }}>
               {result.score}%
             </span>
             <ScoreRingMini score={result.score} />
@@ -367,8 +476,16 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
 
         {/* Summary */}
         {result.summary && (
-          <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <p className="text-sm leading-relaxed" style={{ color: 'rgba(203,213,225,0.88)' }}>
+          <div
+            className="px-5 py-4"
+            style={{
+              borderBottom: '1px solid rgba(255,255,255,0.05)',
+              background: 'rgba(7,9,13,0.35)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+            }}
+          >
+            <p className="text-sm leading-relaxed" style={{ color: 'rgba(203,213,225,0.90)' }}>
               {result.summary}
             </p>
           </div>
@@ -376,7 +493,7 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
 
         {/* Pros */}
         {result.pros.length > 0 && (
-          <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(7,9,13,0.3)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
             <p className="text-[11px] uppercase tracking-[0.2em] mb-2.5 font-medium" style={{ color: 'rgba(100,116,139,0.65)' }}>
               {strings.RESULT_PROS}
             </p>
@@ -404,7 +521,7 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
 
         {/* Cons */}
         {result.cons.length > 0 && (
-          <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(7,9,13,0.3)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
             <p className="text-[11px] uppercase tracking-[0.2em] mb-2.5 font-medium" style={{ color: 'rgba(100,116,139,0.65)' }}>
               {strings.RESULT_CONS}
             </p>
@@ -441,7 +558,7 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
                 {strings.RESULT_FACTOR_BREAKDOWN}
               </p>
               <div className="flex gap-0.5 rounded-lg overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
-                {(['bars', 'radar', 'ring'] as ChartTab[]).map(tab => (
+                {(['dual', 'bars', 'ring'] as ChartTab[]).map(tab => (
                   <button
                     key={tab}
                     onClick={() => setChartTab(tab)}
@@ -451,15 +568,15 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
                       color: chartTab === tab ? '#fff' : 'rgba(100,116,139,0.6)',
                     }}
                   >
-                    {tab === 'bars' ? '≡' : tab === 'radar' ? '◈' : '○'}
+                    {tab === 'dual' ? '◐' : tab === 'bars' ? '≡' : '○'}
                   </button>
                 ))}
               </div>
             </div>
             {/* Chart */}
-            {chartTab === 'bars'  && <BarsChartDisplay  factors={chartFactors} accent={BLUE} />}
-            {chartTab === 'radar' && <RadarChartDisplay factors={chartFactors} accent={BLUE} />}
-            {chartTab === 'ring'  && <ScoreRingDisplay  factors={chartFactors} total={chartTotal} maxTotal={chartMax} accent={BLUE} />}
+            {chartTab === 'dual' && <DualChartDisplay factors={chartFactors} total={chartTotal} maxTotal={chartMax} />}
+            {chartTab === 'bars' && <BarsChartDisplay factors={chartFactors} accent={BLUE} />}
+            {chartTab === 'ring' && <ScoreRingDisplay factors={chartFactors} total={chartTotal} maxTotal={chartMax} accent={BLUE} />}
           </div>
         )}
 
@@ -492,24 +609,33 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
           </div>
         )}
 
-        {/* Inline Expert Panel */}
+        {/* Agent Toolbar + Inline Expert Panel */}
         {context && lat !== null && lng !== null && (
-          <div className="px-5">
-            <ExpertPanel
-              isOpen={expertPanelOpen}
-              onClose={onCloseExpertPanel}
-              lat={lat}
-              lng={lng}
-              businessType={business}
-              score={result.score}
-              placesContext={context}
-              luxuryMismatch={result.luxuryMismatch}
-              rentTierAz={result.rentTierAz}
-              districtPopulationK={result.districtPopulationK}
+          <>
+            <AgentToolbar
+              strings={strings}
               lang={lang}
-              cacheRef={expertCacheRef}
+              selectedAgents={selectedAgents}
+              onToggle={toggleAgent}
             />
-          </div>
+            <div className="px-5">
+              <ExpertPanel
+                isOpen={expertPanelOpen}
+                onClose={onCloseExpertPanel}
+                lat={lat}
+                lng={lng}
+                businessType={business}
+                score={result.score}
+                placesContext={context}
+                luxuryMismatch={result.luxuryMismatch}
+                rentTierAz={result.rentTierAz}
+                districtPopulationK={result.districtPopulationK}
+                lang={lang}
+                cacheRef={expertCacheRef}
+                selectedAgents={Array.from(selectedAgents)}
+              />
+            </div>
+          </>
         )}
 
         {/* Actions */}

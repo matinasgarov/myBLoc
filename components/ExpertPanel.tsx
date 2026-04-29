@@ -30,13 +30,14 @@ interface Props {
   districtPopulationK?: number
   lang: Lang
   cacheRef: MutableRefObject<PanelResult | null>
+  selectedAgents?: string[]
 }
 
-const AGENT_BORDER_COLORS = ['#f59e0b', '#ef4444', '#3b82f6', '#10b981']
+const AGENT_BORDER_COLORS = ['#f59e0b', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#06b6d4']
 
 function AgentAvatar({ index, color }: { index: number; color: string }) {
   const avatars = [
-    // 0 — Data Analyst: glasses + tie
+    // 0 — Market Analyst: glasses + tie
     <svg key={0} width="28" height="30" viewBox="0 0 28 30" fill="none">
       <circle cx="14" cy="11" r="7" fill={`${color}40`} stroke={`${color}99`} strokeWidth="1.2"/>
       <rect x="8.5" y="9.5" width="4.5" height="3" rx="1.2" stroke={color} strokeWidth="1" fill="none"/>
@@ -52,7 +53,7 @@ function AgentAvatar({ index, color }: { index: number; color: string }) {
       <rect x="5.5" y="10" width="17" height="2" rx="0.8" fill={`${color}80`}/>
       <path d="M4 30 Q4 21 14 21 Q24 21 24 30" fill={`${color}25`} stroke={`${color}55`} strokeWidth="1.2"/>
     </svg>,
-    // 2 — Location Expert: baseball cap
+    // 2 — Location Strategist: baseball cap
     <svg key={2} width="28" height="30" viewBox="0 0 28 30" fill="none">
       <circle cx="14" cy="12" r="6.5" fill={`${color}40`} stroke={`${color}99`} strokeWidth="1.2"/>
       <path d="M8 11.5 Q14 5 20 11.5" fill={`${color}60`} stroke={`${color}aa`} strokeWidth="1.2"/>
@@ -60,7 +61,7 @@ function AgentAvatar({ index, color }: { index: number; color: string }) {
       <line x1="8" y1="11.5" x2="20" y2="11.5" stroke={`${color}80`} strokeWidth="1"/>
       <path d="M4 30 Q4 21 14 21 Q24 21 24 30" fill={`${color}25`} stroke={`${color}55`} strokeWidth="1.2"/>
     </svg>,
-    // 3 — Foot Traffic Expert: walking pedestrian
+    // 3 — Customer Flow: walking pedestrian
     <svg key={3} width="28" height="30" viewBox="0 0 28 30" fill="none">
       <circle cx="14" cy="7" r="4.5" fill={`${color}40`} stroke={`${color}99`} strokeWidth="1.2"/>
       <line x1="14" y1="11.5" x2="14" y2="20" stroke={`${color}aa`} strokeWidth="2" strokeLinecap="round"/>
@@ -69,6 +70,21 @@ function AgentAvatar({ index, color }: { index: number; color: string }) {
       <path d="M14 20 L10 27" stroke={`${color}aa`} strokeWidth="1.8" strokeLinecap="round"/>
       <path d="M14 20 L18 26" stroke={`${color}aa`} strokeWidth="1.8" strokeLinecap="round"/>
       <line x1="19" y1="16" x2="22" y2="28" stroke={`${color}55`} strokeWidth="1.2" strokeLinecap="round"/>
+    </svg>,
+    // 4 — Urban Forecaster: building silhouette
+    <svg key={4} width="28" height="30" viewBox="0 0 28 30" fill="none">
+      <circle cx="14" cy="10" r="6.5" fill={`${color}40`} stroke={`${color}99`} strokeWidth="1.2"/>
+      <rect x="4" y="16" width="6" height="14" rx="0.8" fill={`${color}50`} stroke={`${color}80`} strokeWidth="1"/>
+      <rect x="11" y="13" width="6" height="17" rx="0.8" fill={`${color}65`} stroke={`${color}90`} strokeWidth="1"/>
+      <rect x="18" y="18" width="6" height="12" rx="0.8" fill={`${color}50`} stroke={`${color}80`} strokeWidth="1"/>
+      <line x1="4" y1="30" x2="24" y2="30" stroke={`${color}60`} strokeWidth="1.2"/>
+    </svg>,
+    // 5 — Infrastructure Auditor: wrench
+    <svg key={5} width="28" height="30" viewBox="0 0 28 30" fill="none">
+      <circle cx="14" cy="10" r="6.5" fill={`${color}40`} stroke={`${color}99`} strokeWidth="1.2"/>
+      <path d="M9 20 Q8 19 9 18 L18 9 Q20 7 21 9 Q22 11 20 12 L11 21 Q10 22 9 20Z" fill={`${color}60`} stroke={`${color}90`} strokeWidth="1" strokeLinejoin="round"/>
+      <circle cx="9.5" cy="19.5" r="2" fill={`${color}80`} stroke={`${color}bb`} strokeWidth="0.8"/>
+      <path d="M4 30 Q4 23 14 23 Q24 23 24 30" fill={`${color}20`} stroke={`${color}40`} strokeWidth="1"/>
     </svg>,
   ]
 
@@ -113,7 +129,7 @@ function ConfidenceMeter({ value, color }: { value: number; color: string }) {
 export default function ExpertPanel({
   isOpen, onClose, lat, lng, businessType, score,
   placesContext, luxuryMismatch, rentTierAz, districtPopulationK,
-  lang, cacheRef,
+  lang, cacheRef, selectedAgents,
 }: Props) {
   const strings = getStrings(lang)
   const [data, setData] = useState<PanelResult | null>(null)
@@ -139,6 +155,7 @@ export default function ExpertPanel({
       body: JSON.stringify({
         lat, lng, businessType, score,
         placesContext, luxuryMismatch, rentTierAz, districtPopulationK, lang,
+        selectedAgents,
       }),
     })
       .then(r => r.json())
@@ -220,8 +237,8 @@ export default function ExpertPanel({
                       {phase === 0 ? strings.EXPERT_PANEL_ROUND1 : phase === 1 ? strings.EXPERT_PANEL_ROUND2 : strings.EXPERT_PANEL_SYNTHESIS}
                     </span>
                   </div>
-                  {['📊', '⚠️', '🗺️', '🚶'].map((emoji, i) => (
-                    <div key={emoji} style={{
+                  {Array.from({ length: selectedAgents && selectedAgents.length > 0 ? Math.min(selectedAgents.length, 6) : 4 }, (_, i) => i).map((i) => (
+                    <div key={i} style={{
                       background: 'rgba(255,255,255,0.03)',
                       border: `1px solid rgba(255,255,255,0.07)`,
                       borderLeft: `3px solid ${AGENT_BORDER_COLORS[i]}`,
