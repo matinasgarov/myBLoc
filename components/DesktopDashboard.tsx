@@ -1,11 +1,17 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type MutableRefObject } from 'react'
 import type { AnalysisResult, PlacesContext, SavedAnalysis, FactorKey } from '@/lib/types'
-import type { Strings } from '@/lib/i18n'
+import type { Strings, Lang } from '@/lib/i18n'
 import PdfDownloadButton from './PdfDownloadButton'
 import { METRO_STATIONS } from '@/lib/metro-stations'
 import { RadarChartDisplay, BarsChartDisplay, ScoreRingDisplay } from '@/components/Charts'
 import { GlowingStatCard, GlowingButton } from '@/components/ui/glowing-card'
+import ExpertPanel from '@/components/ExpertPanel'
+
+interface ExpertCache {
+  agents: { role: string; emoji: string; opinion: string; response: string; confidence?: number }[]
+  verdict: string
+}
 
 type PanelView = 'idle' | 'result' | 'compare' | 'insights'
 type ChartTab = 'bars' | 'radar' | 'ring'
@@ -25,6 +31,10 @@ interface Props {
   strings: Strings
   onOpenExpertPanel: () => void
   expertPanelAvailable: boolean
+  expertPanelOpen: boolean
+  onCloseExpertPanel: () => void
+  expertCacheRef: MutableRefObject<ExpertCache | null>
+  lang: Lang
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -202,7 +212,7 @@ function IdleView({ analyses, onOpenHistory, onCompare, onInsights, strings }: {
 
 // ─── Result View ──────────────────────────────────────────────────────────────
 
-function ResultView({ business, result, context, lat, lng, onReset, strings, onOpenExpertPanel, expertPanelAvailable }: {
+function ResultView({ business, result, context, lat, lng, onReset, strings, onOpenExpertPanel, expertPanelAvailable, expertPanelOpen, onCloseExpertPanel, expertCacheRef, lang }: {
   business: string
   result: AnalysisResult
   context: PlacesContext | null
@@ -212,6 +222,10 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
   strings: Strings
   onOpenExpertPanel: () => void
   expertPanelAvailable: boolean
+  expertPanelOpen: boolean
+  onCloseExpertPanel: () => void
+  expertCacheRef: MutableRefObject<ExpertCache | null>
+  lang: Lang
 }) {
   const [chartTab, setChartTab] = useState<ChartTab>('bars')
   const color = scoreColor(result.score)
@@ -410,6 +424,26 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
             {context.landUse && (
               <p className="text-[11px] mt-2.5" style={{ color: '#fbbf24' }}>⚠ {context.landUse}</p>
             )}
+          </div>
+        )}
+
+        {/* Inline Expert Panel */}
+        {context && lat !== null && lng !== null && (
+          <div className="px-5">
+            <ExpertPanel
+              isOpen={expertPanelOpen}
+              onClose={onCloseExpertPanel}
+              lat={lat}
+              lng={lng}
+              businessType={business}
+              score={result.score}
+              placesContext={context}
+              luxuryMismatch={result.luxuryMismatch}
+              rentTierAz={result.rentTierAz}
+              districtPopulationK={result.districtPopulationK}
+              lang={lang}
+              cacheRef={expertCacheRef}
+            />
           </div>
         )}
 
@@ -742,6 +776,10 @@ export default function DesktopDashboard({
   strings,
   onOpenExpertPanel,
   expertPanelAvailable,
+  expertPanelOpen,
+  onCloseExpertPanel,
+  expertCacheRef,
+  lang,
 }: Props) {
   const [view, setView] = useState<PanelView>('idle')
 
@@ -829,6 +867,10 @@ export default function DesktopDashboard({
           strings={strings}
           onOpenExpertPanel={onOpenExpertPanel}
           expertPanelAvailable={expertPanelAvailable}
+          expertPanelOpen={expertPanelOpen}
+          onCloseExpertPanel={onCloseExpertPanel}
+          expertCacheRef={expertCacheRef}
+          lang={lang}
         />
       )}
 

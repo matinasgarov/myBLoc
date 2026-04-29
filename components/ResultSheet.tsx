@@ -1,12 +1,18 @@
 'use client'
-import { useState } from 'react'
+import { useState, type MutableRefObject } from 'react'
 import { getStrings, type Lang } from '@/lib/i18n'
 import type { AnalysisResult, PlacesContext, FactorKey } from '@/lib/types'
 import PdfDownloadButton from './PdfDownloadButton'
 import { buildShareUrl } from '@/lib/share'
 import { GlowingStatCard } from '@/components/ui/glowing-card'
+import ExpertPanel from './ExpertPanel'
 
 type Strings = ReturnType<typeof getStrings>
+
+interface ExpertCache {
+  agents: { role: string; emoji: string; opinion: string; response: string; confidence?: number }[]
+  verdict: string
+}
 
 interface Props {
   business: string
@@ -19,6 +25,9 @@ interface Props {
   strings: Strings
   onOpenExpertPanel: () => void
   expertPanelAvailable: boolean
+  expertPanelOpen: boolean
+  onCloseExpertPanel: () => void
+  expertCacheRef: MutableRefObject<ExpertCache | null>
 }
 
 function scoreColor(score: number) {
@@ -146,7 +155,7 @@ const FACTOR_EXPLAIN_KEYS: Record<FactorKey, keyof Strings> = {
   businessDensity: 'FACTOR_EXPLAIN_BUSINESS_DENSITY',
 }
 
-export default function ResultSheet({ business, result, context, lat, lng, lang, onReset, strings, onOpenExpertPanel, expertPanelAvailable }: Props) {
+export default function ResultSheet({ business, result, context, lat, lng, lang, onReset, strings, onOpenExpertPanel, expertPanelAvailable, expertPanelOpen, onCloseExpertPanel, expertCacheRef }: Props) {
   const [expanded, setExpanded] = useState(false)
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'failed'>('idle')
   const sc = scoreColor(result.score)
@@ -317,6 +326,26 @@ export default function ResultSheet({ business, result, context, lat, lng, lang,
           {strings.RESULT_RESET}
         </button>
       </div>
+
+      {/* Inline Expert Panel */}
+      {context && lat !== undefined && lng !== undefined && (
+        <div className="px-4">
+          <ExpertPanel
+            isOpen={expertPanelOpen}
+            onClose={onCloseExpertPanel}
+            lat={lat}
+            lng={lng}
+            businessType={business}
+            score={result.score}
+            placesContext={context}
+            luxuryMismatch={result.luxuryMismatch}
+            rentTierAz={result.rentTierAz}
+            districtPopulationK={result.districtPopulationK}
+            lang={lang}
+            cacheRef={expertCacheRef}
+          />
+        </div>
+      )}
 
       {/* ── Body ─────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">

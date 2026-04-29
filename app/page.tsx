@@ -11,7 +11,6 @@ import LandingPage from '@/components/LandingPage'
 import MapErrorBoundary from '@/components/MapErrorBoundary'
 import LocationSearch from '@/components/LocationSearch'
 import DesktopDashboard from '@/components/DesktopDashboard'
-import ExpertPanelModal from '@/components/ExpertPanelModal'
 import type { AnalysisResult, LatLng, PlacesContext, SavedAnalysis } from '@/lib/types'
 import { parseShareParams } from '@/lib/share'
 
@@ -51,7 +50,7 @@ export default function Home() {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [flyToTarget, setFlyToTarget] = useState<LatLng | null>(null)
   const [expertPanelOpen, setExpertPanelOpen] = useState(false)
-  const expertPanelCacheRef = useRef<{ agents: { role: string; emoji: string; opinion: string; response: string }[]; verdict: string } | null>(null)
+  const expertPanelCacheRef = useRef<{ agents: { role: string; emoji: string; opinion: string; response: string; confidence?: number }[]; verdict: string } | null>(null)
 
   const strings = getStrings(lang)
 
@@ -500,8 +499,11 @@ export default function Home() {
                 lang={lang}
                 onReset={handleReset}
                 strings={strings}
-                onOpenExpertPanel={() => setExpertPanelOpen(true)}
+                onOpenExpertPanel={() => setExpertPanelOpen(o => !o)}
                 expertPanelAvailable={!!result}
+                expertPanelOpen={expertPanelOpen}
+                onCloseExpertPanel={() => setExpertPanelOpen(false)}
+                expertCacheRef={expertPanelCacheRef}
               />
             </div>
           )}
@@ -523,29 +525,17 @@ export default function Home() {
             onReset={handleReset}
             onOpenHistory={() => setHistoryOpen(true)}
             strings={strings}
-            onOpenExpertPanel={() => setExpertPanelOpen(true)}
+            onOpenExpertPanel={() => setExpertPanelOpen(o => !o)}
             expertPanelAvailable={!!result}
+            expertPanelOpen={expertPanelOpen}
+            onCloseExpertPanel={() => setExpertPanelOpen(false)}
+            expertCacheRef={expertPanelCacheRef}
+            lang={lang}
           />
         </div>
 
       </div>
 
-      {result && pin && placesContext && (
-        <ExpertPanelModal
-          isOpen={expertPanelOpen}
-          onClose={() => setExpertPanelOpen(false)}
-          lat={pin.lat}
-          lng={pin.lng}
-          businessType={businessType}
-          score={result.score}
-          placesContext={placesContext}
-          luxuryMismatch={result.luxuryMismatch}
-          rentTierAz={result.rentTierAz}
-          districtPopulationK={result.districtPopulationK}
-          lang={lang}
-          cacheRef={expertPanelCacheRef}
-        />
-      )}
     </main>
   )
 }
