@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { LatLng } from '@/lib/types'
+import type { Strings } from '@/lib/i18n'
 
 type LayerType = 'bus' | 'metro' | 'transport' | 'competitors'
 
@@ -13,6 +14,7 @@ interface MapProps {
   flyToTarget: LatLng | null
   showLayerPanel?: boolean
   businessType?: string
+  strings?: Strings
 }
 
 const BAKU_CENTER: [number, number] = [40.4093, 49.8671]
@@ -32,12 +34,20 @@ const LAYER_COLORS: Record<LayerType, string> = {
   competitors: '#ef4444',
 }
 
-const LAYER_DEFS: { type: LayerType; label: string; emoji: string }[] = [
-  { type: 'bus',         label: 'Bus Stops',   emoji: '🚌' },
-  { type: 'metro',       label: 'Metro',        emoji: '🚇' },
-  { type: 'transport',   label: 'Transport',    emoji: '🚦' },
-  { type: 'competitors', label: 'Competitors',  emoji: '🏪' },
+const LAYER_DEFS: { type: LayerType; stringKey: keyof Strings; emoji: string }[] = [
+  { type: 'bus',         stringKey: 'LAYER_BUS',         emoji: '🚌' },
+  { type: 'metro',       stringKey: 'LAYER_METRO',        emoji: '🚇' },
+  { type: 'transport',   stringKey: 'LAYER_TRANSPORT',    emoji: '🚦' },
+  { type: 'competitors', stringKey: 'LAYER_COMPETITORS',  emoji: '🏪' },
 ]
+
+// Fallback labels when strings prop is absent
+const LAYER_LABELS: Record<LayerType, string> = {
+  bus: 'Bus Stops',
+  metro: 'Metro',
+  transport: 'Transport',
+  competitors: 'Competitors',
+}
 
 const ALL_LAYER_TYPES: LayerType[] = ['bus', 'metro', 'transport', 'competitors']
 
@@ -54,7 +64,7 @@ function makeLayerIcon(type: LayerType): L.DivIcon {
 const INITIAL_ACTIVE: Record<LayerType, boolean> = { bus: false, metro: false, transport: false, competitors: false }
 const INITIAL_LOADING: Record<LayerType, boolean> = { bus: false, metro: false, transport: false, competitors: false }
 
-export default function Map({ onPinDrop, pin, dimmed, flyToTarget, showLayerPanel, businessType }: MapProps) {
+export default function Map({ onPinDrop, pin, dimmed, flyToTarget, showLayerPanel, businessType, strings }: MapProps) {
   const mapRef = useRef<L.Map | null>(null)
   const markerRef = useRef<L.Marker | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -150,7 +160,8 @@ export default function Map({ onPinDrop, pin, dimmed, flyToTarget, showLayerPane
       const elements: { lat: number; lng: number }[] = data.elements ?? []
       if (elements.length === 0) {
         const def = LAYER_DEFS.find(d => d.type === type)!
-        showToast(`No ${def.label} found in this area`)
+        const label = strings ? strings[def.stringKey] : LAYER_LABELS[type]
+        showToast(`${label}: 0`)
         return
       }
       const map = mapRef.current
@@ -179,7 +190,8 @@ export default function Map({ onPinDrop, pin, dimmed, flyToTarget, showLayerPane
           position: 'absolute', top: 12, right: 12, zIndex: 1000,
           display: 'flex', flexDirection: 'column', gap: 6,
         }}>
-          {LAYER_DEFS.map(({ type, label, emoji }) => {
+          {LAYER_DEFS.map(({ type, stringKey, emoji }) => {
+            const label = strings ? strings[stringKey] : LAYER_LABELS[type]
             const isActive = activeLayers[type]
             const isLoading = layerLoading[type]
             return (

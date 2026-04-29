@@ -359,7 +359,7 @@ export default function Home() {
           {/* Map area */}
           <div className="relative flex-1 min-h-0">
             <MapErrorBoundary message={strings.MAP_ERROR}>
-              <Map key={mapKey} onPinDrop={handlePinDrop} pin={pin} dimmed={isDimmed} flyToTarget={flyToTarget} showLayerPanel={appState === 'result'} businessType={businessType} />
+              <Map key={mapKey} onPinDrop={handlePinDrop} pin={pin} dimmed={isDimmed} flyToTarget={flyToTarget} showLayerPanel={appState === 'result'} businessType={businessType} strings={strings} />
             </MapErrorBoundary>
 
             {(appState === 'map' || appState === 'input') && (
