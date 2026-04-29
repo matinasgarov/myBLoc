@@ -30,7 +30,7 @@ function useCountUp(target: number, duration = 1200, delay = 0) {
   return val
 }
 
-function barColor(pct: number): string {
+export function barColor(pct: number): string {
   if (pct >= 70) return '#34d399'  // emerald
   if (pct >= 40) return '#fbbf24'  // amber
   return '#f87171'                  // red

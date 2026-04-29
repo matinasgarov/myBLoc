@@ -208,7 +208,12 @@ async function callGroq(prompt: string, maxTokens = 300): Promise<string> {
   return res.choices[0]?.message?.content?.trim() ?? ''
 }
 
-function buildConfidencePrompt(role: string, opinion: string, lang: 'az' | 'en'): string {
+export function parseConfidence(raw: string): number {
+  const n = parseInt(raw.trim(), 10)
+  return isNaN(n) ? 5 : Math.min(10, Math.max(0, n))
+}
+
+export function buildConfidencePrompt(role: string, opinion: string, lang: 'az' | 'en'): string {
   if (lang === 'en') {
     return `You are ${role}. Your analysis was:
 "${opinion}"
@@ -283,10 +288,7 @@ export async function POST(req: NextRequest) {
         callGroq(buildConfidencePrompt(a.role, a.opinion, lang), 5)
       )
     )
-    const confidences = confidenceResponses.map(r => {
-      const n = parseInt(r.trim(), 10)
-      return isNaN(n) ? 5 : Math.min(10, Math.max(0, n))
-    })
+    const confidences = confidenceResponses.map(parseConfidence)
 
     const agents: AgentResponse[] = round1Agents.map((a, i) => ({
       ...a,
