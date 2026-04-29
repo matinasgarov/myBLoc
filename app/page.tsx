@@ -349,8 +349,8 @@ export default function Home() {
       {/* Content area */}
       <div className="flex flex-1 min-h-0">
 
-        {/* Map column — full width on mobile, 60% on desktop */}
-        <div className="min-h-0 flex flex-col" style={{ flex: '3' }}>
+        {/* Map column — was flex:'3', now 55% */}
+        <div className="min-h-0 flex flex-col" style={{ flex: '0 0 55%' }}>
 
           {/* Map area */}
           <div className="relative flex-1 min-h-0">
@@ -504,10 +504,10 @@ export default function Home() {
 
         </div>
 
-        {/* Desktop dashboard panel — hidden on mobile, 40% width on desktop */}
+        {/* Desktop dashboard panel — was flex:'2', now 45% */}
         <div
           className="hidden lg:flex flex-col"
-          style={{ flex: '2', borderLeft: '1px solid rgba(255,255,255,0.07)' }}
+          style={{ flex: '0 0 45%' }}
         >
           <DesktopDashboard
             analyses={analyses}

@@ -64,6 +64,17 @@ body {
   50%       { opacity: 0.22; transform: scale(1.1); }
 }
 
+/* ── Design tokens ──────────────────────────────────────────────────────────── */
+:root {
+  --dashboard-bg: rgba(7, 9, 13, 0.70);
+  --dashboard-blur: blur(24px) saturate(1.4);
+  --dashboard-border: rgba(255, 255, 255, 0.10);
+}
+
+@keyframes spin-arc {
+  to { transform: rotate(360deg); }
+}
+
 .anim-fade-up  { animation: fade-up  0.45s cubic-bezier(0.16,1,0.3,1) both; }
 .anim-scale-in { animation: scale-in 0.4s  cubic-bezier(0.16,1,0.3,1) both; }
 
