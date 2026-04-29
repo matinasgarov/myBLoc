@@ -189,4 +189,8 @@ export const EN = {
   EXPERT_PANEL_ROUND2: 'Experts discussing...',
   EXPERT_PANEL_SYNTHESIS: 'Synthesizing verdict...',
   EXPERT_PANEL_AFTER_DISCUSSION: 'After discussion',
+  LAYER_BUS: 'Bus Stops',
+  LAYER_METRO: 'Metro',
+  LAYER_TRANSPORT: 'Transport',
+  LAYER_COMPETITORS: 'Competitors',
 } as const

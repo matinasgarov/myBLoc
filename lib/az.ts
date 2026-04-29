@@ -189,4 +189,8 @@ export const AZ = {
   EXPERT_PANEL_ROUND2: 'Ekspertlər müzakirə edir...',
   EXPERT_PANEL_SYNTHESIS: 'Yekun nəticə hazırlanır...',
   EXPERT_PANEL_AFTER_DISCUSSION: 'Müzakirədən sonra',
+  LAYER_BUS: 'Avtobus',
+  LAYER_METRO: 'Metro',
+  LAYER_TRANSPORT: 'Nəqliyyat',
+  LAYER_COMPETITORS: 'Rəqiblər',
 } as const
