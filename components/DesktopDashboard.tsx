@@ -45,6 +45,68 @@ function scoreColor(score: number) {
   return '#f87171'
 }
 
+function verdictFor(score: number, strings: Strings): { label: string; color: string; bg: string; border: string } {
+  if (score >= 70) return {
+    label: strings.VERDICT_RECOMMENDED,
+    color: '#34d399',
+    bg: 'rgba(52,211,153,0.10)',
+    border: 'rgba(52,211,153,0.45)',
+  }
+  if (score >= 40) return {
+    label: strings.VERDICT_FAIR,
+    color: '#fbbf24',
+    bg: 'rgba(251,191,36,0.10)',
+    border: 'rgba(251,191,36,0.45)',
+  }
+  return {
+    label: strings.VERDICT_RISKY,
+    color: '#f87171',
+    bg: 'rgba(248,113,113,0.10)',
+    border: 'rgba(248,113,113,0.45)',
+  }
+}
+
+function VerdictBadge({ score, strings }: { score: number; strings: Strings }) {
+  const v = verdictFor(score, strings)
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.1em]"
+      style={{
+        background: v.bg,
+        border: `1px solid ${v.border}`,
+        color: v.color,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span style={{
+        width: 6, height: 6, borderRadius: '50%',
+        background: v.color,
+        boxShadow: `0 0 6px ${v.color}cc`,
+      }} />
+      {v.label}
+    </span>
+  )
+}
+
+function ProIcon({ color }: { color: string }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+      <circle cx="7" cy="7" r="6" stroke={`${color}55`} fill={`${color}18`} />
+      <path d="M4 7l2.2 2.2L10 5.4" />
+    </svg>
+  )
+}
+
+function ConIcon({ color }: { color: string }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+      <circle cx="7" cy="7" r="6" stroke={`${color}55`} fill={`${color}18`} />
+      <path d="M7 4v3.5" />
+      <circle cx="7" cy="10" r="0.4" fill={color} stroke="none" />
+    </svg>
+  )
+}
+
 function ScoreRingMini({ score }: { score: number }) {
   const R = 28
   const circ = 2 * Math.PI * R
@@ -268,11 +330,14 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
             >
               {business}
             </h2>
-            {result.rentTierAz && (
-              <p className="text-[12px] mt-1" style={{ color: 'rgba(100,116,139,0.6)' }}>
-                Kirayə: <span style={{ color: 'rgba(203,213,225,0.7)' }}>{result.rentTierAz}</span>
-              </p>
-            )}
+            <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+              <VerdictBadge score={result.score} strings={strings} />
+              {result.rentTierAz && (
+                <span className="text-[11px]" style={{ color: 'rgba(100,116,139,0.6)' }}>
+                  Kirayə: <span style={{ color: 'rgba(203,213,225,0.7)' }}>{result.rentTierAz}</span>
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-2xl font-bold tabular-nums" style={{ color, fontFamily: 'monospace' }}>
@@ -329,7 +394,7 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
                     animationFillMode: 'both', animationDelay: `${i * 55}ms`,
                   }}
                 >
-                  <span className="shrink-0 font-bold mt-px" style={{ color: '#34d399' }}>+</span>
+                  <ProIcon color="#34d399" />
                   <span style={{ color: 'rgba(203,213,225,0.85)' }}>{p}</span>
                 </li>
               ))}
@@ -357,7 +422,7 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
                     animationFillMode: 'both', animationDelay: `${i * 55}ms`,
                   }}
                 >
-                  <span className="shrink-0 font-bold mt-px" style={{ color: '#f87171' }}>—</span>
+                  <ConIcon color="#f87171" />
                   <span style={{ color: 'rgba(203,213,225,0.85)' }}>{c}</span>
                 </li>
               ))}

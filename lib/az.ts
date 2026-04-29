@@ -193,4 +193,7 @@ export const AZ = {
   LAYER_METRO: 'Metro',
   LAYER_TRANSPORT: 'Nəqliyyat',
   LAYER_COMPETITORS: 'Rəqiblər',
+  VERDICT_RECOMMENDED: 'Tövsiyə olunur',
+  VERDICT_FAIR: 'Diqqətli ol',
+  VERDICT_RISKY: 'Riskli',
 } as const

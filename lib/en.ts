@@ -193,4 +193,7 @@ export const EN = {
   LAYER_METRO: 'Metro',
   LAYER_TRANSPORT: 'Transport',
   LAYER_COMPETITORS: 'Competitors',
+  VERDICT_RECOMMENDED: 'Recommended',
+  VERDICT_FAIR: 'Proceed with caution',
+  VERDICT_RISKY: 'Risky',
 } as const
