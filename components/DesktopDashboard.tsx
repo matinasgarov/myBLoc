@@ -769,7 +769,12 @@ export default function DesktopDashboard({
   return (
     <div
       className="flex flex-col h-full"
-      style={{ background: '#07090D' }}
+      style={{
+        background: 'var(--dashboard-bg)',
+        backdropFilter: 'var(--dashboard-blur)',
+        WebkitBackdropFilter: 'var(--dashboard-blur)',
+        borderLeft: '1px solid var(--dashboard-border)',
+      }}
     >
       {/* Sub-header for compare / insights */}
       {subHeaderViews.includes(view) && (
