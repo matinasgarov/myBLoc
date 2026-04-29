@@ -18,6 +18,7 @@ interface AgentResponse {
   emoji: string
   opinion: string
   response: string
+  confidence: number
 }
 
 interface RequestBody {
@@ -197,14 +198,27 @@ ${discussion}
 Yekun qərar kimi tam 2 cümlə yaz. Bütün müzakirəni balanslaşdırılmış nəticəyə birləşdir. Birbaşa ol. Yalnız qərar mətni yaz, JSON yox, etiket yox.`
 }
 
-async function callGroq(prompt: string): Promise<string> {
+async function callGroq(prompt: string, maxTokens = 300): Promise<string> {
   const res = await groq.chat.completions.create({
     model: MODEL,
     temperature: 0.7,
-    max_tokens: 300,
+    max_tokens: maxTokens,
     messages: [{ role: 'user', content: prompt }],
   })
   return res.choices[0]?.message?.content?.trim() ?? ''
+}
+
+function buildConfidencePrompt(role: string, opinion: string, lang: 'az' | 'en'): string {
+  if (lang === 'en') {
+    return `You are ${role}. Your analysis was:
+"${opinion}"
+
+Rate your confidence in this assessment on a scale from 0 to 10, where 0 = very uncertain and 10 = highly confident. Consider data availability and potential confounding factors. Reply with only a single integer between 0 and 10, nothing else.`
+  }
+  return `Sən ${role}. Sənin analizin:
+"${opinion}"
+
+Bu qiymətləndirmədəki inamını 0-dan 10-a qədər qiymətləndir: 0 = çox qeyri-müəyyən, 10 = çox əmindir. Yalnız 0 ilə 10 arasında bir tam ədəd yaz, başqa heç nə yox.`
 }
 
 export async function POST(req: NextRequest) {
@@ -263,9 +277,21 @@ export async function POST(req: NextRequest) {
       })
     )
 
+    // Round 3: confidence ratings (parallel, short calls)
+    const confidenceResponses = await Promise.all(
+      round1Agents.map(a =>
+        callGroq(buildConfidencePrompt(a.role, a.opinion, lang), 5)
+      )
+    )
+    const confidences = confidenceResponses.map(r => {
+      const n = parseInt(r.trim(), 10)
+      return isNaN(n) ? 5 : Math.min(10, Math.max(0, n))
+    })
+
     const agents: AgentResponse[] = round1Agents.map((a, i) => ({
       ...a,
       response: round2Responses[i],
+      confidence: confidences[i],
     }))
 
     const verdict = await callGroq(buildSynthesizerPrompt(agents, safeBody.businessType, score, lang))
