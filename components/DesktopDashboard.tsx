@@ -768,9 +768,12 @@ export default function DesktopDashboard({
 
   return (
     <div
-      className="flex flex-col h-full"
+      className="flex flex-col h-full relative"
       style={{
-        background: 'var(--dashboard-bg)',
+        backgroundImage: `linear-gradient(var(--dashboard-bg), var(--dashboard-bg)), url(/dashboard-image.png)`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
         backdropFilter: 'var(--dashboard-blur)',
         WebkitBackdropFilter: 'var(--dashboard-blur)',
         borderLeft: '1px solid var(--dashboard-border)',

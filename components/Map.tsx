@@ -194,35 +194,66 @@ export default function Map({ onPinDrop, pin, dimmed, flyToTarget, showLayerPane
             const label = strings ? strings[stringKey] : LAYER_LABELS[type]
             const isActive = activeLayers[type]
             const isLoading = layerLoading[type]
+            const c = LAYER_COLORS[type]
             return (
               <button
                 key={type}
                 onClick={() => toggleLayer(type)}
                 style={{
-                  background: isActive ? LAYER_COLORS[type] : 'rgba(7,9,13,0.82)',
-                  border: `1px solid ${isActive ? LAYER_COLORS[type] : 'rgba(255,255,255,0.18)'}`,
+                  background: isActive
+                    ? `linear-gradient(135deg, ${c}f0 0%, ${c}c0 100%)`
+                    : 'linear-gradient(135deg, rgba(15,20,28,0.78) 0%, rgba(7,9,13,0.78) 100%)',
+                  border: `1px solid ${isActive ? `${c}` : 'rgba(255,255,255,0.10)'}`,
+                  boxShadow: isActive
+                    ? `0 4px 14px ${c}55, 0 0 0 1px ${c}40, inset 0 1px 0 rgba(255,255,255,0.15)`
+                    : '0 2px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04)',
                   color: '#fff',
-                  borderRadius: 8,
-                  padding: '6px 12px',
+                  borderRadius: 10,
+                  padding: '8px 14px',
                   fontSize: 12,
                   fontWeight: 600,
+                  letterSpacing: '0.01em',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 6,
-                  backdropFilter: 'blur(8px)',
-                  WebkitBackdropFilter: 'blur(8px)',
+                  gap: 8,
+                  backdropFilter: 'blur(12px) saturate(1.4)',
+                  WebkitBackdropFilter: 'blur(12px) saturate(1.4)',
                   opacity: isLoading ? 0.7 : 1,
-                  transition: 'all 0.15s',
-                  minWidth: 130,
+                  transition: 'transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease',
+                  minWidth: 140,
                   whiteSpace: 'nowrap',
                   userSelect: 'none',
+                  transform: isActive ? 'translateY(-0.5px)' : 'none',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) e.currentTarget.style.transform = 'translateY(-1px)'
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) e.currentTarget.style.transform = 'none'
                 }}
               >
-                <span>{emoji}</span>
+                <span style={{
+                  width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: isActive ? 'rgba(255,255,255,0.18)' : `${c}1f`,
+                  fontSize: 11,
+                }}>{emoji}</span>
                 <span style={{ flex: 1 }}>{label}</span>
-                {isLoading && (
-                  <span style={{ opacity: 0.8, fontSize: 14 }}>⟳</span>
+                {isLoading ? (
+                  <span style={{
+                    width: 12, height: 12, borderRadius: '50%',
+                    border: '2px solid rgba(255,255,255,0.3)',
+                    borderTopColor: '#fff',
+                    animation: 'spin-arc 0.8s linear infinite',
+                  }} />
+                ) : (
+                  <span style={{
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: isActive ? '#fff' : `${c}66`,
+                    boxShadow: isActive ? `0 0 6px rgba(255,255,255,0.8)` : 'none',
+                    transition: 'background 0.2s, box-shadow 0.2s',
+                  }} />
                 )}
               </button>
             )
