@@ -30,6 +30,12 @@ function useCountUp(target: number, duration = 1200, delay = 0) {
   return val
 }
 
+function barColor(pct: number): string {
+  if (pct >= 70) return '#34d399'  // emerald
+  if (pct >= 40) return '#fbbf24'  // amber
+  return '#f87171'                  // red
+}
+
 // ─── Radar Chart ──────────────────────────────────────────────────────────────
 export function RadarChartDisplay({ factors, accent }: { factors: ChartFactor[]; accent: string }) {
   const N = factors.length
@@ -110,6 +116,7 @@ export function BarsChartDisplay({ factors, accent }: { factors: ChartFactor[]; 
     <div className="px-3 py-4 space-y-3">
       {factors.map((f, i) => {
         const pct = (f.score / f.max) * 100
+        const color = barColor(pct)
         const label = f.label.length > 11 ? f.label.slice(0, 10) + '…' : f.label
         return (
           <div key={f.label} className="flex items-center gap-2.5">
@@ -120,7 +127,7 @@ export function BarsChartDisplay({ factors, accent }: { factors: ChartFactor[]; 
             <div className="flex-1 h-[3px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
               <motion.div
                 className="h-full rounded-full"
-                style={{ background: accent }}
+                style={{ background: color }}
                 initial={{ width: '0%' }}
                 animate={{ width: `${pct}%` }}
                 transition={{ duration: 0.9, delay: 0.08 + i * 0.07, ease: [0.25, 0, 0, 1] }}
@@ -128,7 +135,7 @@ export function BarsChartDisplay({ factors, accent }: { factors: ChartFactor[]; 
             </div>
             <motion.span
               className="text-[9px] tabular-nums shrink-0"
-              style={{ color: accent, fontFamily: 'monospace', minWidth: '30px', textAlign: 'right' }}
+              style={{ color, fontFamily: 'monospace', minWidth: '30px', textAlign: 'right' }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.25 + i * 0.07 }}
