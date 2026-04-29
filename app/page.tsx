@@ -166,13 +166,17 @@ export default function Home() {
 
     const t2 = setTimeout(() => setLoadingStep(2), 2000)
     const t3 = setTimeout(() => setLoadingStep(3), 4000)
+    const minDelay = new Promise<void>(resolve => setTimeout(resolve, 1500))
 
     try {
-      const placesRes = await fetch('/api/places', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat: activePin.lat, lng: activePin.lng, businessType: business }),
-      })
+      const [placesRes] = await Promise.all([
+        fetch('/api/places', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lat: activePin.lat, lng: activePin.lng, businessType: business }),
+        }),
+        minDelay,
+      ])
       clearTimeout(t2)
       clearTimeout(t3)
       if (!placesRes.ok) throw new Error('places')
