@@ -8,6 +8,7 @@ interface AgentResponse {
   emoji: string
   opinion: string
   response: string
+  confidence?: number
 }
 
 interface PanelResult {
@@ -31,6 +32,82 @@ interface Props {
 }
 
 const AGENT_BORDER_COLORS = ['#f59e0b', '#ef4444', '#3b82f6', '#10b981']
+
+function AgentAvatar({ index, color }: { index: number; color: string }) {
+  const avatars = [
+    // 0 — Data Analyst: glasses + tie
+    <svg key={0} width="28" height="30" viewBox="0 0 28 30" fill="none">
+      <circle cx="14" cy="11" r="7" fill={`${color}40`} stroke={`${color}99`} strokeWidth="1.2"/>
+      <rect x="8.5" y="9.5" width="4.5" height="3" rx="1.2" stroke={color} strokeWidth="1" fill="none"/>
+      <rect x="15" y="9.5" width="4.5" height="3" rx="1.2" stroke={color} strokeWidth="1" fill="none"/>
+      <line x1="13" y1="11" x2="15" y2="11" stroke={color} strokeWidth="0.9"/>
+      <path d="M4 30 Q4 20 14 20 Q24 20 24 30" fill={`${color}25`} stroke={`${color}55`} strokeWidth="1.2"/>
+      <path d="M13 20 L12.3 25.5 L14 27 L15.7 25.5 L15 20" fill={`${color}70`}/>
+    </svg>,
+    // 1 — Risk Advisor: hard hat
+    <svg key={1} width="28" height="30" viewBox="0 0 28 30" fill="none">
+      <circle cx="14" cy="12" r="6.5" fill={`${color}40`} stroke={`${color}99`} strokeWidth="1.2"/>
+      <path d="M7 11 Q14 4 21 11" fill={`${color}70`} stroke={`${color}cc`} strokeWidth="1.2"/>
+      <rect x="5.5" y="10" width="17" height="2" rx="0.8" fill={`${color}80`}/>
+      <path d="M4 30 Q4 21 14 21 Q24 21 24 30" fill={`${color}25`} stroke={`${color}55`} strokeWidth="1.2"/>
+    </svg>,
+    // 2 — Location Expert: baseball cap
+    <svg key={2} width="28" height="30" viewBox="0 0 28 30" fill="none">
+      <circle cx="14" cy="12" r="6.5" fill={`${color}40`} stroke={`${color}99`} strokeWidth="1.2"/>
+      <path d="M8 11.5 Q14 5 20 11.5" fill={`${color}60`} stroke={`${color}aa`} strokeWidth="1.2"/>
+      <path d="M8 11.5 Q5 12.5 4 13" stroke={`${color}bb`} strokeWidth="1.8" strokeLinecap="round"/>
+      <line x1="8" y1="11.5" x2="20" y2="11.5" stroke={`${color}80`} strokeWidth="1"/>
+      <path d="M4 30 Q4 21 14 21 Q24 21 24 30" fill={`${color}25`} stroke={`${color}55`} strokeWidth="1.2"/>
+    </svg>,
+    // 3 — Foot Traffic Expert: walking pedestrian
+    <svg key={3} width="28" height="30" viewBox="0 0 28 30" fill="none">
+      <circle cx="14" cy="7" r="4.5" fill={`${color}40`} stroke={`${color}99`} strokeWidth="1.2"/>
+      <line x1="14" y1="11.5" x2="14" y2="20" stroke={`${color}aa`} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M14 14 L9 17" stroke={`${color}aa`} strokeWidth="1.8" strokeLinecap="round"/>
+      <path d="M14 14 L19 16" stroke={`${color}aa`} strokeWidth="1.8" strokeLinecap="round"/>
+      <path d="M14 20 L10 27" stroke={`${color}aa`} strokeWidth="1.8" strokeLinecap="round"/>
+      <path d="M14 20 L18 26" stroke={`${color}aa`} strokeWidth="1.8" strokeLinecap="round"/>
+      <line x1="19" y1="16" x2="22" y2="28" stroke={`${color}55`} strokeWidth="1.2" strokeLinecap="round"/>
+    </svg>,
+  ]
+
+  return (
+    <div style={{
+      width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+      background: `${color}26`,
+      border: `2px solid ${color}80`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      overflow: 'hidden',
+    }}>
+      {avatars[index] ?? <span style={{ fontSize: 18 }}>👤</span>}
+    </div>
+  )
+}
+
+function ConfidenceMeter({ value, color }: { value: number; color: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+      <div style={{ display: 'flex', gap: 4 }}>
+        {Array.from({ length: 10 }, (_, i) => (
+          <div
+            key={i}
+            style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: i < value ? `${color}cc` : 'rgba(255,255,255,0.08)',
+              transition: `background 0.2s ${i * 40}ms`,
+            }}
+          />
+        ))}
+      </div>
+      <span style={{
+        fontSize: 9, color: 'rgba(100,116,139,0.6)',
+        fontFamily: 'monospace', whiteSpace: 'nowrap',
+      }}>
+        {value} / 10
+      </span>
+    </div>
+  )
+}
 
 export default function ExpertPanelModal({
   isOpen, onClose, lat, lng, businessType, score,
@@ -165,7 +242,7 @@ export default function ExpertPanelModal({
                   borderRadius: 10, padding: '14px 16px',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                    <span style={{ fontSize: 16 }}>{emoji}</span>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
                     <div style={{ height: 12, width: 120, background: 'rgba(255,255,255,0.06)', borderRadius: 4 }} />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -198,8 +275,8 @@ export default function ExpertPanelModal({
               borderLeft: `3px solid ${AGENT_BORDER_COLORS[i] ?? '#6366f1'}`,
               borderRadius: 10, padding: '14px 16px',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <span style={{ fontSize: 16 }}>{agent.emoji}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                <AgentAvatar index={i} color={AGENT_BORDER_COLORS[i] ?? '#6366f1'} />
                 <span style={{ color: 'rgba(203,213,225,0.9)', fontSize: 13, fontWeight: 600 }}>
                   {agent.role}
                 </span>
@@ -207,6 +284,9 @@ export default function ExpertPanelModal({
               <p style={{ color: 'rgba(148,163,184,0.85)', fontSize: 13, lineHeight: 1.6, margin: 0 }}>
                 {agent.opinion}
               </p>
+              {agent.confidence !== undefined && (
+                <ConfidenceMeter value={agent.confidence} color={AGENT_BORDER_COLORS[i] ?? '#6366f1'} />
+              )}
               {agent.response && (
                 <>
                   <div style={{
