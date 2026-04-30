@@ -1,6 +1,6 @@
 'use client'
-import { useState, useEffect } from 'react'
-import type { AnalysisResult, PlacesContext, SavedAnalysis, FactorKey } from '@/lib/types'
+import { useState, useEffect, useRef } from 'react'
+import type { AnalysisResult, PlacesContext, SavedAnalysis, FactorKey, AgentResult, AgentStatus } from '@/lib/types'
 import type { Strings, Lang } from '@/lib/i18n'
 import PdfDownloadButton from './PdfDownloadButton'
 import { METRO_STATIONS } from '@/lib/metro-stations'
@@ -9,14 +9,6 @@ import { GlowingStatCard, GlowingButton } from '@/components/ui/glowing-card'
 
 type PanelView = 'idle' | 'result' | 'compare' | 'insights'
 type ChartTab = 'dual' | 'bars' | 'ring'
-type AgentStatus = 'idle' | 'loading' | 'done' | 'error'
-
-const LAYER_DEFS = [
-  { key: 'bus',         emoji: '🚌', labelEn: 'Bus Stops',   labelAz: 'Avtobus',   color: '#f59e0b' },
-  { key: 'metro',       emoji: '🚇', labelEn: 'Metro',       labelAz: 'Metro',     color: '#a855f7' },
-  { key: 'transport',   emoji: '🚉', labelEn: 'Transport',   labelAz: 'Nəqliyyat', color: '#10b981' },
-  { key: 'competitors', emoji: '🏪', labelEn: 'Competitors', labelAz: 'Rəqiblər',  color: '#ef4444' },
-] as const
 
 const AGENT_TOOLBAR_DEFS = [
   { key: 'market-analyst',         emoji: '📊', labelEn: 'Market Analyst',         labelAz: 'Bazar Analitiki',              descEn: 'Evaluates competitive landscape and market saturation.',         descAz: 'Rəqabət mühiti və bazar doyumunu qiymətləndirir.',               color: '#f59e0b' },
@@ -41,6 +33,8 @@ interface Props {
   onOpenHistory: () => void
   strings: Strings
   lang: Lang
+  agentResults: Record<string, AgentResult>
+  agentStatus: Record<string, AgentStatus>
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -139,6 +133,382 @@ function ScoreRingMini({ score }: { score: number }) {
   )
 }
 
+
+const LOADING_MESSAGES_AZ = [
+  'Məlumatları toplayıram…',
+  'Şəkilləri analiz edirəm…',
+  'Trafik nümunələrini araşdırıram…',
+  'Məlumatları çarpaz yoxlayıram…',
+  'Bazar nüanslarını qiymətləndirirəm…',
+  'Nəticələri tərtib edirəm…',
+]
+
+const LOADING_MESSAGES_EN = [
+  'Gathering data…',
+  'Analyzing patterns…',
+  'Examining traffic flows…',
+  'Cross-referencing datasets…',
+  'Weighing market nuances…',
+  'Compiling insights…',
+]
+
+function LoadingMessages({ lang, color }: { lang: Lang; color: string }) {
+  const messages = lang === 'az' ? LOADING_MESSAGES_AZ : LOADING_MESSAGES_EN
+  const [idx, setIdx] = useState(0)
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setIdx(i => (i + 1) % messages.length)
+    }, 1600)
+    return () => window.clearInterval(id)
+  }, [messages.length])
+  return (
+    <p style={{ marginTop: 10, fontSize: 10.5, color: `${color}cc`, fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: 6, transition: 'opacity 0.3s' }} key={idx} className="anim-fade-up">
+      <span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}` }} />
+      {messages[idx]}
+    </p>
+  )
+}
+
+function AgentLogo({ emoji, color }: { emoji: string; color: string }) {
+  return (
+    <div style={{
+      width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
+      background: `radial-gradient(circle at 30% 30%, ${color}33 0%, ${color}11 60%, rgba(7,9,13,0.6) 100%)`,
+      border: `1.5px solid ${color}66`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: 20,
+      boxShadow: `0 0 18px ${color}33, inset 0 0 12px ${color}22`,
+    }}>
+      {emoji}
+    </div>
+  )
+}
+
+function ConfidenceDiagram({ confidence, color }: { confidence: number; color: string }) {
+  const pct = Math.max(0, Math.min(10, confidence)) / 10
+  const R = 24
+  const circ = 2 * Math.PI * R
+  return (
+    <div style={{
+      width: 88, flexShrink: 0,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      gap: 6,
+    }}>
+      <div style={{ position: 'relative', width: 60, height: 60 }}>
+        <svg width="60" height="60" viewBox="0 0 60 60">
+          <circle cx={30} cy={30} r={R} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={4} />
+          <circle
+            cx={30} cy={30} r={R}
+            fill="none" stroke={color} strokeWidth={4} strokeLinecap="round"
+            strokeDasharray={circ}
+            strokeDashoffset={circ - pct * circ}
+            transform="rotate(-90 30 30)"
+            style={{ transition: 'stroke-dashoffset 0.7s cubic-bezier(0.25,0,0,1)', filter: `drop-shadow(0 0 4px ${color}88)` }}
+          />
+        </svg>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color, fontFamily: 'monospace' }}>
+            {confidence}
+          </span>
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 18 }}>
+        {[0.45, 0.7, 0.55, 0.85, 0.6].map((h, i) => {
+          const active = i < Math.round(pct * 5)
+          return (
+            <span key={i} style={{
+              width: 4, height: `${h * 100}%`, borderRadius: 1.5,
+              background: active ? color : `${color}22`,
+              boxShadow: active ? `0 0 4px ${color}88` : 'none',
+              transition: 'background 0.3s',
+            }} />
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Diagnostic chart primitives ──────────────────────────────────────────────
+
+function ChartCard({ label, value, color, children }: {
+  label: string
+  value: string
+  color: string
+  children: React.ReactNode
+}) {
+  return (
+    <div style={{
+      flex: 1, minWidth: 0,
+      padding: '8px 10px 9px',
+      background: 'rgba(255,255,255,0.025)',
+      border: '1px solid rgba(255,255,255,0.06)',
+      borderRadius: 8,
+      display: 'flex', flexDirection: 'column', gap: 5,
+    }}>
+      <p style={{ fontSize: 8.5, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'rgba(100,116,139,0.7)', margin: 0, fontWeight: 600, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</p>
+      <div style={{ height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{children}</div>
+      <p style={{ fontSize: 10.5, color, fontFamily: 'monospace', fontWeight: 700, margin: 0, lineHeight: 1.1, letterSpacing: '-0.01em' }}>{value}</p>
+    </div>
+  )
+}
+
+function Sparkline({ data, color }: { data: number[]; color: string }) {
+  const max = Math.max(...data, 1)
+  const min = Math.min(...data, 0)
+  const range = max - min || 1
+  const w = 100, h = 36
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * w
+    const y = h - 4 - ((v - min) / range) * (h - 8)
+    return `${x},${y}`
+  })
+  const area = `0,${h} ${points.join(' ')} ${w},${h}`
+  const last = points[points.length - 1].split(',')
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
+      <defs>
+        <linearGradient id={`spark-${color.replace('#', '')}`} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.35" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon points={area} fill={`url(#spark-${color.replace('#', '')})`} />
+      <polyline points={points.join(' ')} fill="none" stroke={color} strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={last[0]} cy={last[1]} r={1.8} fill={color} />
+    </svg>
+  )
+}
+
+function Gauge({ pct, color }: { pct: number; color: string }) {
+  const clamped = Math.max(0, Math.min(1, pct))
+  const R = 22
+  const halfCirc = Math.PI * R
+  const startX = 30 - R, startY = 30
+  const endX = 30 + R, endY = 30
+  const path = `M ${startX} ${startY} A ${R} ${R} 0 0 1 ${endX} ${endY}`
+  const angle = Math.PI - clamped * Math.PI
+  const tipX = 30 + R * Math.cos(angle)
+  const tipY = 30 - R * Math.sin(angle)
+  return (
+    <svg viewBox="0 0 60 36" style={{ width: '100%', height: '100%' }}>
+      <path d={path} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={4} strokeLinecap="round" />
+      <path d={path} fill="none" stroke={color} strokeWidth={4} strokeLinecap="round"
+        strokeDasharray={halfCirc} strokeDashoffset={halfCirc * (1 - clamped)}
+        style={{ transition: 'stroke-dashoffset 0.6s cubic-bezier(0.25,0,0,1)' }} />
+      <circle cx={tipX} cy={tipY} r={2.5} fill={color} />
+    </svg>
+  )
+}
+
+function StackedHBar({ segments }: { segments: { value: number; color: string; label: string }[] }) {
+  const total = segments.reduce((s, x) => s + x.value, 0) || 1
+  return (
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 5 }}>
+      <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', background: 'rgba(255,255,255,0.05)' }}>
+        {segments.map((s, i) => (
+          <div key={i} style={{ width: `${(s.value / total) * 100}%`, background: s.color, transition: 'width 0.5s' }} />
+        ))}
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, fontSize: 8.5 }}>
+        {segments.map((s, i) => (
+          <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 3, color: 'rgba(148,163,184,0.65)', whiteSpace: 'nowrap' }}>
+            <span style={{ width: 5, height: 5, borderRadius: 1, background: s.color }} />
+            {s.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function BarSeries({ data, color }: { data: number[]; color: string }) {
+  const max = Math.max(...data, 1)
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, width: '100%', height: '100%' }}>
+      {data.map((v, i) => (
+        <div key={i} style={{
+          flex: 1,
+          height: `${(v / max) * 100}%`,
+          background: `linear-gradient(180deg, ${color} 0%, ${color}66 100%)`,
+          borderRadius: '2px 2px 0 0',
+          minHeight: 2,
+          transition: 'height 0.5s',
+        }} />
+      ))}
+    </div>
+  )
+}
+
+// ─── Diagnostic charts per agent ──────────────────────────────────────────────
+
+function getDiagnosticCharts(
+  agentKey: string,
+  color: string,
+  result: AnalysisResult,
+  context: PlacesContext | null,
+  lang: Lang,
+): React.ReactNode {
+  const ctx = context
+  const az = lang === 'az'
+  const competitors = ctx?.competitors ?? 0
+  const totalBiz = ctx?.totalBusinesses ?? 0
+  const busStops = ctx?.busStops ?? 0
+  const parking = ctx?.parking ?? 0
+  const grocery = ctx?.groceryStores ?? 0
+  const metroDist = ctx?.metroDistance
+  const metroRide = ctx?.metroRidership ?? 0
+  const majorRoads = ctx?.majorRoads ?? 0
+  const tier = ctx?.urbanTier ?? 'rural'
+  const rentTier = result.rentTier ?? 'Medium'
+  const tierMul = tier === 'metro-city' ? 1 : tier === 'city' ? 0.7 : tier === 'town' ? 0.4 : 0.15
+  const rentMul = rentTier === 'Very High' ? 1 : rentTier === 'High' ? 0.75 : rentTier === 'Medium' ? 0.5 : 0.25
+
+  switch (agentKey) {
+    case 'market-analyst': {
+      const saturationPct = Math.min(1, competitors / 12)
+      const trend = [3, 4, 6, 5, 7, 8, competitors || 6, Math.min(12, (competitors || 6) + 1)]
+      return (
+        <>
+          <ChartCard label={az ? 'Bazar Doyumu' : 'Saturation'} value={`${Math.round(saturationPct * 100)}%`} color={color}>
+            <Gauge pct={saturationPct} color={color} />
+          </ChartCard>
+          <ChartCard label={az ? 'Rəqabət Trendi' : 'Volatility Trend'} value={`${competitors} ${az ? 'rəqib' : 'comp'}`} color={color}>
+            <Sparkline data={trend} color={color} />
+          </ChartCard>
+          <ChartCard label={az ? 'Kateqoriya Payı' : 'Category Mix'} value={`${totalBiz} ${az ? 'biznes' : 'biz'}`} color={color}>
+            <StackedHBar segments={[
+              { value: competitors,                       color: color,         label: az ? 'Rəqib' : 'Direct' },
+              { value: Math.max(0, totalBiz - competitors), color: `${color}55`, label: az ? 'Digər' : 'Other' },
+            ]} />
+          </ChartCard>
+        </>
+      )
+    }
+    case 'risk-advisor': {
+      const legalRisk = result.luxuryMismatch ? 7 : 2
+      const financialRisk = Math.round(rentMul * 10)
+      const operationalRisk = ctx?.landUse ? 6 : Math.max(2, 10 - Math.round(tierMul * 8))
+      const totalRisk = (legalRisk + financialRisk + operationalRisk) / 30
+      const volatility = [4, 6, 5, 7, 6, 8, financialRisk + 1, Math.max(legalRisk, operationalRisk)]
+      return (
+        <>
+          <ChartCard label={az ? 'Risk Bölgüsü' : 'Risk Exposure'} value={`${legalRisk + financialRisk + operationalRisk}/30`} color={color}>
+            <StackedHBar segments={[
+              { value: legalRisk,       color: '#ef4444', label: az ? 'Hüquqi'   : 'Legal' },
+              { value: financialRisk,   color: '#f59e0b', label: az ? 'Maliyyə'  : 'Fiscal' },
+              { value: operationalRisk, color: '#a855f7', label: az ? 'Əməliyyat': 'Ops' },
+            ]} />
+          </ChartCard>
+          <ChartCard label={az ? 'Dəyişkənlik' : 'Volatility'} value={`σ ${(volatility.reduce((a, b) => a + b, 0) / volatility.length).toFixed(1)}`} color={color}>
+            <Sparkline data={volatility} color={color} />
+          </ChartCard>
+          <ChartCard label={az ? 'Şiddət İndeksi' : 'Severity Index'} value={`${Math.round(totalRisk * 100)}%`} color={color}>
+            <Gauge pct={totalRisk} color={color} />
+          </ChartCard>
+        </>
+      )
+    }
+    case 'location-strategist': {
+      const metroPct = metroDist === null || metroDist === undefined ? 0 : Math.max(0, 1 - metroDist / 1500)
+      const ridershipBars = [0.4, 0.6, 0.55, 0.85, 0.7, 0.5, 0.35].map(v => Math.round(v * Math.max(1, metroRide / 1000)))
+      return (
+        <>
+          <ChartCard label={az ? 'Metro Yaxınlığı' : 'Metro Proximity'} value={metroDist != null ? `${metroDist}m` : '—'} color={color}>
+            <Gauge pct={metroPct} color={color} />
+          </ChartCard>
+          <ChartCard label={az ? 'Sərnişin Axını' : 'Catchment Pull'} value={`${Math.round(metroRide / 1000)}K`} color={color}>
+            <BarSeries data={ridershipBars} color={color} />
+          </ChartCard>
+          <ChartCard label={az ? 'Yol Şəbəkəsi' : 'Road Network'} value={`${majorRoads} ${az ? 'yol' : 'rd'}`} color={color}>
+            <StackedHBar segments={[
+              { value: majorRoads,                          color: color,         label: az ? 'Əsas'  : 'Major' },
+              { value: Math.max(0, 6 - majorRoads),         color: `${color}40`,  label: az ? 'Yerli' : 'Local' },
+            ]} />
+          </ChartCard>
+        </>
+      )
+    }
+    case 'customer-flow': {
+      const hours = [0.3, 0.45, 0.6, 0.85, 0.75, 0.55, 0.7, 0.95, 0.8, 0.5].map(v => Math.round(v * 100))
+      const transitPct = Math.min(1, (busStops + (metroDist != null && metroDist < 600 ? 5 : 0)) / 10)
+      return (
+        <>
+          <ChartCard label={az ? 'Saatlıq Trafik' : 'Hourly Footfall'} value={`${Math.max(...hours)} ${az ? 'pik' : 'peak'}`} color={color}>
+            <BarSeries data={hours} color={color} />
+          </ChartCard>
+          <ChartCard label={az ? 'Tranzit Əlçatanlıq' : 'Transit Score'} value={`${Math.round(transitPct * 100)}%`} color={color}>
+            <Gauge pct={transitPct} color={color} />
+          </ChartCard>
+          <ChartCard label={az ? 'Parkinq Tutumu' : 'Parking Mix'} value={`${parking}`} color={color}>
+            <StackedHBar segments={[
+              { value: Math.max(1, parking),              color: color,        label: az ? 'Mövcud' : 'On-site' },
+              { value: Math.max(1, busStops),             color: `${color}77`, label: az ? 'Tranzit': 'Transit' },
+            ]} />
+          </ChartCard>
+        </>
+      )
+    }
+    case 'urban-forecaster': {
+      const trajectory = (() => {
+        const base = tierMul * 60 + 20
+        return [base - 8, base - 4, base - 2, base + 1, base + 5, base + 9, base + 14, base + 20].map(v => Math.round(v))
+      })()
+      const popK = result.districtPopulationK ?? 0
+      const zoningPct = Math.min(1, totalBiz / 50)
+      return (
+        <>
+          <ChartCard label={az ? 'İnkişaf Trayektoriyası' : 'Growth Trajectory'} value={`+${Math.round((trajectory[trajectory.length - 1] - trajectory[0]) / trajectory[0] * 100)}%`} color={color}>
+            <Sparkline data={trajectory} color={color} />
+          </ChartCard>
+          <ChartCard label={az ? 'Zonalanma Təzyiqi' : 'Zoning Pressure'} value={`${Math.round(zoningPct * 100)}%`} color={color}>
+            <Gauge pct={zoningPct} color={color} />
+          </ChartCard>
+          <ChartCard label={az ? 'Əhali Tərkibi' : 'Population Mix'} value={popK ? `${popK.toFixed(1)}K` : '—'} color={color}>
+            <StackedHBar segments={[
+              { value: Math.max(1, Math.round(tierMul * 10)),         color: color,         label: az ? 'Şəhər'  : 'Urban' },
+              { value: Math.max(1, Math.round((1 - tierMul) * 10)),   color: `${color}55`,  label: az ? 'Periferiya' : 'Periph' },
+            ]} />
+          </ChartCard>
+        </>
+      )
+    }
+    case 'infrastructure-auditor': {
+      const utilities = [
+        { value: Math.max(2, busStops),     color: '#10b981', label: az ? 'Tranzit' : 'Transit' },
+        { value: Math.max(2, grocery),      color: '#f59e0b', label: az ? 'Ərzaq'   : 'Retail' },
+        { value: Math.max(2, parking),      color: '#3b82f6', label: az ? 'Park'    : 'Parking' },
+        { value: Math.max(2, majorRoads),   color: '#a855f7', label: az ? 'Yollar'  : 'Roads' },
+      ]
+      const roadPct = Math.min(1, majorRoads / 6)
+      const density = [grocery, busStops, parking, majorRoads, totalBiz / 5].map(v => Math.max(1, Math.round(v)))
+      return (
+        <>
+          <ChartCard label={az ? 'Kommunal Əhatə' : 'Utility Coverage'} value={`${utilities.length}× ${az ? 'xidmət' : 'svc'}`} color={color}>
+            <StackedHBar segments={utilities} />
+          </ChartCard>
+          <ChartCard label={az ? 'Yol Keyfiyyəti' : 'Road Quality'} value={`${Math.round(roadPct * 100)}%`} color={color}>
+            <Gauge pct={roadPct} color={color} />
+          </ChartCard>
+          <ChartCard label={az ? 'Xidmət Sıxlığı' : 'Service Density'} value={`${density.reduce((a, b) => a + b, 0)} pts`} color={color}>
+            <BarSeries data={density} color={color} />
+          </ChartCard>
+        </>
+      )
+    }
+    default:
+      return null
+  }
+}
+
+function splitOpinionPoints(text: string): string[] {
+  const pieces = text
+    .split(/(?<=[.!?])\s+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 0)
+  if (pieces.length <= 1) return [text.trim()]
+  return pieces.slice(0, 4)
+}
 
 const FACTOR_LABEL_KEYS: Record<FactorKey, keyof Strings> = {
   competition: 'FACTOR_COMPETITION',
@@ -280,179 +650,7 @@ function IdleView({ analyses, onOpenHistory, onCompare, onInsights, strings }: {
 
 // ─── Result View ──────────────────────────────────────────────────────────────
 
-interface AgentResult {
-  role: string
-  emoji: string
-  opinion: string
-  confidence?: number
-}
-
-function LayerButtonsSection({ lang }: { lang: Lang }) {
-  const [activeLayers, setActiveLayers] = useState<Set<string>>(new Set())
-  const toggle = (key: string) => setActiveLayers(prev => {
-    const n = new Set(prev)
-    n.has(key) ? n.delete(key) : n.add(key)
-    return n
-  })
-  return (
-    <div style={{ padding: '10px 16px 8px', borderBottom: '1px solid rgba(255,255,255,0.04)', background: 'rgba(7,9,13,0.3)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
-      <p style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(100,116,139,0.45)', marginBottom: 6, fontWeight: 600 }}>
-        {lang === 'az' ? 'Xəritə Layları' : 'Map Layers'}
-      </p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-        {LAYER_DEFS.map(layer => {
-          const isActive = activeLayers.has(layer.key)
-          const label = lang === 'az' ? layer.labelAz : layer.labelEn
-          return (
-            <button key={layer.key} onClick={() => toggle(layer.key)} style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '5px 8px', borderRadius: 7, cursor: 'pointer', textAlign: 'left',
-              background: isActive ? `${layer.color}18` : 'rgba(255,255,255,0.025)',
-              border: `1px solid ${isActive ? layer.color + '45' : 'rgba(255,255,255,0.055)'}`,
-              color: isActive ? layer.color : 'rgba(148,163,184,0.55)',
-              fontSize: 10.5, fontWeight: isActive ? 600 : 400, transition: 'all 0.15s',
-            }}>
-              <span style={{ fontSize: 11 }}>{layer.emoji}</span>
-              <span style={{ flex: 1 }}>{label}</span>
-              {isActive && <span style={{ width: 5, height: 5, borderRadius: '50%', background: layer.color, flexShrink: 0 }} />}
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-interface AgentPanelProps {
-  business: string
-  result: AnalysisResult
-  context: PlacesContext | null
-  lat: number | null
-  lng: number | null
-  lang: Lang
-  strings: Strings
-}
-
-function AgentButtonsSection({ business, result, context, lat, lng, lang, strings }: AgentPanelProps) {
-  const [agentStatus, setAgentStatus] = useState<Record<string, AgentStatus>>({})
-  const [agentResults, setAgentResults] = useState<Record<string, AgentResult>>({})
-
-  const handleAgentClick = async (agentKey: string) => {
-    const current = agentStatus[agentKey] ?? 'idle'
-    if (current === 'loading') return
-    if (current === 'done') {
-      setAgentStatus(prev => ({ ...prev, [agentKey]: 'idle' }))
-      setAgentResults(prev => { const n = { ...prev }; delete n[agentKey]; return n })
-      return
-    }
-    setAgentStatus(prev => ({ ...prev, [agentKey]: 'loading' }))
-    try {
-      const res = await fetch('/api/expert-panel', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lat, lng, businessType: business, score: result.score,
-          placesContext: context, luxuryMismatch: result.luxuryMismatch,
-          rentTierAz: result.rentTierAz, districtPopulationK: result.districtPopulationK,
-          lang, selectedAgents: [agentKey],
-        }),
-      })
-      const data = await res.json()
-      const agent = data.agents?.[0] as AgentResult | undefined
-      if (agent) {
-        setAgentResults(prev => ({ ...prev, [agentKey]: agent }))
-        setAgentStatus(prev => ({ ...prev, [agentKey]: 'done' }))
-      } else {
-        setAgentStatus(prev => ({ ...prev, [agentKey]: 'error' }))
-      }
-    } catch {
-      setAgentStatus(prev => ({ ...prev, [agentKey]: 'error' }))
-    }
-  }
-
-  const completedAgents = AGENT_TOOLBAR_DEFS.filter(a => agentResults[a.key])
-
-  return (
-    <>
-      {/* Agent buttons */}
-      <div style={{ padding: '10px 16px 8px', borderBottom: '1px solid rgba(255,255,255,0.04)', background: 'rgba(7,9,13,0.3)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
-        <p style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(100,116,139,0.45)', marginBottom: 6, fontWeight: 600 }}>
-          {strings.EXPERT_PANEL_TITLE}
-        </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {AGENT_TOOLBAR_DEFS.map(agent => {
-            const status = agentStatus[agent.key] ?? 'idle'
-            const label = lang === 'az' ? agent.labelAz : agent.labelEn
-            const desc = lang === 'az' ? agent.descAz : agent.descEn
-            const isDone = status === 'done'
-            const isLoading = status === 'loading'
-            const isErr = status === 'error'
-            return (
-              <button
-                key={agent.key}
-                onClick={() => handleAgentClick(agent.key)}
-                title={desc}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '6px 10px', borderRadius: 7,
-                  cursor: isLoading ? 'wait' : 'pointer', width: '100%', textAlign: 'left',
-                  background: isDone ? `${agent.color}18` : isLoading ? 'rgba(255,255,255,0.055)' : 'rgba(255,255,255,0.025)',
-                  border: `1px solid ${isDone ? agent.color + '45' : isErr ? 'rgba(248,113,113,0.3)' : 'rgba(255,255,255,0.055)'}`,
-                  color: isDone ? agent.color : isErr ? '#f87171' : isLoading ? 'rgba(203,213,225,0.7)' : 'rgba(148,163,184,0.6)',
-                  fontSize: 11, fontWeight: isDone ? 600 : 400, transition: 'all 0.15s',
-                }}
-              >
-                <span style={{ fontSize: 12 }}>{agent.emoji}</span>
-                <span style={{ flex: 1, letterSpacing: '-0.01em' }}>{label}</span>
-                <span style={{ fontSize: 10, width: 14, textAlign: 'center', flexShrink: 0, fontFamily: 'monospace', opacity: 0.8 }}>
-                  {isLoading ? '…' : isDone ? '✓' : isErr ? '!' : ''}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Agent result cards — appear inline as each completes */}
-      {completedAgents.map((agent) => {
-        const r = agentResults[agent.key]!
-        return (
-          <div key={agent.key} style={{
-            margin: '0', padding: '14px 16px',
-            background: 'rgba(7,9,13,0.3)',
-            backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-            borderBottom: '1px solid rgba(255,255,255,0.04)',
-            borderLeft: `3px solid ${agent.color}`,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <span style={{ fontSize: 16 }}>{agent.emoji}</span>
-              <span style={{ color: agent.color, fontSize: 11.5, fontWeight: 700, letterSpacing: '-0.01em' }}>
-                {r.role}
-              </span>
-              {r.confidence !== undefined && (
-                <span style={{ marginLeft: 'auto', fontSize: 9.5, color: 'rgba(100,116,139,0.55)', fontFamily: 'monospace' }}>
-                  {r.confidence}/10
-                </span>
-              )}
-            </div>
-            <p style={{ color: 'rgba(203,213,225,0.88)', fontSize: 12.5, lineHeight: 1.65, margin: 0 }}>
-              {r.opinion}
-            </p>
-            {r.confidence !== undefined && (
-              <div style={{ display: 'flex', gap: 3, marginTop: 8 }}>
-                {Array.from({ length: 10 }, (_, i) => (
-                  <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: i < r.confidence! ? `${agent.color}cc` : 'rgba(255,255,255,0.07)' }} />
-                ))}
-              </div>
-            )}
-          </div>
-        )
-      })}
-    </>
-  )
-}
-
-function ResultView({ business, result, context, lat, lng, onReset, strings, lang }: {
+function ResultView({ business, result, context, lat, lng, onReset, strings, lang, agentResults, agentStatus }: {
   business: string
   result: AnalysisResult
   context: PlacesContext | null
@@ -461,8 +659,12 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, lan
   onReset: () => void
   strings: Strings
   lang: Lang
+  agentResults: Record<string, AgentResult>
+  agentStatus: Record<string, AgentStatus>
 }) {
   const [chartTab, setChartTab] = useState<ChartTab>('dual')
+  const agentResultsRef = useRef<HTMLDivElement>(null)
+  const prevAgentCountRef = useRef(0)
   const color = scoreColor(result.score)
 
   const chartFactors = (result.factors ?? []).map(f => ({
@@ -473,12 +675,27 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, lan
   const chartTotal = chartFactors.reduce((s, f) => s + f.score, 0)
   const chartMax = chartFactors.reduce((s, f) => s + f.max, 0)
 
+  const completedAgents = AGENT_TOOLBAR_DEFS.filter(a => agentResults[a.key])
+  const loadingAgents = AGENT_TOOLBAR_DEFS.filter(a => agentStatus[a.key] === 'loading')
+  const hasAgentSection = completedAgents.length > 0 || loadingAgents.length > 0
+
+  useEffect(() => {
+    const prevCount = prevAgentCountRef.current
+    const nowCount = Object.keys(agentResults).length + loadingAgents.length
+    if (nowCount > prevCount) {
+      setTimeout(() => {
+        agentResultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 150)
+    }
+    prevAgentCountRef.current = nowCount
+  }, [agentResults, loadingAgents.length])
+
   return (
     <div className="anim-scale-in flex flex-col h-full overflow-hidden">
       {/* Score header */}
       <div
         className="shrink-0 px-5 py-4 relative overflow-hidden"
-        style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+        style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(7,9,13,0.88)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}
       >
         {/* Ambient score glow */}
         <div style={{
@@ -512,11 +729,10 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, lan
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center shrink-0">
             <span className="text-3xl font-bold tabular-nums" style={{ color, fontFamily: 'monospace' }}>
               {result.score}%
             </span>
-            <ScoreRingMini score={result.score} />
           </div>
         </div>
       </div>
@@ -524,28 +740,14 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, lan
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto">
 
-        {/* Map layer toggles */}
-        <LayerButtonsSection lang={lang} />
-
-        {/* Per-agent analysis buttons + inline results */}
-        <AgentButtonsSection
-          business={business}
-          result={result}
-          context={context}
-          lat={lat}
-          lng={lng}
-          lang={lang}
-          strings={strings}
-        />
-
         {/* Warnings */}
         {result.luxuryMismatch && (
-          <div className="px-5 py-2.5" style={{ background: 'rgba(180,130,0,0.08)', borderBottom: '1px solid rgba(180,130,0,0.15)' }}>
+          <div className="px-5 py-2.5" style={{ background: 'rgba(180,130,0,0.12)', borderBottom: '1px solid rgba(180,130,0,0.2)' }}>
             <p className="text-[11px] font-medium" style={{ color: '#fbbf24' }}>⚠ {strings.WARN_LUXURY_MISMATCH}</p>
           </div>
         )}
         {(context?.dominantCompetitors ?? []).map((dc, i) => (
-          <div key={i} className="px-5 py-2.5" style={{ background: 'rgba(160,0,0,0.08)', borderBottom: '1px solid rgba(160,0,0,0.15)' }}>
+          <div key={i} className="px-5 py-2.5" style={{ background: 'rgba(160,0,0,0.12)', borderBottom: '1px solid rgba(160,0,0,0.2)' }}>
             <p className="text-[11px] font-medium" style={{ color: '#f87171' }}>
               {strings.WARN_DOMINANT_COMPETITOR.replace('{name}', dc.name).replace('{dist}', String(dc.distance))}
             </p>
@@ -558,12 +760,12 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, lan
             className="px-5 py-4"
             style={{
               borderBottom: '1px solid rgba(255,255,255,0.05)',
-              background: 'rgba(7,9,13,0.35)',
+              background: 'rgba(7,9,13,0.82)',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
             }}
           >
-            <p className="text-sm leading-relaxed" style={{ color: 'rgba(203,213,225,0.90)' }}>
+            <p className="text-sm leading-relaxed" style={{ color: 'rgba(203,213,225,0.92)' }}>
               {result.summary}
             </p>
           </div>
@@ -571,8 +773,8 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, lan
 
         {/* Pros */}
         {result.pros.length > 0 && (
-          <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(7,9,13,0.3)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
-            <p className="text-[11px] uppercase tracking-[0.2em] mb-2.5 font-medium" style={{ color: 'rgba(100,116,139,0.65)' }}>
+          <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(7,9,13,0.78)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+            <p className="text-[11px] uppercase tracking-[0.2em] mb-2.5 font-medium" style={{ color: 'rgba(100,116,139,0.75)' }}>
               {strings.RESULT_PROS}
             </p>
             <ul className="space-y-1.5">
@@ -581,16 +783,16 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, lan
                   key={i}
                   className="flex items-start gap-2 text-[13px] leading-snug rounded-lg px-3 py-2"
                   style={{
-                    background: 'rgba(52,211,153,0.05)',
-                    border: '1px solid rgba(52,211,153,0.1)',
-                    borderLeft: '2px solid rgba(52,211,153,0.45)',
+                    background: 'rgba(52,211,153,0.07)',
+                    border: '1px solid rgba(52,211,153,0.15)',
+                    borderLeft: '2px solid rgba(52,211,153,0.5)',
                     animationName: 'fade-up', animationDuration: '0.4s',
                     animationTimingFunction: 'cubic-bezier(0.16,1,0.3,1)',
                     animationFillMode: 'both', animationDelay: `${i * 55}ms`,
                   }}
                 >
                   <ProIcon color="#34d399" />
-                  <span style={{ color: 'rgba(203,213,225,0.85)' }}>{p}</span>
+                  <span style={{ color: 'rgba(220,230,240,0.92)' }}>{p}</span>
                 </li>
               ))}
             </ul>
@@ -599,8 +801,8 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, lan
 
         {/* Cons */}
         {result.cons.length > 0 && (
-          <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(7,9,13,0.3)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
-            <p className="text-[11px] uppercase tracking-[0.2em] mb-2.5 font-medium" style={{ color: 'rgba(100,116,139,0.65)' }}>
+          <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(7,9,13,0.78)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+            <p className="text-[11px] uppercase tracking-[0.2em] mb-2.5 font-medium" style={{ color: 'rgba(100,116,139,0.75)' }}>
               {strings.RESULT_CONS}
             </p>
             <ul className="space-y-1.5">
@@ -609,16 +811,16 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, lan
                   key={i}
                   className="flex items-start gap-2 text-[13px] leading-snug rounded-lg px-3 py-2"
                   style={{
-                    background: 'rgba(248,113,113,0.05)',
-                    border: '1px solid rgba(248,113,113,0.1)',
-                    borderLeft: '2px solid rgba(248,113,113,0.45)',
+                    background: 'rgba(248,113,113,0.07)',
+                    border: '1px solid rgba(248,113,113,0.15)',
+                    borderLeft: '2px solid rgba(248,113,113,0.5)',
                     animationName: 'fade-up', animationDuration: '0.4s',
                     animationTimingFunction: 'cubic-bezier(0.16,1,0.3,1)',
                     animationFillMode: 'both', animationDelay: `${i * 55}ms`,
                   }}
                 >
                   <ConIcon color="#f87171" />
-                  <span style={{ color: 'rgba(203,213,225,0.85)' }}>{c}</span>
+                  <span style={{ color: 'rgba(220,230,240,0.92)' }}>{c}</span>
                 </li>
               ))}
             </ul>
@@ -627,12 +829,9 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, lan
 
         {/* Factor breakdown — chart tabs */}
         {chartFactors.length > 0 && (
-          <div style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(7,9,13,0.3)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
-            {/* Tab strip */}
-            <div
-              className="px-6 pt-5 pb-0 flex items-center justify-between"
-            >
-              <p className="text-[11px] uppercase tracking-[0.2em] font-medium" style={{ color: 'rgba(100,116,139,0.65)' }}>
+          <div style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(7,9,13,0.78)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+            <div className="px-6 pt-5 pb-0 flex items-center justify-between">
+              <p className="text-[11px] uppercase tracking-[0.2em] font-medium" style={{ color: 'rgba(100,116,139,0.75)' }}>
                 {strings.RESULT_FACTOR_BREAKDOWN}
               </p>
               <div className="flex gap-0.5 rounded-lg overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
@@ -651,7 +850,6 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, lan
                 ))}
               </div>
             </div>
-            {/* Chart */}
             {chartTab === 'dual' && <DualChartDisplay factors={chartFactors} total={chartTotal} maxTotal={chartMax} />}
             {chartTab === 'bars' && <BarsChartDisplay factors={chartFactors} accent={BLUE} />}
             {chartTab === 'ring' && <ScoreRingDisplay factors={chartFactors} total={chartTotal} maxTotal={chartMax} accent={BLUE} />}
@@ -660,8 +858,8 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, lan
 
         {/* OSM data grid */}
         {context && (
-          <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(7,9,13,0.3)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
-            <p className="text-[11px] uppercase tracking-[0.2em] mb-3 font-medium" style={{ color: 'rgba(100,116,139,0.65)' }}>
+          <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(7,9,13,0.78)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+            <p className="text-[11px] uppercase tracking-[0.2em] mb-3 font-medium" style={{ color: 'rgba(100,116,139,0.75)' }}>
               {strings.RESULT_OSM_TITLE}
             </p>
             <div className="grid grid-cols-3 gap-2">
@@ -687,8 +885,161 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, lan
           </div>
         )}
 
+        {/* Agent cards — loading skeletons + completed results */}
+        {hasAgentSection && (
+          <div ref={agentResultsRef}>
+            <p style={{ padding: '10px 16px 4px', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(100,116,139,0.5)', fontWeight: 600, background: 'rgba(7,9,13,0.82)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', margin: 0 }}>
+              {strings.EXPERT_PANEL_TITLE}
+            </p>
+
+            {/* Loading skeletons (new grid layout) */}
+            {loadingAgents.map((agent) => {
+              const purpose = lang === 'az' ? agent.descAz : agent.descEn
+              return (
+                <div key={`loading-${agent.key}`} style={{
+                  background: 'rgba(7,9,13,0.82)',
+                  backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  borderLeft: `3px solid ${agent.color}55`,
+                }}>
+                  {/* Header row */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'auto 1fr auto',
+                    gap: 10, alignItems: 'center',
+                    padding: '12px 14px',
+                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  }}>
+                    <AgentLogo emoji={agent.emoji} color={agent.color} />
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: 11.5, fontWeight: 700, color: agent.color, letterSpacing: '-0.01em', margin: 0, lineHeight: 1.25 }}>
+                        {lang === 'az' ? agent.labelAz : agent.labelEn}
+                      </p>
+                      <p style={{ fontSize: 10.5, color: 'rgba(148,163,184,0.65)', margin: '2px 0 0', lineHeight: 1.3 }}>
+                        {purpose}
+                      </p>
+                    </div>
+                    <span style={{ display: 'inline-block', width: 16, height: 16, borderRadius: '50%', border: `2px solid ${agent.color}33`, borderTopColor: agent.color, animation: 'spin-arc 0.8s linear infinite' }} />
+                  </div>
+
+                  {/* Body: shimmer text + diagram */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 88px', gap: 12, padding: '12px 14px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                      {[94, 84, 72, 58].map((w, i) => (
+                        <div key={i} style={{
+                          height: 8, borderRadius: 4,
+                          width: `${w}%`,
+                          background: `linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.13) 50%, rgba(255,255,255,0.04) 100%)`,
+                          backgroundSize: '200% 100%',
+                          animation: `shimmer 1.6s ease-in-out ${i * 0.18}s infinite`,
+                        }} />
+                      ))}
+                      <LoadingMessages lang={lang} color={agent.color} />
+                    </div>
+                    {/* Diagram skeleton */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+                      <div style={{
+                        width: 60, height: 60, borderRadius: '50%',
+                        border: `2px solid ${agent.color}22`,
+                        borderTopColor: `${agent.color}99`,
+                        animation: 'spin-arc 1.4s linear infinite',
+                      }} />
+                      <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 18 }}>
+                        {[0.45, 0.7, 0.55, 0.85, 0.6].map((h, i) => (
+                          <span key={i} style={{
+                            width: 4, height: `${h * 100}%`, borderRadius: 1.5,
+                            background: `${agent.color}22`,
+                            animation: `shimmer 1.4s ease-in-out ${i * 0.15}s infinite`,
+                            backgroundImage: `linear-gradient(90deg, ${agent.color}22 0%, ${agent.color}66 50%, ${agent.color}22 100%)`,
+                            backgroundSize: '200% 100%',
+                          }} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+
+            {/* Completed cards (new grid layout) */}
+            {completedAgents.map((agent) => {
+              const r = agentResults[agent.key]!
+              const purpose = lang === 'az' ? agent.descAz : agent.descEn
+              const points = splitOpinionPoints(r.opinion)
+              const confidence = r.confidence ?? 0
+              return (
+                <div key={agent.key} style={{
+                  background: 'rgba(7,9,13,0.82)',
+                  backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  borderLeft: `3px solid ${agent.color}`,
+                }} className="anim-fade-up">
+                  {/* Header row: logo | purpose | score */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'auto 1fr auto',
+                    gap: 10, alignItems: 'center',
+                    padding: '12px 14px',
+                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  }}>
+                    <AgentLogo emoji={agent.emoji} color={agent.color} />
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: 11.5, fontWeight: 700, color: agent.color, letterSpacing: '-0.01em', margin: 0, lineHeight: 1.25 }}>
+                        {r.role}
+                      </p>
+                      <p style={{ fontSize: 10.5, color: 'rgba(148,163,184,0.65)', margin: '2px 0 0', lineHeight: 1.3 }}>
+                        {purpose}
+                      </p>
+                    </div>
+                    {r.confidence !== undefined && (
+                      <div style={{
+                        padding: '4px 10px', borderRadius: 999,
+                        background: `${agent.color}22`,
+                        border: `1px solid ${agent.color}66`,
+                        color: agent.color,
+                        fontSize: 11, fontWeight: 700, fontFamily: 'monospace',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {confidence}/10
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Body: bullet text */}
+                  <div style={{ padding: '12px 14px' }}>
+                    <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {points.map((p, i) => (
+                        <li key={i} style={{
+                          display: 'flex', alignItems: 'flex-start', gap: 8,
+                          fontSize: 13.5, lineHeight: 1.6,
+                          color: 'rgba(220,228,238,0.94)',
+                        }}>
+                          <span style={{
+                            display: 'inline-block', flexShrink: 0, marginTop: 7,
+                            width: 5, height: 5, borderRadius: '50%',
+                            background: agent.color, boxShadow: `0 0 6px ${agent.color}aa`,
+                          }} />
+                          <span>{p}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Diagnostic charts strip */}
+                  <div style={{
+                    display: 'flex', gap: 8,
+                    padding: '4px 14px 14px',
+                  }}>
+                    {getDiagnosticCharts(agent.key, agent.color, result, context, lang)}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
         {/* Actions */}
-        <div className="px-5 py-4 flex gap-2.5">
+        <div className="px-5 py-4 flex gap-2.5" style={{ background: 'rgba(7,9,13,0.82)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
           <GlowingButton onClick={onReset} style={{ flex: 1 }}>
             <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', fontSize: 13, fontWeight: 700, color: '#93c5fd' }}>
               <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -1010,6 +1361,8 @@ export default function DesktopDashboard({
   onOpenHistory,
   strings,
   lang,
+  agentResults,
+  agentStatus,
 }: Props) {
   const [view, setView] = useState<PanelView>('idle')
 
@@ -1096,6 +1449,8 @@ export default function DesktopDashboard({
           onReset={handleReset}
           strings={strings}
           lang={lang}
+          agentResults={agentResults}
+          agentStatus={agentStatus}
         />
       )}
 

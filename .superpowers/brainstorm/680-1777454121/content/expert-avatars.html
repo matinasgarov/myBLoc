@@ -1,0 +1,165 @@
+<h2>Expert Panel: Character Avatar Style</h2>
+<p class="subtitle">4 agents analyze your location: Data Analyst, Risk Advisor, Location Expert, Foot Traffic Expert. How should their "character" feel?</p>
+
+<div class="cards" style="gap:18px; margin-top:20px;">
+
+  <!-- Option A: Emoji in glowing rings -->
+  <div class="card" data-choice="emoji-rings" onclick="toggleSelect(this)" style="max-width:260px;">
+    <div class="card-image" style="padding:16px; background:#080C11; border-radius:8px 8px 0 0;">
+      <div style="display:flex; gap:10px; flex-direction:column; font-family:-apple-system,sans-serif;">
+
+        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-left:3px solid #f59e0b; border-radius:10px; padding:12px 14px; display:flex; gap:10px; align-items:flex-start;">
+          <div style="width:38px;height:38px;border-radius:50%;background:rgba(245,158,11,0.15);border:2px solid rgba(245,158,11,0.4);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 0 12px rgba(245,158,11,0.25);">📊</div>
+          <div>
+            <div style="color:rgba(203,213,225,0.9);font-size:12px;font-weight:600;">Data Analyst</div>
+            <div style="color:rgba(148,163,184,0.7);font-size:11px;margin-top:3px;line-height:1.5;">Mərkəzi ərazidə 14 rəqib aşkar edilib. Sıxlıq yüksəkdir.</div>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-left:3px solid #ef4444; border-radius:10px; padding:12px 14px; display:flex; gap:10px; align-items:flex-start;">
+          <div style="width:38px;height:38px;border-radius:50%;background:rgba(239,68,68,0.15);border:2px solid rgba(239,68,68,0.4);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 0 12px rgba(239,68,68,0.25);">⚠️</div>
+          <div>
+            <div style="color:rgba(203,213,225,0.9);font-size:12px;font-weight:600;">Risk Advisor</div>
+            <div style="color:rgba(148,163,184,0.7);font-size:11px;margin-top:3px;line-height:1.5;">Yüksək kirayə zolağı gəlir marjasını sıxışdıra bilər.</div>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-left:3px solid #3b82f6; border-radius:10px; padding:12px 14px; display:flex; gap:10px; align-items:flex-start;">
+          <div style="width:38px;height:38px;border-radius:50%;background:rgba(59,130,246,0.15);border:2px solid rgba(59,130,246,0.4);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 0 12px rgba(59,130,246,0.25);">🗺️</div>
+          <div>
+            <div style="color:rgba(203,213,225,0.9);font-size:12px;font-weight:600;">Location Expert</div>
+            <div style="color:rgba(148,163,184,0.7);font-size:11px;margin-top:3px;line-height:1.5;">İctimai nəqliyyata yaxınlıq əla üstünlükdür.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Emoji Rings</h3>
+      <p>Large emoji in glowing circular frames, each tinted with the agent's color. Simple, expressive, familiar.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Abstract geometric avatars -->
+  <div class="card" data-choice="geometric" onclick="toggleSelect(this)" style="max-width:260px;">
+    <div class="card-image" style="padding:16px; background:#080C11; border-radius:8px 8px 0 0;">
+      <div style="display:flex; gap:10px; flex-direction:column; font-family:-apple-system,sans-serif;">
+
+        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-left:3px solid #f59e0b; border-radius:10px; padding:12px 14px; display:flex; gap:10px; align-items:flex-start;">
+          <!-- Geometric: bar chart bars -->
+          <div style="width:38px;height:38px;border-radius:8px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);display:flex;align-items:flex-end;justify-content:center;gap:2px;padding:7px 6px;flex-shrink:0;">
+            <div style="width:5px;background:rgba(245,158,11,0.5);border-radius:2px;height:60%;"></div>
+            <div style="width:5px;background:rgba(245,158,11,0.7);border-radius:2px;height:85%;"></div>
+            <div style="width:5px;background:rgba(245,158,11,0.9);border-radius:2px;height:100%;"></div>
+            <div style="width:5px;background:rgba(245,158,11,0.6);border-radius:2px;height:70%;"></div>
+          </div>
+          <div>
+            <div style="color:rgba(203,213,225,0.9);font-size:12px;font-weight:600;">Data Analyst</div>
+            <div style="color:rgba(148,163,184,0.7);font-size:11px;margin-top:3px;line-height:1.5;">Mərkəzi ərazidə 14 rəqib aşkar edilib. Sıxlıq yüksəkdir.</div>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-left:3px solid #ef4444; border-radius:10px; padding:12px 14px; display:flex; gap:10px; align-items:flex-start;">
+          <!-- Geometric: warning triangle -->
+          <div style="width:38px;height:38px;border-radius:8px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(239,68,68,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <div>
+            <div style="color:rgba(203,213,225,0.9);font-size:12px;font-weight:600;">Risk Advisor</div>
+            <div style="color:rgba(148,163,184,0.7);font-size:11px;margin-top:3px;line-height:1.5;">Yüksək kirayə zolağı gəlir marjasını sıxışdıra bilər.</div>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-left:3px solid #3b82f6; border-radius:10px; padding:12px 14px; display:flex; gap:10px; align-items:flex-start;">
+          <!-- Geometric: map pin -->
+          <div style="width:38px;height:38px;border-radius:8px;background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="18" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(59,130,246,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <div>
+            <div style="color:rgba(203,213,225,0.9);font-size:12px;font-weight:600;">Location Expert</div>
+            <div style="color:rgba(148,163,184,0.7);font-size:11px;margin-top:3px;line-height:1.5;">İctimai nəqliyyata yaxınlıq əla üstünlükdür.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Geometric Icons</h3>
+      <p>Rounded square "chip" avatars with a role-specific SVG icon inside. Data-driven, minimal, professional.</p>
+    </div>
+  </div>
+
+  <!-- Option C: Illustrated character silhouettes -->
+  <div class="card" data-choice="illustrated" onclick="toggleSelect(this)" style="max-width:260px;">
+    <div class="card-image" style="padding:16px; background:#080C11; border-radius:8px 8px 0 0;">
+      <div style="display:flex; gap:10px; flex-direction:column; font-family:-apple-system,sans-serif;">
+
+        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-left:3px solid #f59e0b; border-radius:10px; padding:12px 14px; display:flex; gap:10px; align-items:flex-start;">
+          <!-- Character: analyst with glasses -->
+          <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,rgba(245,158,11,0.3),rgba(245,158,11,0.1));border:2px solid rgba(245,158,11,0.5);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;overflow:hidden;">
+            <svg width="26" height="28" viewBox="0 0 26 28" fill="none">
+              <!-- head -->
+              <circle cx="13" cy="9" r="6" fill="rgba(245,158,11,0.4)" stroke="rgba(245,158,11,0.7)" stroke-width="1"/>
+              <!-- glasses -->
+              <rect x="8" y="8" width="4" height="2.5" rx="1" stroke="rgba(245,158,11,0.9)" stroke-width="1" fill="none"/>
+              <rect x="14" y="8" width="4" height="2.5" rx="1" stroke="rgba(245,158,11,0.9)" stroke-width="1" fill="none"/>
+              <line x1="12" y1="9.2" x2="14" y2="9.2" stroke="rgba(245,158,11,0.9)" stroke-width="0.8"/>
+              <!-- body -->
+              <path d="M5 28 Q5 18 13 18 Q21 18 21 28" fill="rgba(245,158,11,0.25)" stroke="rgba(245,158,11,0.5)" stroke-width="1"/>
+              <!-- tie -->
+              <path d="M12 18 L11.5 23 L13 24.5 L14.5 23 L14 18" fill="rgba(245,158,11,0.6)"/>
+            </svg>
+          </div>
+          <div>
+            <div style="color:rgba(203,213,225,0.9);font-size:12px;font-weight:600;">Data Analyst</div>
+            <div style="color:rgba(148,163,184,0.7);font-size:11px;margin-top:3px;line-height:1.5;">Mərkəzi ərazidə 14 rəqib aşkar edilib. Sıxlıq yüksəkdir.</div>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-left:3px solid #ef4444; border-radius:10px; padding:12px 14px; display:flex; gap:10px; align-items:flex-start;">
+          <!-- Character: risk advisor with hard hat -->
+          <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,rgba(239,68,68,0.3),rgba(239,68,68,0.1));border:2px solid rgba(239,68,68,0.5);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">
+            <svg width="26" height="28" viewBox="0 0 26 28" fill="none">
+              <!-- head -->
+              <circle cx="13" cy="10" r="5.5" fill="rgba(239,68,68,0.35)" stroke="rgba(239,68,68,0.6)" stroke-width="1"/>
+              <!-- hard hat -->
+              <ellipse cx="13" cy="6" rx="7" ry="2.5" fill="rgba(239,68,68,0.7)" stroke="rgba(239,68,68,0.9)" stroke-width="1"/>
+              <rect x="7" y="7.5" width="12" height="1.5" rx="0.5" fill="rgba(239,68,68,0.6)"/>
+              <!-- body -->
+              <path d="M5 28 Q5 19 13 19 Q21 19 21 28" fill="rgba(239,68,68,0.2)" stroke="rgba(239,68,68,0.45)" stroke-width="1"/>
+            </svg>
+          </div>
+          <div>
+            <div style="color:rgba(203,213,225,0.9);font-size:12px;font-weight:600;">Risk Advisor</div>
+            <div style="color:rgba(148,163,184,0.7);font-size:11px;margin-top:3px;line-height:1.5;">Yüksək kirayə zolağı gəlir marjasını sıxışdıra bilər.</div>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-left:3px solid #3b82f6; border-radius:10px; padding:12px 14px; display:flex; gap:10px; align-items:flex-start;">
+          <!-- Character: location expert with cap -->
+          <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,rgba(59,130,246,0.3),rgba(59,130,246,0.1));border:2px solid rgba(59,130,246,0.5);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">
+            <svg width="26" height="28" viewBox="0 0 26 28" fill="none">
+              <!-- head -->
+              <circle cx="13" cy="10" r="5.5" fill="rgba(59,130,246,0.35)" stroke="rgba(59,130,246,0.6)" stroke-width="1"/>
+              <!-- cap -->
+              <path d="M7 9 Q13 4 19 9" stroke="rgba(59,130,246,0.9)" stroke-width="1.5" fill="rgba(59,130,246,0.5)"/>
+              <rect x="5.5" y="8.5" width="15" height="1.5" rx="0.5" fill="rgba(59,130,246,0.7)"/>
+              <!-- body -->
+              <path d="M5 28 Q5 19 13 19 Q21 19 21 28" fill="rgba(59,130,246,0.2)" stroke="rgba(59,130,246,0.45)" stroke-width="1"/>
+            </svg>
+          </div>
+          <div>
+            <div style="color:rgba(203,213,225,0.9);font-size:12px;font-weight:600;">Location Expert</div>
+            <div style="color:rgba(148,163,184,0.7);font-size:11px;margin-top:3px;line-height:1.5;">İctimai nəqliyyata yaxınlıq əla üstünlükdür.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Character Silhouettes</h3>
+      <p>Minimal SVG person silhouettes with role-specific accessories (glasses, hard hat, cap). More personality, playful-yet-professional.</p>
+    </div>
+  </div>
+
+</div>

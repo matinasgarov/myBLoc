@@ -1,4 +1,4 @@
-import { fetchPlacesContext } from '@/lib/overpass'
+import { clearOverpassMemoryCacheForTests, fetchPlacesContext } from '@/lib/overpass'
 
 jest.mock('@/lib/az-competitors', () => ({
   countAzCompetitors: () => -1,
@@ -25,13 +25,17 @@ const mockOSMResponse = {
 
 describe('fetchPlacesContext', () => {
   beforeEach(() => {
+    clearOverpassMemoryCacheForTests()
     ;(global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => mockOSMResponse,
     })
   })
 
-  afterEach(() => jest.clearAllMocks())
+  afterEach(() => {
+    clearOverpassMemoryCacheForTests()
+    jest.clearAllMocks()
+  })
 
   it('returns correct totalBusinesses count', async () => {
     const result = await fetchPlacesContext(40.4093, 49.8671, 'restaurant')
@@ -85,7 +89,7 @@ describe('fetchPlacesContext', () => {
   })
 
   it('returns degraded result on Overpass API error instead of throwing', async () => {
-    ;(global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 429 })
+    ;(global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 500 })
     const result = await fetchPlacesContext(40.4093, 49.8671, 'restaurant')
     expect(result.totalBusinesses).toBe(0)
     expect(result.competitors).toBe(0)

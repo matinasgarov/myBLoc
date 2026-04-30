@@ -75,6 +75,11 @@ body {
   to { transform: rotate(360deg); }
 }
 
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 .anim-fade-up  { animation: fade-up  0.45s cubic-bezier(0.16,1,0.3,1) both; }
 .anim-scale-in { animation: scale-in 0.4s  cubic-bezier(0.16,1,0.3,1) both; }
 
@@ -179,3 +184,132 @@ body {
 .glowing-card-bottoml { bottom: 0; left: 15%;  right: 15%; height: 1px; }
 .glowing-card-leftl   { left: 0;   top: 15%;   bottom: 15%; width: 1px; background: linear-gradient(180deg, transparent, rgba(99,102,241,0.4), transparent); }
 .glowing-card-rightl  { right: 0;  top: 15%;   bottom: 15%; width: 1px; background: linear-gradient(180deg, transparent, rgba(99,102,241,0.4), transparent); }
+
+.map-tool-rail p {
+  display: none;
+}
+
+.map-tool-grip {
+  width: 34px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: grab;
+  border-radius: 6px;
+  background: linear-gradient(145deg, rgba(4, 10, 26, 0.9), rgba(12, 29, 64, 0.9));
+  border: 1px solid rgba(59, 130, 246, 0.28);
+}
+
+.map-tool-grip:active {
+  cursor: grabbing;
+}
+
+.map-tool-grip span {
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(147, 197, 253, 0.76);
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.5);
+}
+
+.map-tool-rail > div:not([style*="height: 1px"]),
+.map-tool-rail > div > div {
+  display: contents !important;
+}
+
+.map-tool-rail button {
+  position: relative;
+  width: 34px !important;
+  height: 34px;
+  min-width: 34px;
+  padding: 0 !important;
+  justify-content: center;
+  text-align: center !important;
+  border-radius: 7px !important;
+  overflow: visible;
+  background: linear-gradient(145deg, #050b1d 0%, #0b1731 52%, #102044 100%) !important;
+  border-color: rgba(30, 64, 175, 0.55) !important;
+  color: #8fb8ff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(147, 197, 253, 0.08),
+    0 8px 18px rgba(2, 6, 23, 0.36);
+}
+
+.map-tool-rail button:hover,
+.map-tool-rail button:focus-visible {
+  background: linear-gradient(145deg, #07112a 0%, #10255a 58%, #17346f 100%) !important;
+  border-color: rgba(96, 165, 250, 0.58) !important;
+  color: #dbeafe !important;
+}
+
+.map-tool-rail button > span:first-child {
+  flex: 0 0 auto;
+  font-size: 13px !important;
+  line-height: 1;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  overflow: hidden;
+  color: inherit !important;
+}
+
+.map-custom-logo {
+  width: 23px;
+  height: 23px;
+  display: block;
+  filter: drop-shadow(0 3px 8px rgba(30, 64, 175, 0.28));
+}
+
+.map-tool-rail button > span:nth-child(2) {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  z-index: 2;
+  min-width: max-content;
+  max-width: 220px;
+  transform: translate(4px, -50%);
+  opacity: 0 !important;
+  visibility: hidden;
+  pointer-events: none;
+  padding: 7px 10px;
+  border-radius: 7px;
+  background: rgba(7, 9, 13, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+  color: rgba(226, 232, 240, 0.92);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: normal;
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+
+.map-tool-rail button > span:nth-child(2)::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  transform: translateY(-50%) rotate(45deg);
+  background: rgba(7, 9, 13, 0.94);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.map-tool-rail button:hover > span:nth-child(2),
+.map-tool-rail button:focus-visible > span:nth-child(2) {
+  opacity: 1 !important;
+  visibility: visible;
+  transform: translate(0, -50%);
+}
+
+.map-tool-rail button > span:nth-child(n + 3) {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+}

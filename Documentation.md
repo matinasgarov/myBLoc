@@ -8,13 +8,13 @@
 
 1. **Landing page** — introduces the app with an AI disclaimer before anything else; language toggle (AZ/EN) persists across sessions
 2. **Map view** — user clicks any point in Azerbaijan to drop a pin (OpenStreetMap, Leaflet); location search bar (Nominatim) lets users fly to a place by name
-3. **Map layer controls** — 4 toggleable overlay buttons (Bus Stops, Metro, Transport, Competitors) appear on the map in result state; each queries Overpass and renders colored dot markers; layers reset on new pin drop
+3. **Map tool rail** — a compact, draggable icon toolbar appears on the map in result state, combining 6 expert-agent buttons and 4 map-layer toggles (Bus Stops, Metro, Transport, Competitors); each layer queries Overpass and renders colored dot markers; layers reset on new pin drop
 4. **Business input** — modal asks what kind of business they plan to open (validated: min 2 chars, must contain letters)
 5. **Data collection** — app queries OpenStreetMap (Overpass API) + AZ government business dataset for real businesses within 500 m of the pin; also looks up nearest Baku metro station and urban tier from static datasets
 6. **Scoring** — a deterministic 7-factor algorithm calculates a 0–95 score from the collected data, returning both the score and a per-factor breakdown
 7. **AI analysis** — Groq AI receives the score and OSM context, returns pros/cons/verdict in the user's active language (AZ or EN)
-8. **Desktop dashboard** — right-panel UI on desktop showing score header, agent toolbar, chart tabs (dual/bars/ring), OSM data grid, inline expert panel, and action buttons; all backed by a background image with glassmorphism layers
-9. **Expert Panel** — 6 AI agents with professional consultative personas independently analyse the location; each shows a confidence meter and SVG avatar; agents can be toggled via the agent toolbar
+8. **Desktop dashboard** — right-panel UI on desktop showing score header (percentage only), chart tabs (dual/bars/ring), OSM data grid, agent result cards, and action buttons; all backed by a background image with glassmorphism layers
+9. **Expert Panel** — 6 AI agents with professional consultative personas; clicking any agent button on the map tool rail fetches a single agent's analysis. Loading state shows a shimmer skeleton with cycling status phrases; completed cards render with a circular agent logo, purpose tagline, score pill, bullet-pointed opinion (13.5 px), and a strip of 3 domain-specific diagnostic charts (saturation gauge, volatility sparkline, exposure stacked bar, etc.)
 10. **PDF export** — downloads a formatted A4 PDF report with logo, score pill, pros/cons, factor bars, and OSM data grid
 11. **History** — past analyses are stored in `localStorage` and viewable in a sidebar
 12. **Warning banners** — amber when business type is unrecognized; red when a dominant competitor chain is within 100 m
@@ -58,13 +58,13 @@ hanimenebiznes/
 │       ├── layers/route.ts      # POST /api/layers — Overpass queries for map layer overlays
 │       └── feedback/route.ts    # POST /api/feedback
 ├── components/
-│   ├── Map.tsx                  # Leaflet map, SSR-disabled, ref-stable callback, layer panel toggle UI
+│   ├── Map.tsx                  # Leaflet map, SSR-disabled, ref-stable callback, draggable map tool rail (agents + layers)
 │   ├── MapErrorBoundary.tsx     # Class error boundary wrapping Map
 │   ├── LandingPage.tsx          # Splash/intro screen with language toggle
 │   ├── BusinessInputModal.tsx   # Business type input modal
 │   ├── LoadingOverlay.tsx       # 4-step loading animation
 │   ├── ResultSheet.tsx          # Score display with expandable details (mobile)
-│   ├── DesktopDashboard.tsx     # Right-panel dashboard (desktop): score header, agent toolbar, charts, OSM grid, expert panel
+│   ├── DesktopDashboard.tsx     # Right-panel dashboard (desktop): score header, charts, OSM grid, agent result cards with diagnostic charts
 │   ├── ExpertPanel.tsx          # 6-agent AI expert panel with SVG avatars, confidence meters, streaming opinions
 │   ├── Charts.tsx               # DualChartDisplay, BarsChartDisplay, ScoreRingDisplay, RadarChartDisplay
 │   ├── LocationSearch.tsx       # Nominatim geocoding search input overlaid on the map
@@ -252,14 +252,15 @@ All agents use a **professional/consultative tone** — they write as senior con
 - The component uses a cache ref (`cacheRef`) to avoid re-fetching when the panel re-opens for the same result
 - Skeleton loader count matches the number of selected agents
 
-### Agent Toolbar (`components/DesktopDashboard.tsx → AgentToolbar`)
+### Map Tool Rail (`components/Map.tsx`)
 
-A fixed strip rendered between the score header and the scrollable body in `ResultView`:
-- 6 pill buttons, one per agent
-- **Hover**: glassmorphism tooltip (blur(16px)) with agent name and description
-- **Click**: toggles agent participation. Minimum 1 agent enforced (last active agent cannot be deselected)
-- Active state: gradient background + colored border + glow shadow using the agent's color
-- `selectedAgents` Set is passed to `ExpertPanel` as an array prop
+The agent buttons (and the map-layer toggles) are no longer rendered in the dashboard — they now live as a single compact, draggable icon rail overlaid on the Leaflet map. Visible only in result state (`showOverlay={appState === 'result'}`). See **Map Tool Rail** further down for full mechanics.
+
+Per-agent click flow:
+- `handleAgentClick(agentKey)` in `app/page.tsx` POSTs to `/api/expert-panel` with `selectedAgents: [agentKey]`
+- `agentStatus: Record<string, AgentStatus>` (`'idle' | 'loading' | 'done' | 'error'`) and `agentResults: Record<string, AgentResult>` are lifted to `page.tsx` so the Map (button states) and the Dashboard (result cards) can share them
+- Clicking a button in `'done'` state removes that agent's card and resets the button — no second fetch
+- Dashboard auto-scrolls to the agent results section whenever a new card (loading or completed) appears
 
 ---
 
@@ -278,23 +279,22 @@ The right-side panel has a 4-layer background:
 | View | Shown when |
 |---|---|
 | `idle` | No result yet — shows history/compare/insights buttons |
-| `result` | After analysis — score header + agent toolbar + scrollable body |
+| `result` | After analysis — score header + scrollable body (agent buttons live on the map, not the dashboard) |
 | `compare` | User navigates from idle — side-by-side factor comparison across saved analyses |
 | `insights` | User navigates from idle — metro ridership chart, urban tier scoring reference |
 
 ### Result View sections (top to bottom)
 
-1. **Score header** (fixed/shrink-0) — business name, verdict badge, rent tier, score %, ScoreRingMini
-2. **Agent Toolbar** (fixed/shrink-0) — 6 agent pill buttons, always visible
-3. **Scrollable body**:
+1. **Score header** (fixed/shrink-0) — business name, verdict badge, rent tier, score percentage only (the inline mini score ring was removed; the percentage stands alone)
+2. **Scrollable body**:
    - Luxury mismatch / dominant competitor warnings
    - Summary (blur(12px) glass background)
    - Pros (blur(10px) glass background)
    - Cons (blur(10px) glass background)
    - Factor breakdown chart (tabs: dual ◐ / bars ≡ / ring ○)
    - OSM data grid (6 GlowingStatCards)
-   - Inline Expert Panel
-   - Action buttons (Expert Panel, Reset, PDF)
+   - **Agent result cards** — appear at the bottom as the user clicks agent buttons on the map rail (see *Agent Result Cards* below)
+   - Action buttons (Reset, PDF)
 
 ### Chart Tabs
 
@@ -332,11 +332,29 @@ Used by all chart components and the score ring.
 
 ---
 
-## Map Layer Controls (`app/api/layers/route.ts` + `components/Map.tsx`)
+## Map Tool Rail (`components/Map.tsx` + `app/api/layers/route.ts`)
 
-Visible only in result state (`showLayerPanel={appState === 'result'}`).
+A single compact, draggable icon rail rendered as an absolutely-positioned overlay inside the Leaflet container. Visible only in result state (`showOverlay={appState === 'result'}`). The rail combines two button groups, separated by a hairline divider:
 
-### 4 Layers
+1. **6 expert-agent buttons** (top group) — drive `/api/expert-panel`
+2. **4 map-layer toggles** (bottom group) — drive `/api/layers`
+
+### Layout & styling
+- 46 px wide vertical column, navy gradient background, blue-tinted border
+- Buttons are forced to 34 × 34 px icon-only squares via CSS in `app/globals.css` (`.map-tool-rail button`)
+- Section title `<p>` elements are hidden via `.map-tool-rail p { display: none }` — the labels collapse into hover tooltips (positioned to the right, with a CSS triangle arrow)
+- `.map-tool-grip` (top of the rail) is the dedicated drag handle — three glowing blue dots
+- Custom SVG logos: `MarketAnalystLogo` for the market-analyst agent, `BusLogo` for the bus-stops layer; remaining buttons use `lucide-react` icons (`AlertTriangle`, `BarChart3`, `Building2`, `Bus`, `MapPinned`, `Route`, `Store`, `TrainFront`, `TrafficCone`, `UsersRound`)
+
+### Drag mechanics
+- `handleRailPointerDown` only initiates drag when the event target is inside `.map-tool-grip` — button presses are explicitly excluded so they never trigger `setPointerCapture` (which would swallow the click and leave the button unresponsive)
+- `dragRef.moved` flag + `suppressRailClickRef` prevents the trailing `click` from firing on a button if the user actually dragged
+- `railPosition` state stores `{ left, top }` clamped to the container bounds so the rail can be repositioned anywhere on the map
+
+### Leaflet event isolation
+A dedicated effect calls `L.DomEvent.disableClickPropagation`, `disableScrollPropagation`, and stops `mousedown` / `pointerdown` / `touchstart` from bubbling to the Leaflet container. Without this, clicks on a button were interpreted by Leaflet as the start of a map-pan that never finalized — leaving the map's drag handler stuck open. It also prevented Leaflet's `click` handler from dropping a phantom pin when the user clicked anywhere on the rail.
+
+### Layer button behaviour (`/api/layers`)
 
 | Type | Label | Color | Query radius |
 |---|---|---|---|
@@ -345,17 +363,68 @@ Visible only in result state (`showLayerPanel={appState === 'result'}`).
 | `transport` | Transport Stops | #10b981 emerald | 500 m |
 | `competitors` | Competitors | #ef4444 red | 500 m |
 
-### Behaviour
 - Each layer is independent — toggling one does not affect others
 - **Layer ON → OFF**: markers are removed, active state cleared
 - **Layer OFF → ON**: POST to `/api/layers`, colored dot markers (`divIcon 14×14 px`) added per result element
 - Empty result: toast notification shown for 3 seconds, button stays inactive
-- **New pin drop**: all layer markers cleared, all layers reset to inactive
+- **New pin drop**: all layer markers cleared, all layers reset to inactive (handled in the pin `useEffect` in `Map.tsx`)
 
-### API Route (`POST /api/layers`)
-**Input:** `{ lat, lng, layerType, businessType? }`
-**Output:** `{ elements: Array<{ lat, lng, name? }> }`
-Returns `400` if lat/lng/layerType missing. Returns `200` with empty array on Overpass error (graceful fallback).
+**`POST /api/layers`** — Input: `{ lat, lng, layerType, businessType? }`. Output: `{ elements: Array<{ lat, lng, name? }> }`. Returns 400 if lat/lng/layerType missing; returns 200 with an empty array on Overpass error (graceful fallback).
+
+### Agent button behaviour
+See [Expert Panel](#expert-panel-apiapiexpert-panelroutets--componentsexpertpaneltsx) above. State (`agentStatus`, `agentResults`) is lifted to `app/page.tsx` and shared with the Dashboard so loading and completed cards can render in `ResultView`.
+
+---
+
+## Agent Result Cards (`components/DesktopDashboard.tsx → ResultView`)
+
+Rendered at the bottom of the dashboard's scrollable body, after a user clicks an agent button on the map rail. The dashboard auto-scrolls to this region when a new card appears.
+
+### Loading skeleton
+- Two-row grid: header (logo + role + purpose tagline + spinning arc) and body (4 shimmering text bars + a skeleton diagram)
+- `LoadingMessages` cycles through 6 phrases every 1.6 s (AZ: "Məlumatları toplayıram…", "Şəkilləri analiz edirəm…", "Trafik nümunələrini araşdırıram…", "Məlumatları çarpaz yoxlayıram…", "Bazar nüanslarını qiymətləndirirəm…", "Nəticələri tərtib edirəm…"; EN equivalents: "Gathering data…", "Analyzing patterns…", "Examining traffic flows…", "Cross-referencing datasets…", "Weighing market nuances…", "Compiling insights…")
+- Cycling phrase has a glowing dot in the agent's color and re-animates on each change
+
+### Completed card layout
+
+```
+┌──────────────────────────────────────────────────┐
+│  [○ logo] │ Role title              │  X/10 pill │
+│           │ Purpose tagline         │            │
+├──────────────────────────────────────────────────┤
+│  • opinion sentence 1                            │
+│  • opinion sentence 2                  (text     │
+│  • opinion sentence 3                   13.5 px) │
+│  • opinion sentence 4                            │
+├──────────────────────────────────────────────────┤
+│  ┌─chart─┐  ┌─chart─┐  ┌─chart─┐                 │
+│  │       │  │       │  │       │  diagnostic    │
+│  └───────┘  └───────┘  └───────┘  charts strip   │
+└──────────────────────────────────────────────────┘
+```
+
+- **Logo**: `AgentLogo` — 42 px circle with a radial gradient + glow in the agent's color
+- **Score pill**: `confidence/10` from the API, rendered as a coloured pill (no separate confidence diagram on the right anymore)
+- **Bullets**: `splitOpinionPoints(text)` splits the opinion by sentence punctuation (max 4 points). Body font 13.5 px, line-height 1.6
+- **Diagnostic charts**: 3 mini chart cards per agent, derived from `placesContext` + `result`. Each card has an uppercase label, a chart, and a single-line monospace value
+
+### Chart primitives
+| Primitive | Visual |
+|---|---|
+| `Sparkline` | Filled-area line, last-point dot |
+| `Gauge` | Half-circle dial with stroke-dashoffset fill + tip dot |
+| `StackedHBar` | Horizontal stacked bar with legend below |
+| `BarSeries` | Vertical bars with gradient fill |
+
+### Per-agent chart strip
+| Agent | Chart 1 | Chart 2 | Chart 3 |
+|---|---|---|---|
+| `market-analyst` | Saturation gauge | Volatility Trend sparkline | Category Mix stacked bar (direct vs other) |
+| `risk-advisor` | Risk Exposure stacked bar (legal/fiscal/ops) | Volatility sparkline | Severity Index gauge |
+| `location-strategist` | Metro Proximity gauge (inverse distance) | Catchment Pull bars (ridership-scaled) | Road Network stacked bar |
+| `customer-flow` | Hourly Footfall bars | Transit Score gauge (busStops + metro proximity) | Parking Mix stacked bar |
+| `urban-forecaster` | Growth Trajectory sparkline (tier-driven) | Zoning Pressure gauge | Population Mix stacked bar |
+| `infrastructure-auditor` | Utility Coverage 4-segment stacked bar | Road Quality gauge | Service Density bars |
 
 ---
 

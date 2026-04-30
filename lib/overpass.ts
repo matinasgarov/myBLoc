@@ -16,6 +16,10 @@ const RADIUS = 500
 const CACHE_TTL_MS = 5 * 60 * 1000
 const queryCache = new Map<string, { data: { elements: OSMElement[] }; expiresAt: number }>()
 
+export function clearOverpassMemoryCacheForTests() {
+  queryCache.clear()
+}
+
 function buildLandUseQuery(lat: number, lng: number): string {
   return (
     `[out:json][timeout:25];` +
@@ -301,6 +305,7 @@ function elementCategoryTags(e: OSMElement): string[] {
   if (e.tags?.shop) out.push(e.tags.shop)
   if (e.tags?.leisure) out.push(e.tags.leisure)
   if (e.tags?.office) out.push(e.tags.office)
+  if (e.tags?.cuisine) out.push(...e.tags.cuisine.split(';').map((tag) => tag.trim()).filter(Boolean))
   return out
 }
 

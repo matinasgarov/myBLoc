@@ -84,3 +84,12 @@ export interface SavedAnalysis {
   rentTier?: string
   luxuryMismatch?: boolean
 }
+
+export type AgentStatus = 'idle' | 'loading' | 'done' | 'error'
+
+export interface AgentResult {
+  role: string
+  emoji: string
+  opinion: string
+  confidence?: number
+}

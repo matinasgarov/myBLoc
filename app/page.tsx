@@ -11,7 +11,7 @@ import LandingPage from '@/components/LandingPage'
 import MapErrorBoundary from '@/components/MapErrorBoundary'
 import LocationSearch from '@/components/LocationSearch'
 import DesktopDashboard from '@/components/DesktopDashboard'
-import type { AnalysisResult, LatLng, PlacesContext, SavedAnalysis } from '@/lib/types'
+import type { AnalysisResult, LatLng, PlacesContext, SavedAnalysis, AgentStatus, AgentResult } from '@/lib/types'
 import { parseShareParams } from '@/lib/share'
 
 const Map = dynamic(() => import('@/components/Map'), { ssr: false })
@@ -51,6 +51,8 @@ export default function Home() {
   const [flyToTarget, setFlyToTarget] = useState<LatLng | null>(null)
   const [expertPanelOpen, setExpertPanelOpen] = useState(false)
   const expertPanelCacheRef = useRef<{ agents: { role: string; emoji: string; opinion: string; response: string; confidence?: number }[]; verdict: string } | null>(null)
+  const [agentStatus, setAgentStatus] = useState<Record<string, AgentStatus>>({})
+  const [agentResults, setAgentResults] = useState<Record<string, AgentResult>>({})
 
   const strings = getStrings(lang)
 
@@ -152,6 +154,39 @@ export default function Home() {
     setAnalyses(getAnalyses())
   }
 
+  const handleAgentClick = async (agentKey: string) => {
+    const current = agentStatus[agentKey] ?? 'idle'
+    if (current === 'loading') return
+    if (current === 'done') {
+      setAgentStatus(prev => ({ ...prev, [agentKey]: 'idle' }))
+      setAgentResults(prev => { const n = { ...prev }; delete n[agentKey]; return n })
+      return
+    }
+    setAgentStatus(prev => ({ ...prev, [agentKey]: 'loading' }))
+    try {
+      const res = await fetch('/api/expert-panel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lat: pin?.lat, lng: pin?.lng, businessType, score: result?.score,
+          placesContext, luxuryMismatch: result?.luxuryMismatch,
+          rentTierAz: result?.rentTierAz, districtPopulationK: result?.districtPopulationK,
+          lang, selectedAgents: [agentKey],
+        }),
+      })
+      const data = await res.json()
+      const agent = data.agents?.[0] as AgentResult | undefined
+      if (agent) {
+        setAgentResults(prev => ({ ...prev, [agentKey]: agent }))
+        setAgentStatus(prev => ({ ...prev, [agentKey]: 'done' }))
+      } else {
+        setAgentStatus(prev => ({ ...prev, [agentKey]: 'error' }))
+      }
+    } catch {
+      setAgentStatus(prev => ({ ...prev, [agentKey]: 'error' }))
+    }
+  }
+
   const handleBusinessSubmit = async (business: string, overridePin?: LatLng) => {
     const activePin = overridePin ?? pin
     if (!activePin) return
@@ -162,6 +197,8 @@ export default function Home() {
     setAppState('loading')
     setLoadingStep(1)
     setError(null)
+    setAgentStatus({})
+    setAgentResults({})
 
     const t2 = setTimeout(() => setLoadingStep(2), 2000)
     const t3 = setTimeout(() => setLoadingStep(3), 4000)
@@ -249,6 +286,8 @@ export default function Home() {
     setWarning(null)
     setMapKey(k => k + 1)
     expertPanelCacheRef.current = null
+    setAgentStatus({})
+    setAgentResults({})
   }
 
   const isDimmed = appState === 'loading'
@@ -358,7 +397,19 @@ export default function Home() {
           {/* Map area */}
           <div className="relative flex-1 min-h-0">
             <MapErrorBoundary message={strings.MAP_ERROR}>
-              <Map key={mapKey} onPinDrop={handlePinDrop} pin={pin} dimmed={isDimmed} flyToTarget={flyToTarget} showLayerPanel={appState === 'result'} businessType={businessType} strings={strings} />
+              <Map
+                key={mapKey}
+                onPinDrop={handlePinDrop}
+                pin={pin}
+                dimmed={isDimmed}
+                flyToTarget={flyToTarget}
+                showOverlay={appState === 'result'}
+                lang={lang}
+                strings={strings}
+                agentStatus={agentStatus}
+                onAgentClick={handleAgentClick}
+                businessType={businessType}
+              />
             </MapErrorBoundary>
 
             {(appState === 'map' || appState === 'input') && (
@@ -526,6 +577,8 @@ export default function Home() {
             onOpenHistory={() => setHistoryOpen(true)}
             strings={strings}
             lang={lang}
+            agentResults={agentResults}
+            agentStatus={agentStatus}
           />
         </div>
 
