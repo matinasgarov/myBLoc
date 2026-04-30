@@ -7,15 +7,17 @@
 ## What the App Does
 
 1. **Landing page** — introduces the app with an AI disclaimer before anything else; language toggle (AZ/EN) persists across sessions
-2. **Map view** — user clicks any point in Azerbaijan to drop a pin (OpenStreetMap, Leaflet)
-3. **Business input** — modal asks what kind of business they plan to open (validated: min 2 chars, must contain letters)
-4. **Data collection** — app queries OpenStreetMap (Overpass API) + AZ government business dataset for real businesses within 500 m of the pin; also looks up nearest Baku metro station and urban tier from static datasets
-5. **Scoring** — a deterministic 7-factor algorithm calculates a 0–95 score from the collected data, returning both the score and a per-factor breakdown
-6. **AI analysis** — Groq AI receives the score and OSM context, returns pros/cons/verdict in the user's active language (AZ or EN)
-7. **Result sheet** — shows the score, pros, cons, verdict, factor breakdown bars, OSM data grid; reset button re-initializes the map for a new analysis
-8. **PDF export** — downloads a formatted A4 PDF report with logo, score pill, pros/cons, factor bars, and OSM data grid
-9. **History** — past analyses are stored in `localStorage` and viewable in a sidebar
-10. **Warning banner** — shown (amber) when the business type is unrecognized by the matching system
+2. **Map view** — user clicks any point in Azerbaijan to drop a pin (OpenStreetMap, Leaflet); location search bar (Nominatim) lets users fly to a place by name
+3. **Map layer controls** — 4 toggleable overlay buttons (Bus Stops, Metro, Transport, Competitors) appear on the map in result state; each queries Overpass and renders colored dot markers; layers reset on new pin drop
+4. **Business input** — modal asks what kind of business they plan to open (validated: min 2 chars, must contain letters)
+5. **Data collection** — app queries OpenStreetMap (Overpass API) + AZ government business dataset for real businesses within 500 m of the pin; also looks up nearest Baku metro station and urban tier from static datasets
+6. **Scoring** — a deterministic 7-factor algorithm calculates a 0–95 score from the collected data, returning both the score and a per-factor breakdown
+7. **AI analysis** — Groq AI receives the score and OSM context, returns pros/cons/verdict in the user's active language (AZ or EN)
+8. **Desktop dashboard** — right-panel UI on desktop showing score header, agent toolbar, chart tabs (dual/bars/ring), OSM data grid, inline expert panel, and action buttons; all backed by a background image with glassmorphism layers
+9. **Expert Panel** — 6 AI agents with professional consultative personas independently analyse the location; each shows a confidence meter and SVG avatar; agents can be toggled via the agent toolbar
+10. **PDF export** — downloads a formatted A4 PDF report with logo, score pill, pros/cons, factor bars, and OSM data grid
+11. **History** — past analyses are stored in `localStorage` and viewable in a sidebar
+12. **Warning banners** — amber when business type is unrecognized; red when a dominant competitor chain is within 100 m
 
 ---
 
@@ -27,6 +29,7 @@
 | Language | TypeScript | ^5 |
 | UI | React | 19.2.4 |
 | Styling | Tailwind CSS v4 | ^4 |
+| Animation | Framer Motion | — |
 | Map | Leaflet (SSR-disabled via `dynamic`) | ^1.9.4 |
 | AI | Groq SDK (`llama-3.3-70b-versatile`) | ^1.1.2 |
 | Map data | Overpass API (OpenStreetMap) | public API |
@@ -43,7 +46,7 @@
 ```
 hanimenebiznes/
 ├── app/
-│   ├── globals.css              # Tailwind v4 import + animation classes
+│   ├── globals.css              # Tailwind v4 import + animation classes + design tokens
 │   ├── layout.tsx               # Root layout (sets font, viewport, metadata)
 │   ├── page.tsx                 # Main page — state machine, all UI flows
 │   ├── robots.ts                # /robots.txt route
@@ -51,16 +54,24 @@ hanimenebiznes/
 │   └── api/
 │       ├── places/route.ts      # POST /api/places — validates input, queries Overpass, returns PlacesContext
 │       ├── analyze/route.ts     # POST /api/analyze — calculates score, calls Groq
+│       ├── expert-panel/route.ts # POST /api/expert-panel — 6-agent expert AI panel with confidence ratings
+│       ├── layers/route.ts      # POST /api/layers — Overpass queries for map layer overlays
 │       └── feedback/route.ts    # POST /api/feedback
 ├── components/
-│   ├── Map.tsx                  # Leaflet map, SSR-disabled, ref-stable callback pattern
+│   ├── Map.tsx                  # Leaflet map, SSR-disabled, ref-stable callback, layer panel toggle UI
 │   ├── MapErrorBoundary.tsx     # Class error boundary wrapping Map
 │   ├── LandingPage.tsx          # Splash/intro screen with language toggle
 │   ├── BusinessInputModal.tsx   # Business type input modal
 │   ├── LoadingOverlay.tsx       # 4-step loading animation
-│   ├── ResultSheet.tsx          # Score display with expandable details
+│   ├── ResultSheet.tsx          # Score display with expandable details (mobile)
+│   ├── DesktopDashboard.tsx     # Right-panel dashboard (desktop): score header, agent toolbar, charts, OSM grid, expert panel
+│   ├── ExpertPanel.tsx          # 6-agent AI expert panel with SVG avatars, confidence meters, streaming opinions
+│   ├── Charts.tsx               # DualChartDisplay, BarsChartDisplay, ScoreRingDisplay, RadarChartDisplay
+│   ├── LocationSearch.tsx       # Nominatim geocoding search input overlaid on the map
 │   ├── PdfDownloadButton.tsx    # jsPDF-based A4 PDF export with Roboto font
-│   └── HistorySidebar.tsx       # localStorage history panel
+│   ├── HistorySidebar.tsx       # localStorage history panel
+│   └── ui/
+│       └── glowing-card.tsx     # GlowingStatCard + GlowingButton reusable UI primitives
 ├── lib/
 │   ├── types.ts                 # Shared TypeScript interfaces (PlacesContext, AnalysisResult, FactorResult, etc.)
 │   ├── az.ts                    # Azerbaijani UI strings
@@ -72,13 +83,14 @@ hanimenebiznes/
 │   ├── az-places-compact.ts     # Bundled AZ business location dataset [lat, lng, TYPE][]
 │   ├── metro-stations.ts        # 27 Baku metro stations with exit coords + avg daily ridership (auto-generated)
 │   ├── settlements.ts           # 4,589 AZ settlements with urban tier classification (auto-generated)
+│   ├── categories.ts            # ~60 BusinessCategory entries with labelAz/labelEn/synonyms
 │   ├── score.ts                 # Deterministic 7-factor scoring algorithm, returns ScoreResult
 │   ├── groq.ts                  # Groq AI prompt + JSON retry logic
 │   ├── storage.ts               # localStorage helper for analysis history
 │   └── ratelimit.ts             # In-memory rate limiting for API routes
 ├── scripts/
 │   ├── build-metro-data.mjs     # Preprocesses datasets/ → lib/metro-stations.ts
-│   └── build-settlements.mjs    # Preprocesses datasets/ → lib/settlements.ts
+│   └── build-settlements.mjs   # Preprocesses datasets/ → lib/settlements.ts
 ├── datasets/                    # Raw source data (not served, only used by build scripts)
 └── __tests__/
     ├── lib/
@@ -121,7 +133,7 @@ The score is **fully deterministic** — the AI never guesses or invents it. `ca
 | `footTraffic` | 20 | Metro ridership tier: ≥30k→12, ≥20k→10, ≥10k→7, ≥5k→4, present→2, none→0. Plus major roads within 500 m (up to 8 pts) |
 | `areaType` | 13 | commercial=13, mixed=9, residential=5 |
 | `urbanTier` | 10 | metro-city=10, city=7, town=4, rural=1 |
-| `accessibility` | 12 | Major roads (primary/secondary/tertiary/trunk) within 500 m — up to 12 pts |
+| `accessibility` | 12 | Bus stops within 500 m (0–7 pts) + parking presence (0–5 pts) |
 | `nearbyServices` | 8 | Grocery stores within 500 m (0–5 pts) + amenity category count (0–3 pts) |
 | `businessDensity` | 10 | Total businesses within 500 m — up to 10 pts |
 
@@ -132,7 +144,7 @@ The score is **fully deterministic** — the AI never guesses or invents it. `ca
 - All others → max 95
 
 ### Distance-weighted competitors
-Competitor elements with coords <200 m from pin count 1.0 weight; 200–500 m count 0.5. Elements without coords (from AZ dataset) count 0.5. This replaces the old flat count.
+Competitor elements with coords <200 m from pin count 1.0 weight; 200–500 m count 0.5. Elements without coords (from AZ dataset) count 0.5.
 
 The AI's job is only to *explain* the pre-calculated score in plain language — it cannot change it.
 
@@ -156,8 +168,8 @@ Queries the public **Overpass API** (OpenStreetMap) for a 500 m radius around th
 - **5 public endpoints** tried in order: `overpass-api.de` → `overpass.kumi.systems` → `overpass.private.coffee` → `overpass.openstreetmap.ru` → `overpass.nchc.org.tw`
 - **HTTP 429** (rate limit): waits 1.5 s before trying the next endpoint
 - **15-second abort timeout** per endpoint attempt
-- **`User-Agent: myblocate/1.0`** header is sent on all requests (required by Overpass fair-use policy; omitting it causes stricter rate limits)
-- **Server-side in-memory cache** (5-minute TTL, keyed by full query string): repeated requests to the same coordinates return cached data instantly without hitting Overpass. Prevents dev-loop rate limiting and reduces latency for popular locations in production.
+- **`User-Agent: myblocate/1.0`** header is sent on all requests (required by Overpass fair-use policy)
+- **Server-side in-memory cache** (5-minute TTL, keyed by full query string): repeated requests to the same coordinates return cached data instantly
 
 ### Additional lookups (static data)
 - `getNearestMetro(lat, lng)` from `lib/metro-stations.ts` — returns nearest metro exit within 2 km and its avg daily ridership, or `null`
@@ -165,32 +177,21 @@ Queries the public **Overpass API** (OpenStreetMap) for a 500 m radius around th
 
 ### Chain Detection
 
-`detectChainsFromOSM()` scans all OSM elements within 500 m for known Azerbaijani retail chains defined in `lib/chains.ts` (`BAKU_CHAINS`). Matching uses `matchesChain()` which normalises names to lowercase and strips punctuation before checking keywords/name variants.
+`detectChainsFromOSM()` scans all OSM elements within 500 m for known Azerbaijani retail chains defined in `lib/chains.ts` (`BAKU_CHAINS`). Matching uses `matchesChain()` which normalises names to lowercase and strips punctuation.
 
-- **`dominantCompetitors`** — chains found within **100 m** of the pin (centroid-to-centroid). Flagged in the result sheet as a red warning. Radius is 100 m rather than a tighter value because OSM way centroids for large stores can be 30–80 m from the entrance.
-- **`nearbyChains`** — chains within **200 m**, only populated for food businesses (used to trigger the cuisine-selection modal). Always empty for non-food business types.
-- `chainMatches` (internal) — all matched chains with distances, used to build both fields above.
+- **`dominantCompetitors`** — chains found within **100 m** of the pin. Flagged as a red warning in the result sheet.
+- **`nearbyChains`** — chains within **200 m**, only populated for food businesses (triggers the cuisine-selection modal).
 
 ### Competitor Matching
 
 `COMPETITOR_ALIASES` in `overpass.ts` maps Azerbaijani/English keywords → OSM tag values.
 `BUSINESS_TO_AZ_TYPES` in `az-competitors.ts` maps keywords → AZ dataset TYPE codes.
 
-Both lists include `'aptek'` / `'apteka'` for pharmacy. When adding a new business category to `lib/categories.ts`, also add entries to both `COMPETITOR_ALIASES` and `BUSINESS_TO_AZ_TYPES`.
+Both lists include `'aptek'` / `'apteka'` for pharmacy. When adding a new business category to `lib/categories.ts`, also add entries to both lists.
 
 ### Business Categories (`lib/categories.ts`)
 
-`BUSINESS_CATEGORIES` (~60 entries) covers:
-- **Retail**: restoran, supermarket, kafe, fast food, çay evi, aptek, elektronika, geyim, mebel, bərbər/gözəllik, kitab, oyuncaq, çiçəkçi, avtomobil malları, qida mağazası, kosmetika, idman malları, zərgərlik, topdan
-- **Health/Wellness**: klinika, diş, masaj, optika, baytarlıq
-- **Services**: minik avtomobili, hüquq, mühasibat, sığorta, əmlak, təmizlik, çatdırılma, foto, reklam, IT xidmət, avtomobil satış, çap, tərcümə
-- **Transport/Logistics**: taksi, yük daşıma, anbar, turizm
-- **Education**: məktəb/kurs, tədris mərkəzi, mühəndislik, arxitektura
-- **Entertainment**: idman, park/istirahət, kinoteatr, musiqi
-- **Agriculture**: kənd təsərrüfatı, heyvandarlıq, balıqçılıq, bağçılıq, kənd malları
-- **Other**: tikinti/materiallar, digər
-
-Each entry has: `key` (used for OSM matching), `labelAz`, `labelEn`, `synonyms[]` (searched alongside label/key), and optional `pinned` (3 pinned categories shown in collapsed modal: restoran, supermarket, aptek).
+`BUSINESS_CATEGORIES` (~60 entries) covers retail, food, health, services, transport, education, entertainment, and agriculture. Each entry has: `key`, `labelAz`, `labelEn`, `synonyms[]`, and optional `pinned` (3 pinned categories shown in collapsed modal: restoran, supermarket, aptek).
 
 ---
 
@@ -208,14 +209,164 @@ Returns `400` for invalid input, `500` only if something unexpected throws.
 
 - **Model**: `llama-3.3-70b-versatile` (via Groq)
 - **Prompt language**: controlled by `lang` parameter — `buildPrompt()` for Azerbaijani, `buildPromptEn()` for English
-- **Language routing**: `page.tsx` passes `lang` in the fetch body → `/api/analyze/route.ts` extracts it → `analyzeLocation(..., lang)` selects the correct prompt builder. Language switch does **not** reset map/pin/score state.
-- **English prompt differences**: uses `rent.tier` ('Low'/'Medium'/'High'/'Very High') instead of `rent.tierAz`; maps `urbanTier` to English strings; no Azerbaijani grammar rules
+- **Language routing**: `page.tsx` passes `lang` in the fetch body → `/api/analyze/route.ts` extracts it → `analyzeLocation(..., lang)` selects the correct prompt builder
+- **English prompt differences**: uses `rent.tier` ('Low'/'Medium'/'High'/'Very High') instead of `rent.tierAz`
 - **Prompt strategy**: provides pre-calculated score + OSM context, asks for `{ summary, detail, pros, cons, verdict }` as JSON
 - **Retry logic**: retries once on invalid JSON; throws after 2 failed attempts
 - **Required env var**: `GROQ_API_KEY` in `.env.local`
-- **Contradiction prevention**: prompt explicitly forbids the LLM from writing "no competitor" pros when `competitors > 0`, and "high competition" cons when `competitors = 0`; also forbids English words leaking into AZ responses
-- **Grammar correction**: `AZ_CORRECTIONS` regex map applied to all output fields via `fixAzerbaijaniGrammar()` before returning (fixes common errors like `çoxluq rəqib → çoxlu rəqib`). **Skipped for English responses.**
-- **Chain cuisine radius**: cuisine-based context hint (e.g. "KFC nearby") only triggers if the competitor is within **50 m** (not 300 m)
+- **Contradiction prevention**: prompt explicitly forbids "no competitor" pros when `competitors > 0`, and "high competition" cons when `competitors = 0`
+- **Grammar correction**: `AZ_CORRECTIONS` regex map applied to all output fields via `fixAzerbaijaniGrammar()` before returning. **Skipped for English responses.**
+
+---
+
+## Expert Panel (`app/api/expert-panel/route.ts` + `components/ExpertPanel.tsx`)
+
+### 6 Expert Agents
+
+All agents use a **professional/consultative tone** — they write as senior consultants advising a client, not as generic chatbots.
+
+| Key | Emoji | Role (EN) | Role (AZ) | Color |
+|---|---|---|---|---|
+| `market-analyst` | 📊 | Market Analyst | Bazar Analitiki | #f59e0b |
+| `risk-advisor` | ⚠️ | Risk Advisor | Risk Məsləhətçisi | #ef4444 |
+| `location-strategist` | 🗺️ | Location Strategist | Məkan Strateqi | #3b82f6 |
+| `customer-flow` | 🚶 | Customer Flow Expert | Müştəri Axını Eksperti | #10b981 |
+| `urban-forecaster` | 🏙️ | Urban Development Forecaster | Şəhər İnkişafı Proqnozçusu | #8b5cf6 |
+| `infrastructure-auditor` | 🔧 | Infrastructure & Utility Auditor | İnfrastruktur Auditor | #06b6d4 |
+
+### API Route (`POST /api/expert-panel`)
+
+**Input:** `{ lat, lng, businessType, score, placesContext, luxuryMismatch?, rentTierAz?, districtPopulationK?, lang?, selectedAgents? }`
+
+- `selectedAgents` — optional array of agent keys to run. If omitted or empty, all 6 agents run.
+- Each agent gets a separate Groq call with its own prompt. All run in parallel (`Promise.all`).
+- Agents return: `{ role, emoji, opinion, confidence }`. A `verdict` summary is generated as a final Groq call over all agent opinions.
+- `confidence` is an integer 1–10 extracted from a special `[CONFIDENCE: N]` tag appended to each prompt and parsed via `parseConfidence()`.
+
+**Output:** `{ agents: [{ role, emoji, opinion, response, confidence }], verdict }`
+
+### Component (`components/ExpertPanel.tsx`)
+
+- Each agent card shows: SVG avatar silhouette (per-agent design), role title, opinion text, and a confidence meter (0–10 bar with color-coded fill)
+- `AGENT_BORDER_COLORS` — 6 accent colors matching the agent order
+- The component uses a cache ref (`cacheRef`) to avoid re-fetching when the panel re-opens for the same result
+- Skeleton loader count matches the number of selected agents
+
+### Agent Toolbar (`components/DesktopDashboard.tsx → AgentToolbar`)
+
+A fixed strip rendered between the score header and the scrollable body in `ResultView`:
+- 6 pill buttons, one per agent
+- **Hover**: glassmorphism tooltip (blur(16px)) with agent name and description
+- **Click**: toggles agent participation. Minimum 1 agent enforced (last active agent cannot be deselected)
+- Active state: gradient background + colored border + glow shadow using the agent's color
+- `selectedAgents` Set is passed to `ExpertPanel` as an array prop
+
+---
+
+## Desktop Dashboard (`components/DesktopDashboard.tsx`)
+
+### Layout
+
+The right-side panel has a 4-layer background:
+1. `/dashboard-image.png` — atmospheric background photo
+2. `--dashboard-bg: rgba(7,9,13,0.48)` — dark overlay (CSS variable)
+3. `--dashboard-blur: blur(24px) saturate(1.4)` — backdrop filter
+4. Per-card `backdrop-filter: blur(10–12px)` on summary, pros, and cons sections for legibility
+
+### Views
+
+| View | Shown when |
+|---|---|
+| `idle` | No result yet — shows history/compare/insights buttons |
+| `result` | After analysis — score header + agent toolbar + scrollable body |
+| `compare` | User navigates from idle — side-by-side factor comparison across saved analyses |
+| `insights` | User navigates from idle — metro ridership chart, urban tier scoring reference |
+
+### Result View sections (top to bottom)
+
+1. **Score header** (fixed/shrink-0) — business name, verdict badge, rent tier, score %, ScoreRingMini
+2. **Agent Toolbar** (fixed/shrink-0) — 6 agent pill buttons, always visible
+3. **Scrollable body**:
+   - Luxury mismatch / dominant competitor warnings
+   - Summary (blur(12px) glass background)
+   - Pros (blur(10px) glass background)
+   - Cons (blur(10px) glass background)
+   - Factor breakdown chart (tabs: dual ◐ / bars ≡ / ring ○)
+   - OSM data grid (6 GlowingStatCards)
+   - Inline Expert Panel
+   - Action buttons (Expert Panel, Reset, PDF)
+
+### Chart Tabs
+
+| Tab | Component | Description |
+|---|---|---|
+| `dual` (◐) | `DualChartDisplay` | 128px score ring (left, flex:1) + factor progress bars (right, flex:1) — **default** |
+| `bars` (≡) | `BarsChartDisplay` | Horizontal bar chart only |
+| `ring` (○) | `ScoreRingDisplay` | Large centered ring + 2-col factor grid |
+
+---
+
+## Charts (`components/Charts.tsx`)
+
+All chart components are animated via Framer Motion.
+
+### `barColor(pct: number): string`
+- ≥70 → `#34d399` (emerald)
+- ≥40 → `#fbbf24` (amber)
+- <40 → `#f87171` (red)
+
+Used by all chart components and the score ring.
+
+### `DualChartDisplay`
+- Left panel (`flex: 1`): 128×128 px SVG ring (R=56), `useCountUp` animated score, `barColor` fill
+- Right panel (`flex: 1`): factor bars at 9.5px font, `barColor` per bar, animated width with stagger
+
+### `BarsChartDisplay`
+- Simple horizontal bars, `barColor` per factor, Framer Motion width animation
+
+### `ScoreRingDisplay`
+- 132×132 px centered ring + 2-column mini grid of factor scores below
+
+### `RadarChartDisplay`
+- Polygon radar/spider chart — still exported but no longer the default tab
+
+---
+
+## Map Layer Controls (`app/api/layers/route.ts` + `components/Map.tsx`)
+
+Visible only in result state (`showLayerPanel={appState === 'result'}`).
+
+### 4 Layers
+
+| Type | Label | Color | Query radius |
+|---|---|---|---|
+| `bus` | Bus Stops | #f59e0b amber | 500 m |
+| `metro` | Metro Stations | #a855f7 purple | 2000 m |
+| `transport` | Transport Stops | #10b981 emerald | 500 m |
+| `competitors` | Competitors | #ef4444 red | 500 m |
+
+### Behaviour
+- Each layer is independent — toggling one does not affect others
+- **Layer ON → OFF**: markers are removed, active state cleared
+- **Layer OFF → ON**: POST to `/api/layers`, colored dot markers (`divIcon 14×14 px`) added per result element
+- Empty result: toast notification shown for 3 seconds, button stays inactive
+- **New pin drop**: all layer markers cleared, all layers reset to inactive
+
+### API Route (`POST /api/layers`)
+**Input:** `{ lat, lng, layerType, businessType? }`
+**Output:** `{ elements: Array<{ lat, lng, name? }> }`
+Returns `400` if lat/lng/layerType missing. Returns `200` with empty array on Overpass error (graceful fallback).
+
+---
+
+## Location Search (`components/LocationSearch.tsx`)
+
+Floating search input overlaid on the map when `appState === 'map'` or `'input'`:
+- Debounces queries 300 ms
+- Calls Nominatim (`countrycodes=az`, limit 5)
+- On result select: calls `handlePinDrop(lat, lng)` AND `setFlyToTarget({ lat, lng })`
+- `flyToTarget` prop on `Map.tsx` triggers `map.flyTo([lat, lng], 17, { duration: 1.2 })`
+- Dismisses dropdown on click-outside or Escape key
 
 ---
 
@@ -229,13 +380,18 @@ Returns `400` for invalid input, `500` only if something unexpected throws.
 ### `POST /api/analyze`
 **Input:** `{ lat, lng, businessType, placesContext, lang? }`
 **Output:** `AnalysisResult` — `{ score, factors, summary, detail, pros, cons, verdict }`
-Calls `calculateScore(ctx)` first (returns `{ score, factors }`), merges both into the Groq result before responding. `lang` ('az' | 'en') controls the AI response language.
+
+### `POST /api/expert-panel`
+**Input:** `{ lat, lng, businessType, score, placesContext, lang?, selectedAgents? }`
+**Output:** `{ agents: [{ role, emoji, opinion, response, confidence }], verdict }`
+
+### `POST /api/layers`
+**Input:** `{ lat, lng, layerType, businessType? }`
+**Output:** `{ elements: Array<{ lat, lng, name? }> }`
 
 ---
 
 ## Map Lifecycle (`components/Map.tsx`)
-
-Critical implementation details:
 
 ### Stable callback via ref
 `handlePinDrop` in `page.tsx` depends on `appState` via `useCallback`. To prevent the map from being torn down when `appState` changes, the callback is stored in a ref:
@@ -246,11 +402,10 @@ useEffect(() => { dropRef.current = onPinDrop }, [onPinDrop])
 ```
 
 ### Remount on reset
-When `handleReset()` is called, `mapKey` is incremented in `page.tsx`. The Map receives `key={mapKey}`, causing React to unmount the old instance (runs `map.remove()` cleanly) and mount a fresh one. This is safe because no zoom animation is in progress when the user clicks the reset button.
+When `handleReset()` is called, `mapKey` is incremented in `page.tsx`. The Map receives `key={mapKey}`, causing React to unmount the old instance and mount a fresh one.
 
 ### Why not `invalidateSize()`?
 `invalidateSize()` only works if tiles are already loaded. A fresh mount guarantees correct container dimensions from the start.
-
 
 ---
 
@@ -274,32 +429,36 @@ const Map = dynamic(() => import('@/components/Map'), { ssr: false })
 ### Security headers (CSP)
 Defined in `next.config.ts`. Key directives:
 - `img-src`: allows `https://*.tile.openstreetmap.org` for OSM tiles
-- `connect-src`: allows Overpass API endpoints
+- `connect-src`: allows Overpass API endpoints and Nominatim
 
 ### i18n
 Language is stored in `localStorage` under `myblocate-lang`. `getStrings(lang)` from `lib/i18n.ts` returns the full string map. Language toggles on the landing page and header persist across sessions.
 
-The AI response language is also controlled by `lang` — it is passed through the entire call chain so the Groq prompt changes language without resetting any UI state.
+The AI response language is also controlled by `lang` — it is passed through the entire call chain (page → /api/analyze → /api/expert-panel → Groq prompts) so the language changes without resetting any UI state.
 
-All UI strings must use `strings.*` keys — never hardcode Azerbaijani text in components. Recent string additions: `RESULT_OSM_BUS_STOPS`, `RESULT_OSM_GROCERY`, `RESULT_OSM_PARKING`, `RESULT_OSM_METRO`, `RESULT_LOW_SCORE_WARNING`, `MODAL_SHOW_ALL`, `MODAL_SHOW_LESS`, `RESULT_TOGGLE_EXPAND`, `RESULT_TOGGLE_COLLAPSE`, `RESULT_COMPETITORS_NOTE`.
+All UI strings must use `strings.*` keys — never hardcode Azerbaijani text in components.
+
+### Design tokens (`globals.css`)
+```css
+:root {
+  --dashboard-bg: rgba(7, 9, 13, 0.48);   /* dark overlay on dashboard background image */
+  --dashboard-blur: blur(24px) saturate(1.4);
+  --dashboard-border: rgba(255, 255, 255, 0.10);
+}
+```
 
 ---
 
 ## Result Sheet (`components/ResultSheet.tsx`)
 
-The expandable bottom sheet shows:
+Mobile-oriented bottom sheet showing:
 - **Score badge** — color-coded (green ≥70, amber ≥40, red <40) with ring
 - **Dominant competitor warning** — red banner when a major chain is within radius
 - **Summary** — one-paragraph AI summary
 - **Pros / Cons** — two-column grid from Groq output
-- **Expandable section** (toggle button) — reveals:
-  - Full AI analysis text
-  - **Factor breakdown** — 7 color-coded progress bars (`ScoreBar`); competition bar shows inline competitor count note (e.g. `· 71 rəqib`)
-  - **OSM data grid** — always 6 fixed cards: competitors, total businesses, bus stops, grocery stores, parking, metro distance
-  - **Low-score warning banner** — red text above OSM grid when `result.score < 45`
-  - Land use note (amber) if relevant
+- **Expandable section** — reveals full AI analysis, 7 factor bars, OSM data grid, land use note
 
-`ScoreBar` fills: green (`bg-emerald-500`) ≥70%, amber (`bg-amber-500`) 40–70%, red (`bg-red-500`) <40%. Track is red when fill is red, slate otherwise. Empty bars (0 pts) render no fill div.
+`ScoreBar` fills: green ≥70%, amber 40–70%, red <40%.
 
 ---
 
@@ -309,9 +468,8 @@ Generates an A4 PDF report client-side via `jsPDF` (dynamic import).
 
 **Font setup:**
 - Loads `public/fonts/Roboto-Regular.ttf` and `public/fonts/Roboto-Bold.ttf` via `fetch` + base64 encoding
-- Files must be real binary TTF (magic bytes `00 01 00 00`), **not** WOFF/WOFF2 or HTML — jsPDF's TTF parser rejects everything else
+- Files must be real binary TTF — jsPDF rejects WOFF/WOFF2 or HTML
 - Covers all AZ Latin characters: ə, ğ, ı, İ, ş, ç, ö, ü
-- `addFont` fires errors via jsPDF's internal PubSub (not JS throw) — verify registration with `doc.getFontList()` if unsure
 
 **Logo:**
 - `public/logo.png` is **319×330 px** (nearly square, ratio 0.97:1) — it is an icon mark, not a wide banner
@@ -320,13 +478,13 @@ Generates an A4 PDF report client-side via `jsPDF` (dynamic import).
 **PDF layout (top to bottom):**
 1. Dark header (`#0f172a`) with logo (14×14 mm) + date (right-aligned)
 2. Business name + score pill (color-coded green/amber/red)
-3. Rent tier (`Kira: Çox Yüksək`) — district name is intentionally omitted
+3. Rent tier — district name is intentionally omitted
 4. Horizontal rule
 5. AI summary paragraph
 6. Pros / Cons two-column layout
 7. Horizontal rule
-8. Factor breakdown — 7 bars with `score/max` labels (green ≥70%, amber 40–70%, red <40%)
-9. OSM data grid — 6 cards: competitors, total businesses, bus stops, grocery stores, parking, metro distance
+8. Factor breakdown — 7 bars with `score/max` labels
+9. OSM data grid — 6 cards
 10. Footer — `myblocate.az · Bu hesabat məlumat xarakter daşıyır.`
 
 ---
@@ -347,7 +505,7 @@ npm run build     # production build check
 
 | Variable | Required | Description |
 |---|---|---|
-| `GROQ_API_KEY` | Yes | Groq API key for AI analysis |
+| `GROQ_API_KEY` | Yes | Groq API key for AI analysis and expert panel |
 
 `.env.local` is git-ignored. Never commit API keys.
 
@@ -355,7 +513,7 @@ npm run build     # production build check
 
 ## Tests
 
-56 tests across 6 files:
+Tests across 6 files (`npm test`):
 - `__tests__/lib/geo.test.ts` — haversine distance calculations
 - `__tests__/lib/score.test.ts` — all 7 scoring factors, caps, land use
 - `__tests__/lib/groq.test.ts` — happy path, JSON retry, exhausted retries, network error

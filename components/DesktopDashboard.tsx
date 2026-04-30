@@ -457,6 +457,14 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
         </div>
       </div>
 
+      {/* Agent Toolbar — fixed below score header */}
+      <AgentToolbar
+        strings={strings}
+        lang={lang}
+        selectedAgents={selectedAgents}
+        onToggle={toggleAgent}
+      />
+
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto">
 
@@ -609,15 +617,9 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
           </div>
         )}
 
-        {/* Agent Toolbar + Inline Expert Panel */}
+        {/* Inline Expert Panel */}
         {context && lat !== null && lng !== null && (
           <>
-            <AgentToolbar
-              strings={strings}
-              lang={lang}
-              selectedAgents={selectedAgents}
-              onToggle={toggleAgent}
-            />
             <div className="px-5">
               <ExpertPanel
                 isOpen={expertPanelOpen}

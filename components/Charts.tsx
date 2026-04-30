@@ -43,23 +43,24 @@ export function DualChartDisplay({ factors, total, maxTotal }: {
   maxTotal: number
 }) {
   const count = useCountUp(total, 1400, 150)
-  const R = 40
+  const R = 56
+  const CX = 64, CY = 64
   const circ = 2 * Math.PI * R
   const pct = maxTotal > 0 ? total / maxTotal : 0
   const ringColor = barColor(pct * 100)
 
   return (
-    <div style={{ display: 'flex', gap: 16, padding: '14px 20px', alignItems: 'center' }}>
-      {/* Left: Score ring */}
-      <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div style={{ position: 'relative', width: 96, height: 96 }}>
-          <svg width="96" height="96" viewBox="0 0 96 96">
-            <circle cx={48} cy={48} r={R} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={8} />
+    <div style={{ display: 'flex', gap: 0, padding: '16px 20px', alignItems: 'center' }}>
+      {/* Left: Score ring — equal flex */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'relative', width: 128, height: 128 }}>
+          <svg width="128" height="128" viewBox="0 0 128 128">
+            <circle cx={CX} cy={CY} r={R} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={9} />
             <motion.circle
-              cx={48} cy={48} r={R}
-              fill="none" stroke={ringColor} strokeWidth={8} strokeLinecap="round"
+              cx={CX} cy={CY} r={R}
+              fill="none" stroke={ringColor} strokeWidth={9} strokeLinecap="round"
               strokeDasharray={circ}
-              style={{ rotate: -90, transformOrigin: '48px 48px' }}
+              style={{ rotate: -90, transformOrigin: `${CX}px ${CY}px` }}
               initial={{ strokeDashoffset: circ }}
               animate={{ strokeDashoffset: circ - pct * circ }}
               transition={{ duration: 1.4, delay: 0.15, ease: [0.25, 0, 0, 1] }}
@@ -69,18 +70,18 @@ export function DualChartDisplay({ factors, total, maxTotal }: {
             position: 'absolute', inset: 0,
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           }}>
-            <span style={{ fontSize: 24, fontWeight: 800, color: ringColor, fontFamily: 'monospace', lineHeight: 1 }}>
+            <span style={{ fontSize: 30, fontWeight: 800, color: ringColor, fontFamily: 'monospace', lineHeight: 1 }}>
               {count}
             </span>
-            <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.22)', fontFamily: 'monospace', marginTop: 2 }}>
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.22)', fontFamily: 'monospace', marginTop: 3 }}>
               /{maxTotal}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Right: Factor bars */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* Right: Factor bars — equal flex */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 9 }}>
         {factors.map((f, i) => {
           const fpct = (f.score / f.max) * 100
           const fcolor = barColor(fpct)
