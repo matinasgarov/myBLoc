@@ -66,7 +66,7 @@ body {
 
 /* ── Design tokens ──────────────────────────────────────────────────────────── */
 :root {
-  --dashboard-bg: rgba(7, 9, 13, 0.48);
+  --dashboard-bg: rgba(7, 9, 13, 0.18);
   --dashboard-blur: blur(24px) saturate(1.4);
   --dashboard-border: rgba(255, 255, 255, 0.10);
 }

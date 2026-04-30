@@ -1,20 +1,22 @@
 'use client'
-import { useState, useEffect, type MutableRefObject } from 'react'
+import { useState, useEffect } from 'react'
 import type { AnalysisResult, PlacesContext, SavedAnalysis, FactorKey } from '@/lib/types'
 import type { Strings, Lang } from '@/lib/i18n'
 import PdfDownloadButton from './PdfDownloadButton'
 import { METRO_STATIONS } from '@/lib/metro-stations'
 import { DualChartDisplay, BarsChartDisplay, ScoreRingDisplay } from '@/components/Charts'
 import { GlowingStatCard, GlowingButton } from '@/components/ui/glowing-card'
-import ExpertPanel from '@/components/ExpertPanel'
-
-interface ExpertCache {
-  agents: { role: string; emoji: string; opinion: string; response: string; confidence?: number }[]
-  verdict: string
-}
 
 type PanelView = 'idle' | 'result' | 'compare' | 'insights'
 type ChartTab = 'dual' | 'bars' | 'ring'
+type AgentStatus = 'idle' | 'loading' | 'done' | 'error'
+
+const LAYER_DEFS = [
+  { key: 'bus',         emoji: '🚌', labelEn: 'Bus Stops',   labelAz: 'Avtobus',   color: '#f59e0b' },
+  { key: 'metro',       emoji: '🚇', labelEn: 'Metro',       labelAz: 'Metro',     color: '#a855f7' },
+  { key: 'transport',   emoji: '🚉', labelEn: 'Transport',   labelAz: 'Nəqliyyat', color: '#10b981' },
+  { key: 'competitors', emoji: '🏪', labelEn: 'Competitors', labelAz: 'Rəqiblər',  color: '#ef4444' },
+] as const
 
 const AGENT_TOOLBAR_DEFS = [
   { key: 'market-analyst',         emoji: '📊', labelEn: 'Market Analyst',         labelAz: 'Bazar Analitiki',              descEn: 'Evaluates competitive landscape and market saturation.',         descAz: 'Rəqabət mühiti və bazar doyumunu qiymətləndirir.',               color: '#f59e0b' },
@@ -38,11 +40,6 @@ interface Props {
   onReset: () => void
   onOpenHistory: () => void
   strings: Strings
-  onOpenExpertPanel: () => void
-  expertPanelAvailable: boolean
-  expertPanelOpen: boolean
-  onCloseExpertPanel: () => void
-  expertCacheRef: MutableRefObject<ExpertCache | null>
   lang: Lang
 }
 
@@ -283,84 +280,42 @@ function IdleView({ analyses, onOpenHistory, onCompare, onInsights, strings }: {
 
 // ─── Result View ──────────────────────────────────────────────────────────────
 
-function AgentToolbar({ strings, lang, selectedAgents, onToggle }: {
-  strings: Strings
-  lang: Lang
-  selectedAgents: Set<string>
-  onToggle: (key: string) => void
-}) {
-  const [hovered, setHovered] = useState<string | null>(null)
+interface AgentResult {
+  role: string
+  emoji: string
+  opinion: string
+  confidence?: number
+}
 
+function LayerButtonsSection({ lang }: { lang: Lang }) {
+  const [activeLayers, setActiveLayers] = useState<Set<string>>(new Set())
+  const toggle = (key: string) => setActiveLayers(prev => {
+    const n = new Set(prev)
+    n.has(key) ? n.delete(key) : n.add(key)
+    return n
+  })
   return (
-    <div style={{ padding: '12px 20px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 12 }}>
-      <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.18em', color: 'rgba(100,116,139,0.6)', marginBottom: 8, fontWeight: 600 }}>
-        {strings.EXPERT_PANEL_TITLE}
+    <div style={{ padding: '10px 16px 8px', borderBottom: '1px solid rgba(255,255,255,0.04)', background: 'rgba(7,9,13,0.3)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
+      <p style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(100,116,139,0.45)', marginBottom: 6, fontWeight: 600 }}>
+        {lang === 'az' ? 'Xəritə Layları' : 'Map Layers'}
       </p>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        {AGENT_TOOLBAR_DEFS.map((agent) => {
-          const isActive = selectedAgents.has(agent.key)
-          const label = lang === 'az' ? agent.labelAz : agent.labelEn
-          const desc  = lang === 'az' ? agent.descAz  : agent.descEn
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+        {LAYER_DEFS.map(layer => {
+          const isActive = activeLayers.has(layer.key)
+          const label = lang === 'az' ? layer.labelAz : layer.labelEn
           return (
-            <div
-              key={agent.key}
-              style={{ position: 'relative' }}
-              onMouseEnter={() => setHovered(agent.key)}
-              onMouseLeave={() => setHovered(null)}
-            >
-              <button
-                onClick={() => onToggle(agent.key)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  padding: '5px 10px', borderRadius: 20, cursor: 'pointer',
-                  fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap',
-                  transition: 'all 0.18s',
-                  background: isActive
-                    ? `linear-gradient(135deg, ${agent.color}28 0%, ${agent.color}18 100%)`
-                    : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${isActive ? agent.color + '60' : 'rgba(255,255,255,0.08)'}`,
-                  color: isActive ? agent.color : 'rgba(100,116,139,0.7)',
-                  boxShadow: isActive ? `0 0 8px ${agent.color}22` : 'none',
-                }}
-              >
-                <span style={{ fontSize: 12 }}>{agent.emoji}</span>
-                <span style={{ maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {label.split(' ')[0]}
-                </span>
-              </button>
-
-              {hovered === agent.key && (
-                <div style={{
-                  position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%',
-                  transform: 'translateX(-50%)', zIndex: 1200,
-                  background: 'rgba(10,14,20,0.96)',
-                  backdropFilter: 'blur(16px)',
-                  WebkitBackdropFilter: 'blur(16px)',
-                  border: `1px solid ${agent.color}40`,
-                  borderRadius: 10, padding: '10px 12px',
-                  minWidth: 160, maxWidth: 200,
-                  boxShadow: `0 8px 24px rgba(0,0,0,0.5), 0 0 0 1px ${agent.color}20`,
-                  pointerEvents: 'none',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
-                    <span style={{ fontSize: 14 }}>{agent.emoji}</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: agent.color }}>
-                      {label}
-                    </span>
-                  </div>
-                  <p style={{ fontSize: 10, color: 'rgba(148,163,184,0.8)', lineHeight: 1.5, margin: 0 }}>
-                    {desc}
-                  </p>
-                  {/* Arrow */}
-                  <div style={{
-                    position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
-                    width: 0, height: 0,
-                    borderLeft: '5px solid transparent', borderRight: '5px solid transparent',
-                    borderTop: `5px solid ${agent.color}40`,
-                  }} />
-                </div>
-              )}
-            </div>
+            <button key={layer.key} onClick={() => toggle(layer.key)} style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '5px 8px', borderRadius: 7, cursor: 'pointer', textAlign: 'left',
+              background: isActive ? `${layer.color}18` : 'rgba(255,255,255,0.025)',
+              border: `1px solid ${isActive ? layer.color + '45' : 'rgba(255,255,255,0.055)'}`,
+              color: isActive ? layer.color : 'rgba(148,163,184,0.55)',
+              fontSize: 10.5, fontWeight: isActive ? 600 : 400, transition: 'all 0.15s',
+            }}>
+              <span style={{ fontSize: 11 }}>{layer.emoji}</span>
+              <span style={{ flex: 1 }}>{label}</span>
+              {isActive && <span style={{ width: 5, height: 5, borderRadius: '50%', background: layer.color, flexShrink: 0 }} />}
+            </button>
           )
         })}
       </div>
@@ -368,7 +323,136 @@ function AgentToolbar({ strings, lang, selectedAgents, onToggle }: {
   )
 }
 
-function ResultView({ business, result, context, lat, lng, onReset, strings, onOpenExpertPanel, expertPanelAvailable, expertPanelOpen, onCloseExpertPanel, expertCacheRef, lang }: {
+interface AgentPanelProps {
+  business: string
+  result: AnalysisResult
+  context: PlacesContext | null
+  lat: number | null
+  lng: number | null
+  lang: Lang
+  strings: Strings
+}
+
+function AgentButtonsSection({ business, result, context, lat, lng, lang, strings }: AgentPanelProps) {
+  const [agentStatus, setAgentStatus] = useState<Record<string, AgentStatus>>({})
+  const [agentResults, setAgentResults] = useState<Record<string, AgentResult>>({})
+
+  const handleAgentClick = async (agentKey: string) => {
+    const current = agentStatus[agentKey] ?? 'idle'
+    if (current === 'loading') return
+    if (current === 'done') {
+      setAgentStatus(prev => ({ ...prev, [agentKey]: 'idle' }))
+      setAgentResults(prev => { const n = { ...prev }; delete n[agentKey]; return n })
+      return
+    }
+    setAgentStatus(prev => ({ ...prev, [agentKey]: 'loading' }))
+    try {
+      const res = await fetch('/api/expert-panel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lat, lng, businessType: business, score: result.score,
+          placesContext: context, luxuryMismatch: result.luxuryMismatch,
+          rentTierAz: result.rentTierAz, districtPopulationK: result.districtPopulationK,
+          lang, selectedAgents: [agentKey],
+        }),
+      })
+      const data = await res.json()
+      const agent = data.agents?.[0] as AgentResult | undefined
+      if (agent) {
+        setAgentResults(prev => ({ ...prev, [agentKey]: agent }))
+        setAgentStatus(prev => ({ ...prev, [agentKey]: 'done' }))
+      } else {
+        setAgentStatus(prev => ({ ...prev, [agentKey]: 'error' }))
+      }
+    } catch {
+      setAgentStatus(prev => ({ ...prev, [agentKey]: 'error' }))
+    }
+  }
+
+  const completedAgents = AGENT_TOOLBAR_DEFS.filter(a => agentResults[a.key])
+
+  return (
+    <>
+      {/* Agent buttons */}
+      <div style={{ padding: '10px 16px 8px', borderBottom: '1px solid rgba(255,255,255,0.04)', background: 'rgba(7,9,13,0.3)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
+        <p style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(100,116,139,0.45)', marginBottom: 6, fontWeight: 600 }}>
+          {strings.EXPERT_PANEL_TITLE}
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {AGENT_TOOLBAR_DEFS.map(agent => {
+            const status = agentStatus[agent.key] ?? 'idle'
+            const label = lang === 'az' ? agent.labelAz : agent.labelEn
+            const desc = lang === 'az' ? agent.descAz : agent.descEn
+            const isDone = status === 'done'
+            const isLoading = status === 'loading'
+            const isErr = status === 'error'
+            return (
+              <button
+                key={agent.key}
+                onClick={() => handleAgentClick(agent.key)}
+                title={desc}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '6px 10px', borderRadius: 7,
+                  cursor: isLoading ? 'wait' : 'pointer', width: '100%', textAlign: 'left',
+                  background: isDone ? `${agent.color}18` : isLoading ? 'rgba(255,255,255,0.055)' : 'rgba(255,255,255,0.025)',
+                  border: `1px solid ${isDone ? agent.color + '45' : isErr ? 'rgba(248,113,113,0.3)' : 'rgba(255,255,255,0.055)'}`,
+                  color: isDone ? agent.color : isErr ? '#f87171' : isLoading ? 'rgba(203,213,225,0.7)' : 'rgba(148,163,184,0.6)',
+                  fontSize: 11, fontWeight: isDone ? 600 : 400, transition: 'all 0.15s',
+                }}
+              >
+                <span style={{ fontSize: 12 }}>{agent.emoji}</span>
+                <span style={{ flex: 1, letterSpacing: '-0.01em' }}>{label}</span>
+                <span style={{ fontSize: 10, width: 14, textAlign: 'center', flexShrink: 0, fontFamily: 'monospace', opacity: 0.8 }}>
+                  {isLoading ? '…' : isDone ? '✓' : isErr ? '!' : ''}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Agent result cards — appear inline as each completes */}
+      {completedAgents.map((agent) => {
+        const r = agentResults[agent.key]!
+        return (
+          <div key={agent.key} style={{
+            margin: '0', padding: '14px 16px',
+            background: 'rgba(7,9,13,0.3)',
+            backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+            borderBottom: '1px solid rgba(255,255,255,0.04)',
+            borderLeft: `3px solid ${agent.color}`,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: 16 }}>{agent.emoji}</span>
+              <span style={{ color: agent.color, fontSize: 11.5, fontWeight: 700, letterSpacing: '-0.01em' }}>
+                {r.role}
+              </span>
+              {r.confidence !== undefined && (
+                <span style={{ marginLeft: 'auto', fontSize: 9.5, color: 'rgba(100,116,139,0.55)', fontFamily: 'monospace' }}>
+                  {r.confidence}/10
+                </span>
+              )}
+            </div>
+            <p style={{ color: 'rgba(203,213,225,0.88)', fontSize: 12.5, lineHeight: 1.65, margin: 0 }}>
+              {r.opinion}
+            </p>
+            {r.confidence !== undefined && (
+              <div style={{ display: 'flex', gap: 3, marginTop: 8 }}>
+                {Array.from({ length: 10 }, (_, i) => (
+                  <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: i < r.confidence! ? `${agent.color}cc` : 'rgba(255,255,255,0.07)' }} />
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </>
+  )
+}
+
+function ResultView({ business, result, context, lat, lng, onReset, strings, lang }: {
   business: string
   result: AnalysisResult
   context: PlacesContext | null
@@ -376,29 +460,9 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
   lng: number | null
   onReset: () => void
   strings: Strings
-  onOpenExpertPanel: () => void
-  expertPanelAvailable: boolean
-  expertPanelOpen: boolean
-  onCloseExpertPanel: () => void
-  expertCacheRef: MutableRefObject<ExpertCache | null>
   lang: Lang
 }) {
   const [chartTab, setChartTab] = useState<ChartTab>('dual')
-  const [selectedAgents, setSelectedAgents] = useState<Set<string>>(
-    new Set(AGENT_TOOLBAR_DEFS.map(a => a.key))
-  )
-
-  const toggleAgent = (key: string) => {
-    setSelectedAgents(prev => {
-      const next = new Set(prev)
-      if (next.has(key)) {
-        if (next.size > 1) next.delete(key)
-      } else {
-        next.add(key)
-      }
-      return next
-    })
-  }
   const color = scoreColor(result.score)
 
   const chartFactors = (result.factors ?? []).map(f => ({
@@ -457,16 +521,22 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
         </div>
       </div>
 
-      {/* Agent Toolbar — fixed below score header */}
-      <AgentToolbar
-        strings={strings}
-        lang={lang}
-        selectedAgents={selectedAgents}
-        onToggle={toggleAgent}
-      />
-
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto">
+
+        {/* Map layer toggles */}
+        <LayerButtonsSection lang={lang} />
+
+        {/* Per-agent analysis buttons + inline results */}
+        <AgentButtonsSection
+          business={business}
+          result={result}
+          context={context}
+          lat={lat}
+          lng={lng}
+          lang={lang}
+          strings={strings}
+        />
 
         {/* Warnings */}
         {result.luxuryMismatch && (
@@ -557,7 +627,7 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
 
         {/* Factor breakdown — chart tabs */}
         {chartFactors.length > 0 && (
-          <div style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(7,9,13,0.3)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
             {/* Tab strip */}
             <div
               className="px-6 pt-5 pb-0 flex items-center justify-between"
@@ -590,7 +660,7 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
 
         {/* OSM data grid */}
         {context && (
-          <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(7,9,13,0.3)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
             <p className="text-[11px] uppercase tracking-[0.2em] mb-3 font-medium" style={{ color: 'rgba(100,116,139,0.65)' }}>
               {strings.RESULT_OSM_TITLE}
             </p>
@@ -617,36 +687,8 @@ function ResultView({ business, result, context, lat, lng, onReset, strings, onO
           </div>
         )}
 
-        {/* Inline Expert Panel */}
-        {context && lat !== null && lng !== null && (
-          <>
-            <div className="px-5">
-              <ExpertPanel
-                isOpen={expertPanelOpen}
-                onClose={onCloseExpertPanel}
-                lat={lat}
-                lng={lng}
-                businessType={business}
-                score={result.score}
-                placesContext={context}
-                luxuryMismatch={result.luxuryMismatch}
-                rentTierAz={result.rentTierAz}
-                districtPopulationK={result.districtPopulationK}
-                lang={lang}
-                cacheRef={expertCacheRef}
-                selectedAgents={Array.from(selectedAgents)}
-              />
-            </div>
-          </>
-        )}
-
         {/* Actions */}
         <div className="px-5 py-4 flex gap-2.5">
-          <GlowingButton onClick={onOpenExpertPanel} disabled={!expertPanelAvailable}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(165,180,252,0.9)', whiteSpace: 'nowrap' }}>
-              ✦ {strings.EXPERT_PANEL_BUTTON}
-            </span>
-          </GlowingButton>
           <GlowingButton onClick={onReset} style={{ flex: 1 }}>
             <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', fontSize: 13, fontWeight: 700, color: '#93c5fd' }}>
               <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -967,11 +1009,6 @@ export default function DesktopDashboard({
   onReset,
   onOpenHistory,
   strings,
-  onOpenExpertPanel,
-  expertPanelAvailable,
-  expertPanelOpen,
-  onCloseExpertPanel,
-  expertCacheRef,
   lang,
 }: Props) {
   const [view, setView] = useState<PanelView>('idle')
@@ -1058,11 +1095,6 @@ export default function DesktopDashboard({
           lng={currentLng}
           onReset={handleReset}
           strings={strings}
-          onOpenExpertPanel={onOpenExpertPanel}
-          expertPanelAvailable={expertPanelAvailable}
-          expertPanelOpen={expertPanelOpen}
-          onCloseExpertPanel={onCloseExpertPanel}
-          expertCacheRef={expertCacheRef}
           lang={lang}
         />
       )}

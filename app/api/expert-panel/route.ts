@@ -290,9 +290,9 @@ export async function POST(req: NextRequest) {
   if (tooLarge(req, MAX_BODY_BYTES)) return json({ error: 'Payload too large' }, 413)
   const ip = extractIp(req)
   const rateKey = extractRateKey(req)
-  if (await isRateLimited(rateKey, 4, 60_000, 'expert-min'))
+  if (await isRateLimited(rateKey, 12, 60_000, 'expert-min'))
     return json({ error: 'Too many requests' }, 429)
-  if (await isRateLimitedDaily(ip, 20, 'expert-day'))
+  if (await isRateLimitedDaily(ip, 40, 'expert-day'))
     return json({ error: 'Daily limit reached' }, 429)
 
   const body = await req.json().catch(() => null) as RequestBody | null
@@ -335,6 +335,17 @@ export async function POST(req: NextRequest) {
       ? body.selectedAgents
       : allAgentDefs.map(a => a.key)
     const agentDefs = allAgentDefs.filter(a => selectedKeys.includes(a.key))
+
+    // Single-agent fast path — skip round 2 and synthesizer
+    if (agentDefs.length === 1) {
+      const [def] = agentDefs
+      const opinion = await callGroq(def.prompt)
+      const confidenceRaw = await callGroq(buildConfidencePrompt(def.role, opinion, lang), 5)
+      return json({
+        agents: [{ role: def.role, emoji: def.emoji, opinion, response: '', confidence: parseConfidence(confidenceRaw) }],
+        verdict: '',
+      })
+    }
 
     // Round 1: parallel independent analysis
     const round1Opinions = await Promise.all(agentDefs.map(a => callGroq(a.prompt)))

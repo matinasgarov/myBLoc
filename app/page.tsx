@@ -525,11 +525,6 @@ export default function Home() {
             onReset={handleReset}
             onOpenHistory={() => setHistoryOpen(true)}
             strings={strings}
-            onOpenExpertPanel={() => setExpertPanelOpen(o => !o)}
-            expertPanelAvailable={!!result}
-            expertPanelOpen={expertPanelOpen}
-            onCloseExpertPanel={() => setExpertPanelOpen(false)}
-            expertCacheRef={expertPanelCacheRef}
             lang={lang}
           />
         </div>
